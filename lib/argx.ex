@@ -30,8 +30,21 @@ defmodule Argx do
   end
 
   defp make_real_f_name(f) do
-    ["real", "_", to_string(f), "__", "macro"]
+    f
+    |> real_f_name_rule()
     |> IO.iodata_to_binary()
     |> String.to_atom()
+  end
+
+  defp real_f_name_rule(f) when is_bitstring(f) do
+    ["real", "_", f, "__", "macro"]
+  end
+
+  defp real_f_name_rule(f) when is_atom(f) do
+    to_string(f) |> real_f_name_rule()
+  end
+
+  defp real_f_name_rule(_) do
+    []
   end
 end
