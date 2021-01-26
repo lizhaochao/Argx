@@ -7,6 +7,8 @@ defmodule Argx.MixProject do
       version: "0.1.0",
       elixir: "~> 1.11",
       aliases: aliases(),
+      description: description(),
+      package: package(),
       start_permanent: Mix.env() == :prod,
       deps: deps()
     ]
@@ -20,7 +22,20 @@ defmodule Argx.MixProject do
 
   defp deps do
     [
-      {:credo, "~> 1.5", only: [:dev, :test], runtime: false}
+      {:credo, "~> 1.5", only: [:dev, :test], runtime: false},
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
+    ]
+  end
+
+  defp description() do
+    "validate function args by your custom rules"
+  end
+
+  defp package() do
+    [
+      name: "argx",
+      licenses: ["MIT"],
+      links: %{"Gitee" => "https://gitee.com/leechaochao/argx"}
     ]
   end
 
