@@ -17,8 +17,7 @@ defmodule Argx do
     } = parse_fun(block)
 
     quote do
-      configs = unquote(gen_configs(configs))
-      %{} |> Map.put(unquote(f), configs)
+      unquote(gen_configs(configs))
 
       def unquote(f)(unquote_splicing(a)) when unquote(guard) do
         unquote(block)
