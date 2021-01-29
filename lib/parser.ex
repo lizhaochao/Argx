@@ -106,6 +106,6 @@ defmodule Argx.Parser do
   end
 
   def parse_defconfig_name(_) do
-    raise "invalid name, such as: NameRule"
+    :ignore
   end
 end

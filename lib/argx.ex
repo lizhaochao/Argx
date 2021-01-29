@@ -2,9 +2,12 @@ defmodule Argx do
   @moduledoc false
 
   import Argx.Config, only: [gen_configs: 1, do_defconfig: 2]
-  import Argx.Parser
+
+  alias Argx.Checker, as: C
+  alias Argx.Parser, as: P
 
   defmacro defconfig(name, configs) do
+    C.check_defconfig(name, configs)
     do_defconfig(name, configs)
   end
 
@@ -14,7 +17,7 @@ defmodule Argx do
       a: a,
       guard: guard,
       block: block
-    } = parse_fun(block)
+    } = P.parse_fun(block)
 
     quote do
       unquote(gen_configs(configs))
