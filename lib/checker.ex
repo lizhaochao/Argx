@@ -29,7 +29,7 @@ defmodule Argx.Checker do
   end
 
   defp check_fun_block!({:__block__, _, [{f_type1, _, _} | [{f_type2, _, _} | _]]})
-       when f_type1 in @allowed_functionalities or f_type2 in @allowed_fun_types do
+       when f_type1 in @allowed_fun_types or f_type2 in @allowed_fun_types do
     raise "only support one function"
   end
 
