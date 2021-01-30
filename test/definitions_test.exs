@@ -1,6 +1,4 @@
 defmodule DefinitionsTest do
-  use ExUnit.Case
-
   import Argx
 
   ### No Compilation Error
@@ -53,7 +51,7 @@ defmodule DefinitionsTest do
     ])
   end
 
-  defmodule WithCheckTest do
+  defmodule WithCheckDefinition do
     with_check configs(Rule) do
       def create(name) when is_bitstring(name), do: name
     end

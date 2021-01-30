@@ -15,24 +15,25 @@ defmodule Argx.Checker do
     check_fun_block!(block)
   end
 
-  def check_configs!({:configs, _, configs}) do
+  ###
+  defp check_configs!({:configs, _, configs}) do
     configs |> extract_config!(true)
   end
 
-  def check_configs!(_) do
+  defp check_configs!(_) do
     raise "syntax error: not found configs keyword"
   end
 
-  def check_fun_block!({:__block__, _, []}) do
+  defp check_fun_block!({:__block__, _, []}) do
     raise "with_check block is empty"
   end
 
-  def check_fun_block!({:__block__, _, [{f_type1, _, _} | [{f_type2, _, _} | _]]})
-      when f_type1 in @allowed_functionalities or f_type2 in @allowed_fun_types do
+  defp check_fun_block!({:__block__, _, [{f_type1, _, _} | [{f_type2, _, _} | _]]})
+       when f_type1 in @allowed_functionalities or f_type2 in @allowed_fun_types do
     raise "only support one function"
   end
 
-  def check_fun_block!(_block) do
+  defp check_fun_block!(_block) do
     :ok
   end
 
@@ -70,8 +71,8 @@ defmodule Argx.Checker do
     raise "invalid defconfig"
   end
 
-  defp every_config!({:__aliases__, _, _}, _) do
-    :ok
+  defp every_config!({:__aliases__, _, _} = defconfig_name, _) do
+    defconfig_name |> check_config_name!()
   end
 
   defp every_config!([config | rest], _has_type?) when config in @allowed_types do
@@ -120,12 +121,8 @@ defmodule Argx.Checker do
     :ok
   end
 
-  defp check_config_name!(name) when is_atom(name) do
-    :ok
-  end
-
   defp check_config_name!(_) do
-    raise "invalid defconfig name, like: :name or NameYes"
+    raise "invalid defconfig name, like: NameYes"
   end
 
   ###
