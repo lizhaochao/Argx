@@ -1,7 +1,9 @@
 defmodule Argx.Parser do
   @moduledoc false
 
-  @allowed_fun_types [:def, :defp]
+  alias Argx.Const, as: Con
+
+  @allowed_fun_types Con.allowed_fun_types()
 
   ###
   def parse_fun(block) do

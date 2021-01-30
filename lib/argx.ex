@@ -1,14 +1,22 @@
 defmodule Argx do
   @moduledoc false
 
-  import Argx.Config, only: [gen_configs: 1, do_defconfig: 2]
-
+  alias Argx.Const, as: Con
   alias Argx.Checker, as: C
   alias Argx.Parser, as: P
+  alias Argx.Util, as: U
 
   defmacro defconfig(name, configs) do
     C.check_defconfig!(name, configs)
-    do_defconfig(name, configs)
+
+    name = P.parse_defconfig_name(name)
+    configs = P.parse_configs(configs)
+    attr = %{name => configs}
+
+    quote do
+      Module.register_attribute(__MODULE__, unquote(Con.store_key()), accumulate: true)
+      Module.put_attribute(__MODULE__, unquote(Con.store_key()), unquote(Macro.escape(attr)))
+    end
   end
 
   defmacro with_check(configs, do: block) do
@@ -22,7 +30,7 @@ defmodule Argx do
     } = P.parse_fun(block)
 
     quote do
-      unquote(gen_configs(configs))
+      unquote(merge_configs(configs))
 
       def unquote(f)(unquote_splicing(a)) when unquote(guard) do
         unquote(block)
@@ -31,6 +39,19 @@ defmodule Argx do
       def unquote(make_real_f_name(f))(unquote_splicing(a)) do
         unquote(block)
       end
+    end
+  end
+
+  ###
+  defp merge_configs(configs) do
+    quote do
+      defconfigs = Module.get_attribute(__MODULE__, unquote(Con.store_key())) |> U.list_to_map()
+      configs = unquote(configs |> P.parse_configs() |> Macro.escape())
+      {names, configs} = Map.pop(configs, :__names__)
+
+      names
+      |> U.get_all_by_names(defconfigs)
+      |> Map.merge(configs)
     end
   end
 
