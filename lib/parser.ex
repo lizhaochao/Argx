@@ -4,6 +4,7 @@ defmodule Argx.Parser do
   alias Argx.Const, as: Con
 
   @allowed_fun_types Con.allowed_fun_types()
+  @names_key Con.names_key()
 
   ###
   def parse_fun(block) do
@@ -82,8 +83,8 @@ defmodule Argx.Parser do
   defp config_rule(config, acc \\ nil)
 
   defp config_rule({:__aliases__, _, [name]}, acc) do
-    names = (acc && acc |> Map.get(:__names__)) || []
-    %{:__names__ => [name | names]}
+    names = (acc && acc |> Map.get(@names_key)) || []
+    %{@names_key => [name | names]}
   end
 
   defp config_rule({field, _, config}, _acc) do

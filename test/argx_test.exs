@@ -7,27 +7,25 @@ defmodule ArgxTest do
     defmodule Example1 do
       with_check configs(
                    name(:string, :optional),
-                   number(:string, :optional),
                    cargoes(:list, :optional)
                  ) do
-        def create(name, number, cargoes) when number |> is_bitstring() do
-          {name, number, cargoes}
+        def create(name, cargoes) when is_bitstring(name) do
+          {name, cargoes}
         end
       end
     end
 
     test "ok" do
-      assert {"name", "number", [1]} == Example1.create("name", "number", [1])
-      assert {"a", "b", []} == Example1.real_create__macro("a", "b", [])
+      assert {"name", [1]} == Example1.create("name", [1])
+      assert {"a", []} == Example1.real_create__macro("a", [])
     end
   end
 
   describe "defconfig" do
     defmodule Example2 do
-      defconfig(AbcRule, account(:map, :optional))
-      defconfig(XyzRule, [operation(:integer, :auto), reason(:string, :optional)])
+      defconfig(AbcRule, reason(:map, :optional))
 
-      with_check configs(AbcRule, XyzRule) do
+      with_check configs(AbcRule) do
         def approve(reason) do
           {reason}
         end
@@ -42,19 +40,19 @@ defmodule ArgxTest do
 
   describe "mix defconfig & with_check config" do
     defmodule Example3 do
-      defconfig(AbcRule, account(:map, :optional))
-      defconfig(XyzRule, [operation(:integer, :auto), reason(:string, :optional)])
+      defconfig(AbcRule, one(:map, :optional))
+      defconfig(XyzRule, [two(:integer, :auto), three(:string, :optional)])
 
       with_check configs(AbcRule, XyzRule, house(:string)) do
-        def get_one(one) do
-          one
+        def get_one(one, two, three, house) do
+          one <> two <> three <> house
         end
       end
     end
 
     test "ok" do
-      assert "name" == Example3.get_one("name")
-      assert [] == Example3.real_get_one__macro([])
+      assert "123a" == Example3.get_one("1", "2", "3", "a")
+      assert "123a" == Example3.real_get_one__macro("1", "2", "3", "a")
     end
   end
 end

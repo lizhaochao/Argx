@@ -12,15 +12,24 @@ defmodule Argx.Util do
     end)
   end
 
-  def get_all_by_names([_ | _] = names, %{} = all) do
-    names
-    |> Enum.reduce(%{}, fn name, acc ->
-      config = all |> Map.get(name, nil)
-      (config && acc |> Map.merge(config)) || acc
-    end)
+  ###
+  def make_fun_name(prefix, name) do
+    name
+    |> fun_name_rule(prefix)
+    |> IO.iodata_to_binary()
+    |> String.downcase()
+    |> String.to_atom()
   end
 
-  def get_all_by_names(_, _) do
-    %{}
+  defp fun_name_rule(name, prefix) when is_bitstring(name) do
+    [prefix, "_", name, "__", "macro"]
+  end
+
+  defp fun_name_rule(name, prefix) when is_atom(name) do
+    name |> to_string() |> fun_name_rule(prefix)
+  end
+
+  defp fun_name_rule(_, _) do
+    []
   end
 end

@@ -5,17 +5,27 @@ defmodule Argx do
   alias Argx.Checker, as: C
   alias Argx.Parser, as: P
   alias Argx.Util, as: U
+  alias Argx.Matcher, as: M
 
+  @defconfigs {:@, [], [{Con.defconfigs_key(), [], nil}]}
+  @names_key Con.names_key()
+
+  ###
   defmacro defconfig(name, configs) do
     C.check_defconfig!(name, configs)
 
     name = P.parse_defconfig_name(name)
     configs = P.parse_configs(configs)
-    attr = %{name => configs}
+    attr = %{name => configs} |> Macro.escape()
 
     quote do
-      Module.register_attribute(__MODULE__, unquote(Con.store_key()), accumulate: true)
-      Module.put_attribute(__MODULE__, unquote(Con.store_key()), unquote(Macro.escape(attr)))
+      unquote(reg_attr())
+
+      Module.put_attribute(
+        __MODULE__,
+        unquote(Con.defconfigs_key()),
+        unquote(attr)
+      )
     end
   end
 
@@ -30,9 +40,13 @@ defmodule Argx do
     } = P.parse_fun(block)
 
     quote do
-      unquote(merge_configs(configs))
+      # ignore undefined module attribute warning
+      unquote(reg_attr())
 
       def unquote(f)(unquote_splicing(a)) when unquote(guard) do
+        args = unquote(make_args(a))
+        configs = unquote(merge_configs(configs, @defconfigs))
+        M.match(unquote(f), args, configs)
         unquote(block)
       end
 
@@ -43,34 +57,80 @@ defmodule Argx do
   end
 
   ###
-  defp merge_configs(configs) do
+  defp make_args(a) do
     quote do
-      defconfigs = Module.get_attribute(__MODULE__, unquote(Con.store_key())) |> U.list_to_map()
-      configs = unquote(configs |> P.parse_configs() |> Macro.escape())
-      {names, configs} = Map.pop(configs, :__names__)
+      keys = unquote(a |> get_arg_names([]))
+      values = [unquote_splicing(a)]
+      keys |> do_make_args(values, %{})
+    end
+  end
+
+  def do_make_args([], [], acc) do
+    acc
+  end
+
+  def do_make_args([_ | _], [], acc) do
+    acc
+  end
+
+  def do_make_args([], [_ | _], acc) do
+    acc
+  end
+
+  def do_make_args([key | k_rest], [value | v_rest], acc) do
+    k_rest |> do_make_args(v_rest, Map.put(acc, key, value))
+  end
+
+  defp get_arg_names([], acc) do
+    acc |> Enum.reverse()
+  end
+
+  defp get_arg_names([{arg, _, _} | rest], acc) do
+    rest |> get_arg_names([arg | acc])
+  end
+
+  defp get_arg_names([_ | rest], acc) do
+    rest |> get_arg_names(acc)
+  end
+
+  ###
+  defp merge_configs(configs, defconfigs) do
+    quote do
+      {names, configs} =
+        unquote(configs |> P.parse_configs() |> Macro.escape())
+        |> Map.pop(unquote(@names_key))
 
       names
-      |> U.get_all_by_names(defconfigs)
+      |> get_configs_by_names(unquote(defconfigs))
       |> Map.merge(configs)
     end
   end
 
+  def get_configs_by_names([_ | _] = names, defconfigs) do
+    names
+    |> Enum.reduce(%{}, fn name, acc ->
+      configs = defconfigs |> U.list_to_map() |> Map.get(name, nil)
+      (configs && acc |> Map.merge(configs)) || acc
+    end)
+  end
+
+  def get_configs_by_names(_, _) do
+    %{}
+  end
+
+  ###
   defp make_real_f_name(f) do
-    f
-    |> real_f_name_rule()
-    |> IO.iodata_to_binary()
-    |> String.to_atom()
+    U.make_fun_name("real", f)
   end
 
-  defp real_f_name_rule(f) when is_bitstring(f) do
-    ["real", "_", f, "__", "macro"]
-  end
-
-  defp real_f_name_rule(f) when is_atom(f) do
-    to_string(f) |> real_f_name_rule()
-  end
-
-  defp real_f_name_rule(_) do
-    []
+  defp reg_attr do
+    quote do
+      Module.register_attribute(
+        __MODULE__,
+        unquote(Con.defconfigs_key()),
+        accumulate: true,
+        persiste: true
+      )
+    end
   end
 end
