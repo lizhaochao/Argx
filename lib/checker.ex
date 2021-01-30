@@ -3,16 +3,43 @@ defmodule Argx.Checker do
 
   @allowed_types [:list, :map, :string, :integer, :float]
   @allowed_functionalities [:optional, :auto]
+  @allowed_fun_types [:def, :defp]
 
-  def check_defconfig(name, configs) do
+  def check_defconfig!(name, config) do
     check_config_name!(name)
+    config |> extract_config!(true)
+  end
+
+  def check!(configs, block) do
+    check_configs!(configs)
+    check_fun_block!(block)
+  end
+
+  def check_configs!({:configs, _, configs}) do
     configs |> extract_config!(true)
+  end
+
+  def check_configs!(_) do
+    raise "syntax error: not found configs keyword"
+  end
+
+  def check_fun_block!({:__block__, _, []}) do
+    raise "with_check block is empty"
+  end
+
+  def check_fun_block!({:__block__, _, [{f_type1, _, _} | [{f_type2, _, _} | _]]})
+      when f_type1 in @allowed_functionalities or f_type2 in @allowed_fun_types do
+    raise "only support one function"
+  end
+
+  def check_fun_block!(_block) do
+    :ok
   end
 
   ###
   defp extract_config!([], first?) do
     if first? do
-      raise "[] is invalid config"
+      raise "config content is empty"
     else
       :ok
     end
@@ -31,12 +58,20 @@ defmodule Argx.Checker do
     config
   end
 
+  defp extract_config!({:__aliases__, _, _} = defconfig_name) do
+    defconfig_name
+  end
+
   defp extract_config!({_field, _, [_ | _] = config}) do
     config
   end
 
   defp extract_config!(_) do
     raise "invalid defconfig"
+  end
+
+  defp every_config!({:__aliases__, _, _}, _) do
+    :ok
   end
 
   defp every_config!([config | rest], _has_type?) when config in @allowed_types do

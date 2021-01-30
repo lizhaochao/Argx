@@ -43,16 +43,8 @@ defmodule Argx.Parser do
     |> Map.put(:a, [])
   end
 
-  defp _parse_fun({:__block__, _, []}, _) do
-    raise "not found function"
-  end
-
-  defp _parse_fun({:__block__, _, [_ | _]}, _) do
-    raise "only support one function"
-  end
-
   defp _parse_fun(_, _) do
-    raise "parse function error"
+    nil
   end
 
   ###
@@ -82,7 +74,7 @@ defmodule Argx.Parser do
   end
 
   def parse_configs(_, _) do
-    raise "configs syntax error"
+    nil
   end
 
   defp config_rule(config, acc \\ nil)

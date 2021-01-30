@@ -52,4 +52,36 @@ defmodule DefinitionsTest do
       addr(:map, :optional, :auto, 2..20) || hello()
     ])
   end
+
+  defmodule WithCheckTest do
+    with_check configs(Rule) do
+      def create(name) when is_bitstring(name), do: name
+    end
+
+    with_check configs(RuleA, RuleB) do
+      def get(name) when is_bitstring(name), do: name
+    end
+
+    with_check configs(name(:string), number(:integer)) do
+      def change(name) when is_bitstring(name), do: name
+    end
+
+    with_check configs(Rule, number(:integer)) do
+      def delete(name) when is_bitstring(name), do: name
+    end
+
+    with_check configs(RuleA, RuleB, name(:string), number(:integer)) do
+      def update(name) when is_bitstring(name), do: name
+    end
+
+    with_check configs(
+                 Rule,
+                 name(:list, :optional, :auto, 1..10),
+                 addr(:list, :optional, :auto, 1..24),
+                 name2(:list) || Account.post(1),
+                 addr2(:list) || Account.get("ljy")
+               ) do
+      def search(name) when is_bitstring(name), do: name
+    end
+  end
 end

@@ -7,11 +7,13 @@ defmodule Argx do
   alias Argx.Parser, as: P
 
   defmacro defconfig(name, configs) do
-    C.check_defconfig(name, configs)
+    C.check_defconfig!(name, configs)
     do_defconfig(name, configs)
   end
 
   defmacro with_check(configs, do: block) do
+    C.check!(configs, block)
+
     %{
       f: f,
       a: a,

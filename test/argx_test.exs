@@ -6,9 +6,9 @@ defmodule ArgxTest do
   describe "no defconfig" do
     defmodule Example1 do
       with_check configs(
-                   name(:string, :a),
-                   number(:string, :optional, :b),
-                   cargoes(:list, :optional, :b, :c)
+                   name(:string, :optional),
+                   number(:string, :optional),
+                   cargoes(:list, :optional)
                  ) do
         def create(name, number, cargoes) when number |> is_bitstring() do
           {name, number, cargoes}
@@ -45,7 +45,7 @@ defmodule ArgxTest do
       defconfig(AbcRule, account(:map, :optional))
       defconfig(XyzRule, [operation(:integer, :auto), reason(:string, :optional)])
 
-      with_check configs(AbcRule, XyzRule, house(:string, :h)) do
+      with_check configs(AbcRule, XyzRule, house(:string)) do
         def get_one(one) do
           one
         end
