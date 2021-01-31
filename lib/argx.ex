@@ -46,8 +46,8 @@ defmodule Argx do
       def unquote(f)(unquote_splicing(a)) when unquote(guard) do
         args = unquote(make_args(a))
         configs = unquote(merge_configs(configs, @defconfigs))
-        M.match(unquote(f), args, configs)
-        unquote(block)
+        args = M.match(__MODULE__, unquote(f), args, configs)
+        apply(__MODULE__, unquote(make_real_f_name(f)), args)
       end
 
       def unquote(make_real_f_name(f))(unquote_splicing(a)) do
@@ -61,12 +61,12 @@ defmodule Argx do
     quote do
       keys = unquote(a |> get_arg_names([]))
       values = [unquote_splicing(a)]
-      keys |> do_make_args(values, %{})
+      keys |> do_make_args(values, [])
     end
   end
 
   def do_make_args([], [], acc) do
-    acc
+    acc |> Enum.reverse()
   end
 
   def do_make_args([_ | _], [], acc) do
@@ -78,7 +78,7 @@ defmodule Argx do
   end
 
   def do_make_args([key | k_rest], [value | v_rest], acc) do
-    k_rest |> do_make_args(v_rest, Map.put(acc, key, value))
+    k_rest |> do_make_args(v_rest, Keyword.put(acc, key, value))
   end
 
   defp get_arg_names([], acc) do

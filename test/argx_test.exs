@@ -1,3 +1,11 @@
+defmodule Argx.A.B.C.Helper do
+  @moduledoc false
+
+  def post do
+    :default_from_fun
+  end
+end
+
 defmodule ArgxTest do
   use ExUnit.Case
 
@@ -6,17 +14,17 @@ defmodule ArgxTest do
   describe "no defconfig" do
     defmodule Example1 do
       with_check configs(
-                   name(:string, :optional),
-                   cargoes(:list, :optional)
+                   cargoes(:list, :optional) || Argx.A.B.C.Helper.post(),
+                   name(:string, :optional) || "default_name"
                  ) do
-        def create(name, cargoes) when is_bitstring(name) do
+        def create(name, cargoes) when is_nil(name) do
           {name, cargoes}
         end
       end
     end
 
     test "ok" do
-      assert {"name", [1]} == Example1.create("name", [1])
+      assert {"default_name", :default_from_fun} == Example1.create(nil, nil)
       assert {"a", []} == Example1.real_create__macro("a", [])
     end
   end
