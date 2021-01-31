@@ -2,7 +2,6 @@ defmodule DefinitionsTest do
   import Argx
 
   ### No Compilation Error
-
   defmodule DefconfigDefinition do
     defconfig(Name, name(:list))
     defconfig(Name, name(:map))
