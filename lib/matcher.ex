@@ -7,27 +7,27 @@ defmodule Argx.Matcher do
     f |> are_keys_equal!(args_kw, configs)
 
     configs = args_kw |> Keyword.keys() |> U.sort_by_keys(configs)
-    set_default(m, configs, args_kw) |> Keyword.values()
+    args_kw = args_kw |> set_default(configs, m)
+    args_kw |> Keyword.values()
   end
 
   ###
-  defp set_default(m, [_ | _] = configs, [_ | _] = args_kw) do
-    do_set_default(m, configs, args_kw, [])
+  defp set_default([_ | _] = args_kw, [_ | _] = configs, m) do
+    do_set_default(args_kw, configs, m, [])
   end
 
-  defp do_set_default(_, _, [], acc) do
+  defp do_set_default([], [], _, acc) do
     acc |> Enum.reverse()
   end
 
-  defp do_set_default(m, [{k1, %Argx.Config{default: default}} | rest1], [{k2, nil} | rest2], acc)
+  defp do_set_default([{k1, nil} | rest1], [{k2, %Argx.Config{default: default}} | rest2], m, acc)
        when k1 == k2 and not is_nil(default) do
     default = get_default(default, m)
-    do_set_default(m, rest1, rest2, [{k2, default} | acc])
+    do_set_default(rest1, rest2, m, [{k1, default} | acc])
   end
 
-  defp do_set_default(m, [{k1, _} | rest1], [{k2, _} = kv | rest2], acc)
-       when k1 == k2 do
-    do_set_default(m, rest1, rest2, [kv | acc])
+  defp do_set_default([{k1, _} = kv | rest1], [{k2, _} | rest2], m, acc) when k1 == k2 do
+    do_set_default(rest1, rest2, m, [kv | acc])
   end
 
   defp get_default({{:., _, [{:__aliases__, _, [_ | _] = m}, f]}, _, a}, _) do
