@@ -3,28 +3,31 @@ defmodule Argx.Matcher do
 
   alias Argx.Util, as: U
 
-  def match(m, f, [_ | _] = args_map, %{} = configs) when is_atom(m) and is_atom(f) do
-    f |> are_keys_equal!(args_map, configs)
+  def match(m, f, [_ | _] = args_kw, %{} = configs) when is_atom(m) and is_atom(f) do
+    f |> are_keys_equal!(args_kw, configs)
 
-    set_default(m, configs, args_map) |> Keyword.values()
+    configs = args_kw |> Keyword.keys() |> U.sort_by_keys(configs)
+    set_default(m, configs, args_kw) |> Keyword.values()
   end
 
   ###
-  defp set_default(m, %{} = configs, [_ | _] = args_map) do
-    do_set_default(m, configs, args_map, [])
+  defp set_default(m, [_ | _] = configs, [_ | _] = args_kw) do
+    do_set_default(m, configs, args_kw, [])
   end
 
   defp do_set_default(_, _, [], acc) do
     acc |> Enum.reverse()
   end
 
-  defp do_set_default(m, configs, [{k, nil} | rest], acc) do
-    v = configs |> Map.get(k) |> Map.get(:default) |> get_default(m)
-    do_set_default(m, configs, rest, [{k, v} | acc])
+  defp do_set_default(m, [{k1, %Argx.Config{default: default}} | rest1], [{k2, nil} | rest2], acc)
+       when k1 == k2 and not is_nil(default) do
+    default = get_default(default, m)
+    do_set_default(m, rest1, rest2, [{k2, default} | acc])
   end
 
-  defp do_set_default(m, configs, [{_, _} = kv | rest], acc) do
-    do_set_default(m, configs, rest, [kv | acc])
+  defp do_set_default(m, [{k1, _} | rest1], [{k2, _} = kv | rest2], acc)
+       when k1 == k2 do
+    do_set_default(m, rest1, rest2, [kv | acc])
   end
 
   defp get_default({{:., _, [{:__aliases__, _, [_ | _] = m}, f]}, _, a}, _) do

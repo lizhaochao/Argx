@@ -44,6 +44,16 @@ defmodule Argx.Util do
   end
 
   ###
+  def sort_by_keys(keys, %{} = data) do
+    keys
+    |> Enum.reduce([], fn key, acc ->
+      value = Map.get(data, key)
+      [{key, value} | acc]
+    end)
+    |> Enum.reverse()
+  end
+
+  ###
   def to_atom_key(%{} = data) do
     data |> traverse_map()
   end
