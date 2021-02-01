@@ -1,8 +1,8 @@
 defmodule Argx.A.B.C.Helper do
   @moduledoc false
 
-  def post do
-    :default_from_fun
+  def get_default_cargoes do
+    [:default_cargoes_from_fun]
   end
 end
 
@@ -14,17 +14,17 @@ defmodule ArgxTest do
   describe "no defconfig" do
     defmodule Example1 do
       with_check configs(
-                   cargoes(:list, :optional) || Argx.A.B.C.Helper.post(),
-                   name(:string, :optional) || "default_name"
+                   cargoes(:list) || Argx.A.B.C.Helper.get_default_cargoes(),
+                   name(:string)
                  ) do
-        def create(name, cargoes) when is_nil(name) do
+        def create(name, cargoes) do
           {name, cargoes}
         end
       end
     end
 
     test "ok" do
-      assert {"default_name", :default_from_fun} == Example1.create(nil, nil)
+      assert {"name", [:default_cargoes_from_fun]} == Example1.create("name", nil)
       assert {"a", []} == Example1.real_create__macro("a", [])
     end
   end
