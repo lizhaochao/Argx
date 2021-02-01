@@ -5,6 +5,19 @@ defmodule Argx.Checker do
   @allowed_functionalities [:optional, :auto]
   @allowed_fun_types [:def, :defp]
 
+  ###
+  def are_keys_equal!(f, [_ | _] = args, %{} = configs) when is_atom(f) do
+    keys1 = args |> Keyword.keys() |> Enum.sort()
+    keys2 = configs |> Map.keys() |> Enum.sort()
+
+    if keys1 == keys2 do
+      :ignore
+    else
+      raise "#{f} function has arg not config"
+    end
+  end
+
+  ###
   def check_defconfig!(name, config) do
     check_config_name!(name)
     config |> extract_config!(true)
