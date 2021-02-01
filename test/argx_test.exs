@@ -2,7 +2,7 @@ defmodule Argx.A.B.C.Helper do
   @moduledoc false
 
   def get_default_cargoes do
-    [:default_cargoes_from_fun]
+    [:default_cargoes]
   end
 end
 
@@ -15,17 +15,19 @@ defmodule ArgxTest do
     defmodule Example1 do
       with_check configs(
                    cargoes(:list) || Argx.A.B.C.Helper.get_default_cargoes(),
-                   name(:string)
+                   number(:integer, :auto),
+                   amount(:float, :auto),
+                   price(:float, :auto)
                  ) do
-        def create(name, cargoes) do
-          {name, cargoes}
+        def create(number, amount, price, cargoes) do
+          {number, amount, price, cargoes}
         end
       end
     end
 
     test "ok" do
-      assert {"name", [:default_cargoes_from_fun]} == Example1.create("name", nil)
-      assert {"a", []} == Example1.real_create__macro("a", [])
+      assert {12, 12.45, 38.0, [:default_cargoes]} == Example1.create("12", "12.45", 38, nil)
+      assert {"11", "11.33", 18, []} == Example1.real_create__macro("11", "11.33", 18, [])
     end
   end
 
@@ -49,7 +51,7 @@ defmodule ArgxTest do
   describe "mix defconfig & with_check config" do
     defmodule Example3 do
       defconfig(AbcRule, one(:map, :optional))
-      defconfig(XyzRule, [two(:integer, :auto), three(:string, :optional)])
+      defconfig(XyzRule, [two(:integer), three(:string, :optional)])
 
       with_check configs(AbcRule, XyzRule, house(:string)) do
         def get_one(one, two, three, house) do
