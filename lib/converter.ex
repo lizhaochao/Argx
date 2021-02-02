@@ -34,8 +34,16 @@ defmodule Argx.Converter do
     String.to_integer(value)
   end
 
+  defp to_type(value, :integer) when is_integer(value) do
+    value
+  end
+
   defp to_type(value, :float) when is_bitstring(value) do
     String.to_float(value)
+  end
+
+  defp to_type(value, :float) when is_float(value) do
+    value
   end
 
   defp to_type(value, :float) when is_integer(value) do
