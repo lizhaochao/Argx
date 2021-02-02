@@ -142,4 +142,7 @@ defmodule Argx.Parser do
   def parse_defconfig_name(_) do
     :ignore
   end
+
+  def parse_range(value) when is_number(value), do: [value, value]
+  def parse_range({:.., _, [l, r]}), do: [l, r]
 end

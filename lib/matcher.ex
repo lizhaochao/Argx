@@ -1,7 +1,7 @@
 defmodule Argx.Matcher do
   @moduledoc false
 
-  import Argx.{Checker, Converter, Defaulter, Util}
+  import Argx.{Checker, Converter, Defaulter, Parser, Util}
 
   def match(m, f, [_ | _] = args_kw, %{} = configs) when is_atom(m) and is_atom(f) do
     are_keys_equal!(f, args_kw, configs)
@@ -20,7 +20,9 @@ defmodule Argx.Matcher do
     |> lacked(configs)
     |> drop_checked_keys(args_kw, configs)
     |> error_type()
-    |> get_arg_values(args_kw)
+    |> drop_checked_keys(args_kw, configs)
+    |> out_of_range()
+    |> post_match(args_kw)
   end
 
   def match(_, _, _, _) do
@@ -70,7 +72,7 @@ defmodule Argx.Matcher do
   end
 
   defp do_error_type(acc_errors, [], []) do
-    {:error, Enum.reverse(acc_errors)}
+    {:error, acc_errors}
   end
 
   defp do_error_type(
@@ -96,18 +98,56 @@ defmodule Argx.Matcher do
     |> do_error_type(rest1, rest2)
   end
 
-  defp some_type?(v, :integer), do: is_integer(v)
-  defp some_type?(v, :float), do: is_float(v)
-  defp some_type?(v, :string), do: is_bitstring(v)
-  defp some_type?(v, :list), do: is_list(v)
-  defp some_type?(v, :map), do: is_map(v)
-  defp some_type?(_, _), do: false
+  ###
+  defp out_of_range({acc_errors, args_kw, configs}) do
+    do_out_of_range(acc_errors, args_kw, configs)
+  end
+
+  defp do_out_of_range([], [], []) do
+    []
+  end
+
+  defp do_out_of_range(acc_errors, [], []) do
+    {:error, acc_errors}
+  end
+
+  defp do_out_of_range(
+         acc_errors,
+         [{k1, nil} | rest1],
+         [{k2, %Argx.Config{optional: true}} | rest2]
+       )
+       when k1 == k2 do
+    do_out_of_range(acc_errors, rest1, rest2)
+  end
+
+  defp do_out_of_range(
+         acc_errors,
+         [{k1, _} | rest1],
+         [{k2, %Argx.Config{range: nil}} | rest2]
+       )
+       when k1 == k2 do
+    do_out_of_range(acc_errors, rest1, rest2)
+  end
+
+  defp do_out_of_range(
+         acc_errors,
+         [{k1, v1} | rest1],
+         [{k2, %Argx.Config{type: type, range: range}} | rest2]
+       )
+       when k1 == k2 do
+    if in_range?(v1, parse_range(range), type) do
+      acc_errors
+    else
+      do_acc_errors(acc_errors, :out_of_range, k1)
+    end
+    |> do_out_of_range(rest1, rest2)
+  end
 
   ###
   defp do_acc_errors(acc, type, field) do
     {nil, acc} =
       Keyword.get_and_update(acc, type, fn current ->
-        new_value = ((current && [field | Enum.reverse(current)]) || [field]) |> Enum.reverse()
+        new_value = (current && [field | current]) || [field]
         {nil, new_value}
       end)
 
@@ -127,20 +167,31 @@ defmodule Argx.Matcher do
   end
 
   defp drop_checked_keys({{:error, errors}, args_kw, configs}) do
-    [{_type, keys} | _] = Enum.reverse(errors)
-
-    {
-      errors,
-      Keyword.drop(args_kw, keys),
-      Keyword.drop(configs, keys)
-    }
+    errors |> do_drop_checked_keys(args_kw, configs, errors)
   end
 
-  defp get_arg_values({:error, _} = err, _) do
-    err
+  defp do_drop_checked_keys([], args_kw, configs, errors) do
+    {errors, args_kw, configs}
   end
 
-  defp get_arg_values([], args_kw) do
+  defp do_drop_checked_keys([{_type, keys} | rest], args_kw, configs, errors) do
+    args_kw = Keyword.drop(args_kw, keys)
+    configs = Keyword.drop(configs, keys)
+    rest |> do_drop_checked_keys(args_kw, configs, errors)
+  end
+
+  defp post_match({:error, errors}, _) do
+    errors =
+      errors
+      |> Enum.reverse()
+      |> Enum.map(fn {type, fields} ->
+        {type, Enum.reverse(fields)}
+      end)
+
+    {:error, errors}
+  end
+
+  defp post_match([], args_kw) do
     Keyword.values(args_kw)
   end
 end

@@ -6,6 +6,40 @@ defmodule Argx.Checker do
   @allowed_fun_types [:def, :defp]
 
   ###
+  def some_type?(v, :integer), do: is_integer(v)
+  def some_type?(v, :float), do: is_float(v)
+  def some_type?(v, :string), do: is_bitstring(v)
+  def some_type?(v, :list), do: is_list(v)
+  def some_type?(v, :map), do: is_map(v)
+  def some_type?(_, _), do: false
+
+  def in_range?(v, [l, r], :integer) when is_integer(v) do
+    (v > l and v < r) or (v == l and v == r)
+  end
+
+  def in_range?(v, [l, r], :float) when is_float(v) do
+    (v > l and v < r) or (v == l and v == r)
+  end
+
+  def in_range?(v, [l, r], :string) when is_bitstring(v) do
+    len = String.length(v)
+    (len > l and len < r) or (len == l and len == r)
+  end
+
+  def in_range?(v, [l, r], :list) when is_list(v) do
+    len = length(v)
+    (len > l and len < r) or (len == l and len == r)
+  end
+
+  def in_range?(v, [l, r], :map) when is_map(v) do
+    len = map_size(v)
+    (len > l and len < r) or (len == l and len == r)
+  end
+
+  def in_range?(_, _, _) do
+    false
+  end
+
   def are_keys_equal!(f, [_ | _] = args, %{} = configs) when is_atom(f) do
     keys1 = args |> Keyword.keys() |> Enum.sort()
     keys2 = configs |> Map.keys() |> Enum.sort()
