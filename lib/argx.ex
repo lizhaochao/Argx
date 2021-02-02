@@ -1,11 +1,11 @@
 defmodule Argx do
   @moduledoc false
 
-  alias Argx.Const, as: Con
   alias Argx.Checker, as: C
+  alias Argx.Const, as: Con
+  alias Argx.Matcher, as: M
   alias Argx.Parser, as: P
   alias Argx.Util, as: U
-  alias Argx.Matcher, as: M
 
   @defconfigs {:@, [], [{Con.defconfigs_key(), [], nil}]}
   @names_key Con.names_key()
