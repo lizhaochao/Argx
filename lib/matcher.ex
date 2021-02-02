@@ -11,26 +11,27 @@ defmodule Argx.Matcher do
     args_kw
     |> set_default(configs, m)
     |> convert(configs, m)
-    |> lacked(configs, m)
+    |> lacked(configs)
     |> Keyword.values()
   end
 
-  defp lacked(args_kw, configs, m) do
+  ###
+  defp lacked(args_kw, configs) do
     do_lacked(args_kw, configs, args_kw, [])
   end
 
-  defp do_lacked([], [], rest_args_kw, []) do
+  defp do_lacked(rest_args_kw, [], [], []) do
     rest_args_kw
   end
 
-  defp do_lacked([], [], rest_args_kw, acc) do
+  defp do_lacked(_, [], [], acc) do
     acc |> Enum.reverse()
   end
 
   defp do_lacked(
+         rest_args_kw,
          [{k1, nil} | rest1],
          [{k2, %Argx.Config{optional: false}} | rest2],
-         rest_args_kw,
          acc
        )
        when k1 == k2 do
@@ -42,16 +43,16 @@ defmodule Argx.Matcher do
 
     {nil, rest3} = Keyword.pop(rest_args_kw, k1)
 
-    do_lacked(rest1, rest2, rest3, acc)
+    do_lacked(rest3, rest1, rest2, acc)
   end
 
   defp do_lacked(
-         [{k1, _} = kv | rest1],
-         [{k2, _} | rest2],
          rest_args_kw,
+         [{k1, _} | rest1],
+         [{k2, _} | rest2],
          acc
        )
        when k1 == k2 do
-    do_lacked(rest1, rest2, rest_args_kw, acc)
+    do_lacked(rest_args_kw, rest1, rest2, acc)
   end
 end
