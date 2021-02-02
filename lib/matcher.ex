@@ -101,6 +101,7 @@ defmodule Argx.Matcher do
   defp some_type?(v, :string), do: is_bitstring(v)
   defp some_type?(v, :list), do: is_list(v)
   defp some_type?(v, :map), do: is_map(v)
+  defp some_type?(_, _), do: false
 
   ###
   defp do_acc_errors(acc, type, field) do
