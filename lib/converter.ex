@@ -31,7 +31,11 @@ defmodule Argx.Converter do
   end
 
   defp to_type(value, :integer) when is_bitstring(value) do
-    String.to_integer(value)
+    try do
+      String.to_integer(value)
+    rescue
+      ArgumentError -> value
+    end
   end
 
   defp to_type(value, :integer) when is_integer(value) do
@@ -39,7 +43,11 @@ defmodule Argx.Converter do
   end
 
   defp to_type(value, :float) when is_bitstring(value) do
-    String.to_float(value)
+    try do
+      String.to_float(value)
+    rescue
+      ArgumentError -> value
+    end
   end
 
   defp to_type(value, :float) when is_float(value) do
@@ -50,7 +58,7 @@ defmodule Argx.Converter do
     value / 1.0
   end
 
-  defp to_type(_, _) do
-    raise "auto convert error"
+  defp to_type(value, _) do
+    value
   end
 end

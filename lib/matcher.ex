@@ -4,55 +4,142 @@ defmodule Argx.Matcher do
   import Argx.{Checker, Converter, Defaulter, Util}
 
   def match(m, f, [_ | _] = args_kw, %{} = configs) when is_atom(m) and is_atom(f) do
-    f |> are_keys_equal!(args_kw, configs)
+    are_keys_equal!(f, args_kw, configs)
 
-    configs = args_kw |> Keyword.keys() |> sort_by_keys(configs)
+    configs =
+      args_kw
+      |> Keyword.keys()
+      |> sort_by_keys(configs)
+
+    args_kw =
+      args_kw
+      |> set_default(configs, m)
+      |> convert(configs, m)
 
     args_kw
-    |> set_default(configs, m)
-    |> convert(configs, m)
     |> lacked(configs)
-    |> Keyword.values()
+    |> drop_checked_keys(args_kw, configs)
+    |> error_type()
+    |> get_arg_values(args_kw)
+  end
+
+  def match(_, _, _, _) do
+    :match_error
   end
 
   ###
   defp lacked(args_kw, configs) do
-    do_lacked(args_kw, configs, args_kw, [])
+    do_lacked([], args_kw, configs)
   end
 
-  defp do_lacked(rest_args_kw, [], [], []) do
-    rest_args_kw
+  defp do_lacked([], [], []) do
+    []
   end
 
-  defp do_lacked(_, [], [], acc) do
-    acc |> Enum.reverse()
+  defp do_lacked(acc_errors, [], []) do
+    {:error, acc_errors}
   end
 
   defp do_lacked(
-         rest_args_kw,
+         acc_errors,
          [{k1, nil} | rest1],
-         [{k2, %Argx.Config{optional: false}} | rest2],
-         acc
+         [{k2, %Argx.Config{optional: false}} | rest2]
        )
        when k1 == k2 do
+    acc_errors
+    |> do_acc_errors(:lacked, k1)
+    |> do_lacked(rest1, rest2)
+  end
+
+  defp do_lacked(
+         acc_errors,
+         [{k1, _} | rest1],
+         [{k2, _} | rest2]
+       )
+       when k1 == k2 do
+    do_lacked(acc_errors, rest1, rest2)
+  end
+
+  ###
+  defp error_type({acc_errors, args_kw, configs}) do
+    do_error_type(acc_errors, args_kw, configs)
+  end
+
+  defp do_error_type([], [], []) do
+    []
+  end
+
+  defp do_error_type(acc_errors, [], []) do
+    {:error, Enum.reverse(acc_errors)}
+  end
+
+  defp do_error_type(
+         acc_errors,
+         [{k1, nil} | rest1],
+         [{k2, %Argx.Config{optional: true}} | rest2]
+       )
+       when k1 == k2 do
+    do_error_type(acc_errors, rest1, rest2)
+  end
+
+  defp do_error_type(
+         acc_errors,
+         [{k1, v1} | rest1],
+         [{k2, %Argx.Config{type: type}} | rest2]
+       )
+       when k1 == k2 do
+    if some_type?(v1, type) do
+      acc_errors
+    else
+      do_acc_errors(acc_errors, :error_type, k1)
+    end
+    |> do_error_type(rest1, rest2)
+  end
+
+  defp some_type?(v, :integer), do: is_integer(v)
+  defp some_type?(v, :float), do: is_float(v)
+  defp some_type?(v, :string), do: is_bitstring(v)
+  defp some_type?(v, :list), do: is_list(v)
+  defp some_type?(v, :map), do: is_map(v)
+
+  ###
+  defp do_acc_errors(acc, type, field) do
     {nil, acc} =
-      Keyword.get_and_update(acc, :lacked, fn current ->
-        new_value = ((current && [k1 | current]) || [k1]) |> Enum.reverse()
+      Keyword.get_and_update(acc, type, fn current ->
+        new_value = ((current && [field | Enum.reverse(current)]) || [field]) |> Enum.reverse()
         {nil, new_value}
       end)
 
-    {nil, rest3} = Keyword.pop(rest_args_kw, k1)
-
-    do_lacked(rest3, rest1, rest2, acc)
+    acc
   end
 
-  defp do_lacked(
-         rest_args_kw,
-         [{k1, _} | rest1],
-         [{k2, _} | rest2],
-         acc
-       )
-       when k1 == k2 do
-    do_lacked(rest_args_kw, rest1, rest2, acc)
+  defp drop_checked_keys([], args_kw, configs) do
+    {[], args_kw, configs}
+  end
+
+  defp drop_checked_keys(errors, args_kw, configs) do
+    {errors, args_kw, configs} |> drop_checked_keys()
+  end
+
+  defp drop_checked_keys({[], args_kw, configs}) do
+    {[], args_kw, configs}
+  end
+
+  defp drop_checked_keys({{:error, errors}, args_kw, configs}) do
+    [{_type, keys} | _] = Enum.reverse(errors)
+
+    {
+      errors,
+      Keyword.drop(args_kw, keys),
+      Keyword.drop(configs, keys)
+    }
+  end
+
+  defp get_arg_values({:error, _} = err, _) do
+    err
+  end
+
+  defp get_arg_values([], args_kw) do
+    Keyword.values(args_kw)
   end
 end

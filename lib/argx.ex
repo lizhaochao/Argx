@@ -46,8 +46,15 @@ defmodule Argx do
       def unquote(f)(unquote_splicing(a)) when unquote(guard) do
         args = unquote(make_args(a))
         configs = unquote(merge_configs(configs, @defconfigs))
-        new_args = M.match(__MODULE__, unquote(f), args, configs)
-        apply(__MODULE__, unquote(make_real_f_name(f)), new_args)
+        resp = M.match(__MODULE__, unquote(f), args, configs)
+
+        case resp do
+          {:error, _} = err ->
+            err
+
+          new_args when is_list(new_args) ->
+            apply(__MODULE__, unquote(make_real_f_name(f)), new_args)
+        end
       end
 
       def unquote(make_real_f_name(f))(unquote_splicing(a)) do
