@@ -144,9 +144,9 @@ defmodule Argx.Matcher do
   end
 
   ###
-  defp do_acc_errors(acc, type, field) do
+  defp do_acc_errors(acc, check_type, field) do
     {nil, acc} =
-      Keyword.get_and_update(acc, type, fn current ->
+      Keyword.get_and_update(acc, check_type, fn current ->
         new_value = (current && [field | current]) || [field]
         {nil, new_value}
       end)
@@ -166,7 +166,7 @@ defmodule Argx.Matcher do
     {errors, args_kw, configs}
   end
 
-  defp drop_checked_keys([{_type, keys} | rest], errors, args_kw, configs) do
+  defp drop_checked_keys([{_check_type, keys} | rest], errors, args_kw, configs) do
     args_kw = Keyword.drop(args_kw, keys)
     configs = Keyword.drop(configs, keys)
     rest |> drop_checked_keys(errors, args_kw, configs)
