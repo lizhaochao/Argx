@@ -47,7 +47,7 @@ defmodule Argx.Checker do
     if keys1 == keys2 do
       :ignore
     else
-      raise "#{f} function has arg not config"
+      raise Argx.Error, "#{f} function has arg not config"
     end
   end
 
@@ -68,16 +68,16 @@ defmodule Argx.Checker do
   end
 
   defp check_configs!(_) do
-    raise "syntax error: not found configs keyword"
+    raise Argx.Error, "syntax error: not found configs keyword"
   end
 
   defp check_fun_block!({:__block__, _, []}) do
-    raise "with_check block is empty"
+    raise Argx.Error, "with_check block is empty"
   end
 
   defp check_fun_block!({:__block__, _, [{f_type1, _, _} | [{f_type2, _, _} | _]]})
        when f_type1 in @allowed_fun_types or f_type2 in @allowed_fun_types do
-    raise "only support one function"
+    raise Argx.Error, "only support one function"
   end
 
   defp check_fun_block!(_block) do
@@ -87,7 +87,7 @@ defmodule Argx.Checker do
   ###
   defp extract_config!([], first?) do
     if first? do
-      raise "config content is empty"
+      raise Argx.Error, "config content is empty"
     else
       :ok
     end
@@ -115,7 +115,7 @@ defmodule Argx.Checker do
   end
 
   defp extract_config!(_) do
-    raise "invalid defconfig"
+    raise Argx.Error, "invalid defconfig"
   end
 
   defp every_config!({:__aliases__, _, _} = defconfig_name, _) do
@@ -148,14 +148,14 @@ defmodule Argx.Checker do
           "unknown #{_to_string(config)} defconfig"
       end
 
-    raise err_msg
+    raise Argx.Error, err_msg
   end
 
   defp every_config!([], has_type?) do
     if has_type? do
       :ok
     else
-      raise "not found one of #{inspect(@allowed_types)} config items"
+      raise Argx.Error, "not found one of #{inspect(@allowed_types)} config items"
     end
   end
 
@@ -169,7 +169,7 @@ defmodule Argx.Checker do
   end
 
   defp check_config_name!(_) do
-    raise "invalid defconfig name, like: NameYes"
+    raise Argx.Error, "invalid defconfig name, like: NameYes"
   end
 
   ###
