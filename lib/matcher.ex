@@ -16,8 +16,8 @@ defmodule Argx.Matcher do
       |> set_default(configs, m)
       |> convert(configs, m)
 
-    args_kw
-    |> lacked(configs)
+    {[], args_kw, configs}
+    |> lacked()
     |> drop_checked_keys(args_kw, configs)
     |> error_type()
     |> drop_checked_keys(args_kw, configs)
@@ -30,8 +30,8 @@ defmodule Argx.Matcher do
   end
 
   ###
-  defp lacked(args_kw, configs) do
-    do_lacked([], args_kw, configs)
+  defp lacked({acc_errors, args_kw, configs}) do
+    do_lacked(acc_errors, args_kw, configs)
   end
 
   defp do_lacked([], [], []) do
