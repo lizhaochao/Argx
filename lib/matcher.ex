@@ -158,26 +158,18 @@ defmodule Argx.Matcher do
     {[], args_kw, configs}
   end
 
-  defp drop_checked_keys(errors, args_kw, configs) do
-    {errors, args_kw, configs} |> drop_checked_keys()
+  defp drop_checked_keys({:error, errors}, args_kw, configs) do
+    errors |> drop_checked_keys(errors, args_kw, configs)
   end
 
-  defp drop_checked_keys({[], args_kw, configs}) do
-    {[], args_kw, configs}
-  end
-
-  defp drop_checked_keys({{:error, errors}, args_kw, configs}) do
-    errors |> do_drop_checked_keys(args_kw, configs, errors)
-  end
-
-  defp do_drop_checked_keys([], args_kw, configs, errors) do
+  defp drop_checked_keys([], errors, args_kw, configs) do
     {errors, args_kw, configs}
   end
 
-  defp do_drop_checked_keys([{_type, keys} | rest], args_kw, configs, errors) do
+  defp drop_checked_keys([{_type, keys} | rest], errors, args_kw, configs) do
     args_kw = Keyword.drop(args_kw, keys)
     configs = Keyword.drop(configs, keys)
-    rest |> do_drop_checked_keys(args_kw, configs, errors)
+    rest |> drop_checked_keys(errors, args_kw, configs)
   end
 
   defp post_match({:error, errors}, _) do
