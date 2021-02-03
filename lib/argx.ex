@@ -1,77 +1,82 @@
 defmodule Argx do
   @moduledoc false
 
-  alias Argx.Checker, as: C
-  alias Argx.Const, as: Con
-  alias Argx.Formatter, as: F
+  import Argx.{Checker, Formatter, Parser, Util}
+  alias Argx
+  alias Argx.Const
   alias Argx.Matcher, as: M
-  alias Argx.Parser, as: P
-  alias Argx.Util, as: U
 
-  @defconfigs {:@, [], [{Con.defconfigs_key(), [], nil}]}
-  @names_key Con.names_key()
-
-  ###
-  defmacro defconfig(name, configs) do
-    C.check_defconfig!(name, configs)
-
-    name = P.parse_defconfig_name(name)
-    configs = P.parse_configs(configs)
-    attr = %{name => configs} |> Macro.escape()
-
+  defmacro __using__(_opts) do
     quote do
-      unquote(reg_attr())
+      @defconfigs {:@, [], [{Const.defconfigs_key(), [], nil}]}
 
-      Module.put_attribute(
-        __MODULE__,
-        unquote(Con.defconfigs_key()),
-        unquote(attr)
-      )
-    end
-  end
+      defmacro defconfig(name, configs) do
+        check_defconfig!(name, configs)
 
-  defmacro with_check(configs, do: block) do
-    C.check!(configs, block)
+        name = parse_defconfig_name(name)
+        configs = parse_configs(configs)
+        attr = %{name => configs} |> Macro.escape()
 
-    %{
-      f: f,
-      a: a,
-      guard: guard,
-      block: block
-    } = P.parse_fun(block)
+        quote do
+          unquote(Argx.reg_attr())
 
-    real_f_name = make_real_f_name(f)
-
-    quote do
-      # ignore undefined module attribute warning
-      unquote(reg_attr())
-
-      def unquote(f)(unquote_splicing(a)) when unquote(guard) do
-        args = unquote(make_args(a))
-        configs = unquote(merge_configs(configs, @defconfigs))
-        resp = M.match(__MODULE__, unquote(f), args, configs)
-
-        case resp do
-          {:error, _} = err ->
-            err |> F.format_errors(__MODULE__)
-
-          new_args when is_list(new_args) ->
-            apply(__MODULE__, unquote(real_f_name), new_args)
+          Module.put_attribute(
+            __MODULE__,
+            unquote(Const.defconfigs_key()),
+            unquote(attr)
+          )
         end
       end
 
-      def unquote(real_f_name)(unquote_splicing(a)) do
-        unquote(block)
+      defmacro with_check(configs, do: block) do
+        check!(configs, block)
+
+        %{
+          f: f,
+          a: a,
+          guard: guard,
+          block: block
+        } = parse_fun(block)
+
+        real_f_name = Argx.make_real_f_name(f)
+        use_m = __MODULE__
+
+        quote do
+          # ignore undefined module attribute warning
+          unquote(Argx.reg_attr())
+
+          def unquote(f)(unquote_splicing(a)) when unquote(guard) do
+            args = unquote(Argx.make_args(a))
+            configs = unquote(Argx.merge_configs(configs, @defconfigs))
+
+            __MODULE__
+            |> M.match(unquote(f), args, configs)
+            |> Argx.post_match(unquote(use_m), __MODULE__, unquote(real_f_name))
+          end
+
+          def unquote(real_f_name)(unquote_splicing(a)) do
+            unquote(block)
+          end
+        end
       end
     end
   end
 
   ###
-  defp make_args(a) do
+  def post_match({:error, _} = err, use_m, current_m, _) do
+    err |> format_errors(use_m, current_m)
+  end
+
+  def post_match([_ | _] = new_args, _, current_m, real_f_name) do
+    apply(current_m, real_f_name, new_args)
+  end
+
+  ###
+  def make_args(a) do
     quote do
       keys = unquote(a |> get_arg_names([]))
       values = [unquote_splicing(a)]
-      keys |> do_make_args(values, [])
+      keys |> Argx.do_make_args(values, [])
     end
   end
 
@@ -91,27 +96,27 @@ defmodule Argx do
     k_rest |> do_make_args(v_rest, Keyword.put(acc, key, value))
   end
 
-  defp get_arg_names([], acc) do
+  def get_arg_names([], acc) do
     acc |> Enum.reverse()
   end
 
-  defp get_arg_names([{arg, _, _} | rest], acc) do
+  def get_arg_names([{arg, _, _} | rest], acc) do
     rest |> get_arg_names([arg | acc])
   end
 
-  defp get_arg_names([_ | rest], acc) do
+  def get_arg_names([_ | rest], acc) do
     rest |> get_arg_names(acc)
   end
 
   ###
-  defp merge_configs(configs, defconfigs) do
+  def merge_configs(configs, defconfigs) do
     quote do
       {names, configs} =
-        unquote(configs |> P.parse_configs() |> Macro.escape())
-        |> Map.pop(unquote(@names_key))
+        unquote(configs |> parse_configs() |> Macro.escape())
+        |> Map.pop(unquote(Const.names_key()))
 
       names
-      |> get_configs_by_names(unquote(defconfigs))
+      |> Argx.get_configs_by_names(unquote(defconfigs))
       |> Map.merge(configs)
     end
   end
@@ -119,7 +124,7 @@ defmodule Argx do
   def get_configs_by_names([_ | _] = names, defconfigs) do
     names
     |> Enum.reduce(%{}, fn name, acc ->
-      configs = defconfigs |> U.list_to_map() |> Map.get(name, nil)
+      configs = defconfigs |> list_to_map() |> Map.get(name, nil)
       (configs && acc |> Map.merge(configs)) || acc
     end)
   end
@@ -129,15 +134,15 @@ defmodule Argx do
   end
 
   ###
-  defp make_real_f_name(f) do
-    U.make_fun_name("real", f)
+  def make_real_f_name(f) do
+    make_fun_name("real", f)
   end
 
-  defp reg_attr do
+  def reg_attr do
     quote do
       Module.register_attribute(
         __MODULE__,
-        unquote(Con.defconfigs_key()),
+        unquote(Const.defconfigs_key()),
         accumulate: true,
         persiste: true
       )

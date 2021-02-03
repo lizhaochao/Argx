@@ -6,13 +6,27 @@ defmodule Argx.A.B.C.Helper do
   end
 end
 
+defmodule MyArgx1 do
+  @moduledoc false
+
+  use Argx
+
+  def format_errors(errors) do
+    errors
+  end
+end
+
 defmodule ArgxTest do
+  @moduledoc false
+
   use ExUnit.Case
 
-  import Argx
+  import MyArgx1
 
   describe "no defconfig" do
     defmodule Example1 do
+      @moduledoc false
+
       with_check configs(
                    cargoes(:list) || Argx.A.B.C.Helper.get_default_cargoes(),
                    number(:integer, :auto),
@@ -22,10 +36,6 @@ defmodule ArgxTest do
         def create(number, amount, price, cargoes) do
           {number, amount, price, cargoes}
         end
-      end
-
-      def format_errors(errors) do
-        errors
       end
     end
 
@@ -72,6 +82,8 @@ defmodule ArgxTest do
 
   describe "defconfig" do
     defmodule Example2 do
+      @moduledoc false
+
       defconfig(AbcRule, reason(:map, :optional))
 
       with_check configs(AbcRule) do
@@ -79,20 +91,17 @@ defmodule ArgxTest do
           {reason}
         end
       end
-
-      def format_errors(errors) do
-        errors
-      end
     end
 
     test "ok" do
       assert {:error, [error_type: [:reason]]} == Example2.approve("name")
-      assert {[]} == Example2.real_approve__macro([])
     end
   end
 
   describe "mix defconfig & with_check config" do
     defmodule Example3 do
+      @moduledoc false
+
       defconfig(AbcRule, one(:map, :optional))
       defconfig(XyzRule, [two(:integer), three(:string, :optional)])
 
@@ -103,13 +112,12 @@ defmodule ArgxTest do
       end
 
       def format_errors(errors) do
-        errors
+        {:err, errors}
       end
     end
 
     test "ok" do
-      assert {:error, [error_type: [:one, :two]]} == Example3.get_one("1", "2", "3", "a")
-      assert "123a" == Example3.real_get_one__macro("1", "2", "3", "a")
+      assert {:err, {:error, [error_type: [:one, :two]]}} == Example3.get_one("1", "2", "3", "a")
     end
   end
 end

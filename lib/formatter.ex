@@ -1,11 +1,16 @@
 defmodule Argx.Formatter do
   @moduledoc false
 
-  def format_errors(errors, m) do
-    if function_exported?(m, :format_errors, 1) do
-      apply(m, :format_errors, [errors])
-    else
-      default(errors)
+  def format_errors(errors, use_m, current_m) do
+    cond do
+      function_exported?(current_m, :format_errors, 1) ->
+        apply(current_m, :format_errors, [errors])
+
+      function_exported?(use_m, :format_errors, 1) ->
+        apply(use_m, :format_errors, [errors])
+
+      true ->
+        default(errors)
     end
   end
 

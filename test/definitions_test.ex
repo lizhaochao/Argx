@@ -1,8 +1,18 @@
+defmodule MyArgx2 do
+  @moduledoc false
+
+  use Argx
+end
+
 defmodule DefinitionsTest do
-  import Argx
+  @moduledoc false
+
+  import MyArgx2
 
   ### No Compilation Error
   defmodule DefconfigDefinition do
+    @moduledoc false
+
     defconfig(Name, name(:list))
     defconfig(Name, name(:map))
     defconfig(Name, name(:string))
@@ -51,6 +61,8 @@ defmodule DefinitionsTest do
   end
 
   defmodule WithCheckDefinition do
+    @moduledoc false
+
     with_check configs(Rule) do
       def create(name) when is_bitstring(name), do: name
     end

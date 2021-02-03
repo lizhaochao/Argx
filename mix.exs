@@ -10,7 +10,8 @@ defmodule Argx.MixProject do
       description: description(),
       package: package(),
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      test_pattern: "*_test.ex*"
     ]
   end
 
