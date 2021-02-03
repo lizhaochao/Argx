@@ -23,6 +23,10 @@ defmodule ArgxTest do
           {number, amount, price, cargoes}
         end
       end
+
+      def format_errors(errors) do
+        errors
+      end
     end
 
     test "normal ok" do
@@ -75,6 +79,10 @@ defmodule ArgxTest do
           {reason}
         end
       end
+
+      def format_errors(errors) do
+        errors
+      end
     end
 
     test "ok" do
@@ -92,6 +100,10 @@ defmodule ArgxTest do
         def get_one(one, two, three, house) do
           one <> two <> three <> house
         end
+      end
+
+      def format_errors(errors) do
+        errors
       end
     end
 

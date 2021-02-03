@@ -3,6 +3,7 @@ defmodule Argx do
 
   alias Argx.Checker, as: C
   alias Argx.Const, as: Con
+  alias Argx.Formatter, as: F
   alias Argx.Matcher, as: M
   alias Argx.Parser, as: P
   alias Argx.Util, as: U
@@ -39,6 +40,8 @@ defmodule Argx do
       block: block
     } = P.parse_fun(block)
 
+    real_f_name = make_real_f_name(f)
+
     quote do
       # ignore undefined module attribute warning
       unquote(reg_attr())
@@ -50,14 +53,14 @@ defmodule Argx do
 
         case resp do
           {:error, _} = err ->
-            err
+            err |> F.format_errors(__MODULE__)
 
           new_args when is_list(new_args) ->
-            apply(__MODULE__, unquote(make_real_f_name(f)), new_args)
+            apply(__MODULE__, unquote(real_f_name), new_args)
         end
       end
 
-      def unquote(make_real_f_name(f))(unquote_splicing(a)) do
+      def unquote(real_f_name)(unquote_splicing(a)) do
         unquote(block)
       end
     end
