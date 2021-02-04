@@ -28,11 +28,11 @@ defmodule Argx.MixProject do
     ]
   end
 
-  defp description() do
+  defp description do
     "validate function args by your custom rules"
   end
 
-  defp package() do
+  defp package do
     [
       name: "argx",
       licenses: ["MIT"],
