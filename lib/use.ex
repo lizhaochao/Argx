@@ -123,15 +123,15 @@ defmodule Argx.WithCheck.Use do
     k_rest |> do_make_args(v_rest, Keyword.put(acc, key, value))
   end
 
-  def get_arg_names([], acc) do
+  defp get_arg_names([], acc) do
     acc |> Enum.reverse()
   end
 
-  def get_arg_names([{arg, _, _} | rest], acc) do
+  defp get_arg_names([{arg, _, _} | rest], acc) do
     rest |> get_arg_names([arg | acc])
   end
 
-  def get_arg_names([_ | rest], acc) do
+  defp get_arg_names([_ | rest], acc) do
     rest |> get_arg_names(acc)
   end
 
