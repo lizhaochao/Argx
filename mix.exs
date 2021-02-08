@@ -29,7 +29,7 @@ defmodule Argx.MixProject do
   end
 
   defp description do
-    "validate function args by your custom rules"
+    "A DSL for validating function's args"
   end
 
   defp package do
