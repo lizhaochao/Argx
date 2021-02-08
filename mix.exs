@@ -4,14 +4,20 @@ defmodule Argx.MixProject do
   def project do
     [
       app: :argx,
-      version: "0.2.0",
+      version: "0.2.1",
       elixir: "~> 1.11",
       aliases: aliases(),
       description: description(),
       package: package(),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      test_pattern: "*_test.ex*"
+      test_pattern: "*_test.ex*",
+
+      # Docs
+      name: "Argx",
+      docs: [
+        main: "Argx"
+      ]
     ]
   end
 
