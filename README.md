@@ -2,7 +2,7 @@
 
   including 5 functionalities:
   1. set default value if arg is nil.
-  2. auto convert arg value, if arg value is compatible, like: "1" to 1.
+  2. convert arg value automatically, if arg value is compatible, like: "1" to 1.
   3. check whether arg is lacked
   4. check whether arg's type is error
   5. check whether arg's length/value is out of range
