@@ -21,10 +21,10 @@
                  name(:string, :optional) || Module.A.B.get_ts(),
                  number(:integer, :auto, 10..20) || 10
                ) do
-    def create(name, number) do
-      :ok
+      def create(name, number) do
+        :ok
+      end
     end
-  end
   ~~~
 
   ### Usage 2 :
