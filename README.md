@@ -1,6 +1,6 @@
-  Using DSLs to check functionalities args.
+  Using DSLs to check function args.
 
-  including 5 functions:
+  including 5 functionalities:
   1. set default value if arg is nil.
   2. auto convert arg value, if arg value is compatible, like: "1" to 1.
   3. check whether arg is lacked
