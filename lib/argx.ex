@@ -20,7 +20,7 @@ defmodule Argx do
   6. || operator is used to define default value, it also be a string/number/function.
 
   ~~~
-    with_check configs(
+  with_check configs(
                  name(:string, :optional) || Module.A.B.get_ts(),
                  number(:integer, :auto, 10..20) || 10
                ) do
