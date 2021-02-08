@@ -23,7 +23,7 @@ defmodule Argx.MixProject do
 
   defp deps do
     [
-      {:credo, "~> 1.5", only: [:dev, :test], runtime: false},
+      {:credo, ">= 0.0.0", only: [:dev, :test], runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end
