@@ -7,6 +7,15 @@
   4. check whether arg's type is error
   5. check whether arg's length/value is out of range
 
+  ### Validator
+  We can define a validator as follows:
+
+  ~~~
+  defmodule Project.Util.Validator do
+    use Argx
+  end
+  ~~~
+
   ### Usage 1:
 
   1. configs keyword is necessary
@@ -17,12 +26,16 @@
   6. || operator is used to define default value, it also be a string/number/function.
 
   ~~~
-  with_check configs(
-                 name(:string, :optional) || Module.A.B.get_ts(),
-                 number(:integer, :auto, 10..20) || 10
-               ) do
-    def create(name, number) do
-      :ok
+  defmodule Project.A.B do
+    import Project.Util.Validator
+
+    with_check configs(
+                   name(:string, :optional) || Module.A.B.get_ts(),
+                   number(:integer, :auto, 10..20) || 10
+                 ) do
+      def create(name, number) do
+        :ok
+      end
     end
   end
   ~~~
@@ -34,21 +47,56 @@
   1. config name, must be an atom
   2. config rule, like: field_name(:string, :optional, :auto, 1..10) || 1
 
-  you can reuse config rule by config name.
+  we can reuse config rule by config name.
 
   ~~~
-  defconfig(NameRule, name(:string))
+  defmodule Project.A.B do
+    import Project.Util.Validator
 
-  with_check configs(NameRule, number(:integer)) do
-    def create(name, number) do
-      :ok
+    defconfig(NameRule, name(:string))
+
+    with_check configs(NameRule, number(:integer)) do
+      def create(name, number) do
+        :ok
+      end
     end
   end
   ~~~
 
+  ### Callback
+
+  we can define in 2 places.
+  ~~~
+  defmodule Project.A.B do
+    ...
+
+    with_check configs(NameRule, number(:integer)) do
+      def create(name, number) do
+        :ok
+      end
+    end
+
+    # higher priority
+    def format_errors(errors) do
+      errors
+    end
+  end
+  ~~~
+
+  ~~~
+  defmodule Project.Util.Validator do
+    use Argx
+
+    def format_errors(errors) do
+      errors
+    end
+  end
+  ~~~
+
+
   ### All DSLs
   1. defconfig
-  1. with_check
+  2. with_check
 
   ### All Checking Data Type Values
   1.  :string
