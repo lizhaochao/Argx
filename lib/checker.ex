@@ -11,7 +11,7 @@ defmodule Argx.Checker do
   def some_type?(v, :string), do: is_bitstring(v)
   def some_type?(v, :list), do: is_list(v)
   def some_type?(v, :map), do: is_map(v)
-  def some_type?(_, _), do: false
+  def some_type?(_v, _other_type), do: false
 
   def in_range?(v, [l, r], :integer) when is_integer(v) do
     (v > l and v < r) or (v == l and v == r)
@@ -36,25 +36,29 @@ defmodule Argx.Checker do
     (len > l and len < r) or (len == l and len == r)
   end
 
-  def in_range?(_, _, _) do
-    false
-  end
+  def in_range?(_v, _range, _other_type), do: false
 
-  def are_keys_equal!(f, [_ | _] = args, %{} = configs) when is_atom(f) do
+  def are_keys_equal!(
+        f_name,
+        [{_arg_name, _arg_value} | _] = args,
+        %{} = configs
+      )
+      when is_atom(f_name) do
     keys1 = args |> Keyword.keys() |> Enum.sort()
     keys2 = configs |> Map.keys() |> Enum.sort()
 
-    if keys1 == keys2 do
-      :ignore
-    else
-      raise Argx.Error, "#{f} function has arg not config"
-    end
+    keys1
+    |> Kernel.==(keys2)
+    |> if(
+      do: :ignore,
+      else: raise(Argx.Error, "#{f_name} function has arg not config")
+    )
   end
 
   ###
   def check_defconfig!(name, config) do
     check_config_name!(name)
-    config |> extract_config!(true)
+    extract_config!(config, true)
   end
 
   def check!(configs, block) do
@@ -63,84 +67,66 @@ defmodule Argx.Checker do
   end
 
   ###
-  defp check_configs!({:configs, _, configs}) do
-    configs |> extract_config!(true)
-  end
+  defp check_configs!({:configs, _, configs}), do: extract_config!(configs, true)
+  defp check_configs!(_other_expr), do: raise(Argx.Error, "not found configs keyword")
 
-  defp check_configs!(_) do
-    raise Argx.Error, "syntax error: not found configs keyword"
-  end
-
-  defp check_fun_block!({:__block__, _, []}) do
-    raise Argx.Error, "with_check block is empty"
-  end
+  defp check_fun_block!({:__block__, _, []}), do: raise(Argx.Error, "with_check block is empty")
 
   defp check_fun_block!({:__block__, _, [{f_type1, _, _} | [{f_type2, _, _} | _]]})
        when f_type1 in @allowed_fun_types or f_type2 in @allowed_fun_types do
     raise Argx.Error, "only support one function"
   end
 
-  defp check_fun_block!(_block) do
-    :ok
-  end
+  defp check_fun_block!(_block), do: :ok
 
   ###
   defp extract_config!([], first?) do
-    if first? do
-      raise Argx.Error, "config content is empty"
-    else
-      :ok
-    end
+    first?
+    |> if(
+      do: raise(Argx.Error, "config content is empty"),
+      else: :ok
+    )
   end
 
   defp extract_config!([config | rest], _first?) do
     config |> extract_config!() |> every_config!(false)
-    rest |> extract_config!(false)
+    extract_config!(rest, false)
   end
 
-  defp extract_config!(config, _) do
+  defp extract_config!(config, _first?) do
     config |> extract_config!() |> every_config!(false)
   end
 
-  defp extract_config!({:||, _, [{_field, _, [_ | _] = config}, _default]}) do
-    config
-  end
-
-  defp extract_config!({:__aliases__, _, _} = defconfig_name) do
-    defconfig_name
-  end
-
-  defp extract_config!({_field, _, [_ | _] = config}) do
-    config
-  end
-
-  defp extract_config!(_) do
-    raise Argx.Error, "invalid defconfig"
-  end
+  defp extract_config!({:||, _, [{_field, _, [_ | _] = config}, _default]}), do: config
+  defp extract_config!({:__aliases__, _, _} = defconfig_name), do: defconfig_name
+  defp extract_config!({_field, _, [_ | _] = config}), do: config
+  defp extract_config!(_other_expr), do: raise(Argx.Error, "invalid defconfig")
 
   defp every_config!({:__aliases__, _, _} = defconfig_name, _) do
-    defconfig_name |> check_config_name!()
+    check_config_name!(defconfig_name)
   end
 
   defp every_config!([config | rest], _has_type?) when config in @allowed_types do
-    rest |> every_config!(true)
+    every_config!(rest, true)
   end
 
   defp every_config!([config | rest], has_type?) when config in @allowed_functionalities do
-    rest |> every_config!(has_type?)
+    every_config!(rest, has_type?)
   end
 
   defp every_config!([{:.., _, [l, r]} | rest], has_type?) when is_integer(l) and is_integer(r) do
-    rest |> every_config!(has_type?)
+    every_config!(rest, has_type?)
   end
 
   defp every_config!([value | rest], has_type?) when is_integer(value) do
-    rest |> every_config!(has_type?)
+    every_config!(rest, has_type?)
   end
 
-  defp every_config!([config | _rest], _) do
+  defp every_config!([config | _rest], _has_type?) do
     err_msg =
-      case _to_string(config) do
+      config
+      |> _to_string()
+      |> case do
         :error ->
           "invalid defconfig"
 
@@ -152,36 +138,21 @@ defmodule Argx.Checker do
   end
 
   defp every_config!([], has_type?) do
-    if has_type? do
-      :ok
-    else
-      raise Argx.Error, "not found one of #{inspect(@allowed_types)} config items"
-    end
+    has_type?
+    |> if(
+      do: :ok,
+      else: raise(Argx.Error, "not found one of #{inspect(@allowed_types)} config items")
+    )
   end
 
-  defp every_config!(config, _) when is_atom(config) do
-    :ok
-  end
+  defp every_config!(config, _has_type?) when is_atom(config), do: :ok
 
   ###
-  defp check_config_name!({:__aliases__, _, [name]}) when is_atom(name) do
-    :ok
-  end
-
-  defp check_config_name!(_) do
-    raise Argx.Error, "invalid defconfig name, like: NameYes"
-  end
+  defp check_config_name!({:__aliases__, _, [name]}) when is_atom(name), do: :ok
+  defp check_config_name!(_other_expr), do: raise(Argx.Error, "invalid defconfig name")
 
   ###
-  defp _to_string(value) when is_atom(value) do
-    ":#{value}"
-  end
-
-  defp _to_string(value) when is_bitstring(value) do
-    value
-  end
-
-  defp _to_string(_) do
-    :error
-  end
+  defp _to_string(v) when is_atom(v), do: ":#{v}"
+  defp _to_string(v) when is_bitstring(v), do: v
+  defp _to_string(_), do: :error
 end

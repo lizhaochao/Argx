@@ -18,9 +18,9 @@ defmodule Argx.Formatter do
     fields_ph = "{{fields}}"
 
     result =
-      errors
-      |> Enum.map(fn {check_type, fields} ->
-        case check_type do
+      Enum.map(errors, fn {check_type, fields} ->
+        check_type
+        |> case do
           :lacked ->
             "lacked: #{fields_ph}"
 

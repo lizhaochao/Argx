@@ -8,91 +8,83 @@ defmodule Argx.Parser do
   @names_key Con.names_key()
 
   ###
-  def parse_fun(block) do
-    block |> _parse_fun(%{})
+  def parse_fun(block), do: do_parse_fun(block, %{})
+
+  defp do_parse_fun({type, _, fun}, parts) when type in @allowed_fun_types do
+    do_parse_fun(fun, parts)
   end
 
-  defp _parse_fun({type, _, fun}, acc) when type in @allowed_fun_types do
-    fun |> _parse_fun(acc)
-  end
-
-  defp _parse_fun([{:when, _, fa_guard}, [{:do, block}]], acc) do
+  defp do_parse_fun([{:when, _, fa_guard}, [{:do, block}]], parts) do
     fa_guard
-    |> _parse_fun(acc)
+    |> do_parse_fun(parts)
     |> Map.put(:block, block)
   end
 
-  defp _parse_fun([fa, [{:do, block}]], acc) do
+  defp do_parse_fun([fa, [{:do, block}]], parts) do
     fa
-    |> _parse_fun(acc)
+    |> do_parse_fun(parts)
     |> Map.put(:block, block)
     |> Map.put(:guard, true)
   end
 
-  defp _parse_fun([fa, guard], acc) do
+  defp do_parse_fun([fa, guard], parts) do
     fa
-    |> _parse_fun(acc)
+    |> do_parse_fun(parts)
     |> Map.put(:guard, guard)
   end
 
-  defp _parse_fun({f, _, [{_, _, nil} | _] = a}, acc) do
-    acc
+  defp do_parse_fun({f, _, [{_, _, nil} | _] = a}, parts) do
+    parts
     |> Map.put(:f, f)
     |> Map.put(:a, a)
   end
 
-  defp _parse_fun({f, _, nil}, acc) do
-    acc
+  defp do_parse_fun({f, _, nil}, parts) do
+    parts
     |> Map.put(:f, f)
     |> Map.put(:a, [])
   end
 
-  defp _parse_fun(_, _) do
-    nil
-  end
+  defp do_parse_fun(_other_expr, _parts), do: nil
 
   ###
-  def parse_configs({:configs, _, [_ | _] = configs}) do
-    configs |> _parse_configs(%{})
+  def parse_configs({:configs, _, [_expr | _] = configs}) do
+    do_parse_configs(configs, %{})
   end
 
-  def parse_configs([_ | _] = configs) do
-    configs |> _parse_configs(%{})
+  def parse_configs([_expr | _] = configs) do
+    do_parse_configs(configs, %{})
   end
 
   def parse_configs(configs) do
-    [configs] |> _parse_configs(%{})
+    do_parse_configs([configs], %{})
   end
 
-  def _parse_configs([], acc) do
-    acc
-  end
+  defp do_parse_configs([], configs), do: configs
 
-  def _parse_configs([{:__aliases__, _, [defconfig_name]} | rest], acc) do
-    {_, acc} =
-      Map.get_and_update(acc, @names_key, fn current ->
+  defp do_parse_configs([{:__aliases__, _, [defconfig_name]} | rest], configs) do
+    {_, new_configs} =
+      Map.get_and_update(configs, @names_key, fn current ->
         new_value = (current && [defconfig_name | current]) || [defconfig_name]
         {current, new_value}
       end)
 
-    rest |> _parse_configs(acc)
+    do_parse_configs(rest, new_configs)
   end
 
-  def _parse_configs([config | rest], acc) do
-    config_map = config |> every_config()
-    acc = acc |> Map.merge(config_map)
-    rest |> _parse_configs(acc)
+  defp do_parse_configs([config | rest], configs) do
+    config_map = every_config(config)
+    new_configs = Map.merge(configs, config_map)
+    do_parse_configs(rest, new_configs)
   end
 
   defp every_config({:||, _, [{field, _, items}, default]}) do
-    _every_config(field, items, default)
+    do_every_config(field, items, default)
   end
 
-  defp every_config({field, _, items}) do
-    _every_config(field, items)
-  end
+  defp every_config({field, _, items}), do: do_every_config(field, items)
 
-  defp _every_config(field, items, default \\ nil) do
+  defp do_every_config(field, items, default \\ nil) do
     config = %Argx.Config{
       auto: false,
       optional: false,
@@ -105,44 +97,47 @@ defmodule Argx.Parser do
     Map.put(%{}, field, items)
   end
 
-  defp every_item([], acc) do
-    acc
+  defp every_item([], items), do: items
+
+  defp every_item([type | rest], items) when type in @allowed_types do
+    every_item(
+      rest,
+      Map.put(items, :type, type)
+    )
   end
 
-  defp every_item([type | rest], acc) when type in @allowed_types do
-    acc = Map.put(acc, :type, type)
-    rest |> every_item(acc)
+  defp every_item([:optional | rest], items) do
+    every_item(
+      rest,
+      Map.put(items, :optional, true)
+    )
   end
 
-  defp every_item([:optional | rest], acc) do
-    acc = Map.put(acc, :optional, true)
-    rest |> every_item(acc)
+  defp every_item([:auto | rest], items) do
+    every_item(
+      rest,
+      Map.put(items, :auto, true)
+    )
   end
 
-  defp every_item([:auto | rest], acc) do
-    acc = Map.put(acc, :auto, true)
-    rest |> every_item(acc)
+  defp every_item([{:.., _, [_, _]} = range | rest], items) do
+    every_item(
+      rest,
+      Map.put(items, :range, range)
+    )
   end
 
-  defp every_item([{:.., _, [_, _]} = range | rest], acc) do
-    acc = Map.put(acc, :range, range)
-    rest |> every_item(acc)
-  end
-
-  defp every_item([range | rest], acc) when is_integer(range) do
-    acc = Map.put(acc, :range, range)
-    rest |> every_item(acc)
+  defp every_item([range | rest], items) when is_integer(range) do
+    every_item(
+      rest,
+      Map.put(items, :range, range)
+    )
   end
 
   ###
-  def parse_defconfig_name({:__aliases__, _, [name]}) do
-    name
-  end
+  def parse_defconfig_name({:__aliases__, _, [name]}), do: name
+  def parse_defconfig_name(_expr), do: raise(Argx.Error, "defconfig name should be atom")
 
-  def parse_defconfig_name(_) do
-    :ignore
-  end
-
-  def parse_range(value) when is_number(value), do: [value, value]
+  def parse_range(v) when is_number(v), do: [v, v]
   def parse_range({:.., _, [l, r]}), do: [l, r]
 end

@@ -6,9 +6,8 @@ defmodule Argx.Util do
   end
 
   def list_to_map(list) do
-    list
-    |> Enum.reduce(%{}, fn item, acc ->
-      acc |> Map.merge(item)
+    Enum.reduce(list, %{}, fn item, map ->
+      Map.merge(map, item)
     end)
   end
 
@@ -44,11 +43,11 @@ defmodule Argx.Util do
   end
 
   ###
-  def sort_by_keys(keys, %{} = data) do
+  def sort_by_keys(keys, %{} = map) do
     keys
-    |> Enum.reduce([], fn key, acc ->
-      value = Map.get(data, key)
-      [{key, value} | acc]
+    |> Enum.reduce([], fn key, item ->
+      value = Map.get(map, key)
+      [{key, value} | item]
     end)
     |> Enum.reverse()
   end

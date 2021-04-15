@@ -13,7 +13,7 @@ defmodule Argx.Defconfig.Use do
 
         name = P.parse_defconfig_name(name)
         configs = P.parse_configs(configs)
-        attr = %{name => configs} |> Macro.escape()
+        attr = Macro.escape(%{name => configs})
 
         quote do
           unquote(Self.reg_attr())
@@ -91,7 +91,7 @@ defmodule Argx.WithCheck.Use do
 
   ###
   def post_match({:error, _} = err, use_m, current_m, _) do
-    err |> F.format_errors(use_m, current_m)
+    F.format_errors(err, use_m, current_m)
   end
 
   def post_match([_ | _] = new_args, _, current_m, real_f_name) do
@@ -101,46 +101,35 @@ defmodule Argx.WithCheck.Use do
   ###
   def make_args(a) do
     quote do
-      keys = unquote(a |> get_arg_names([]))
+      keys = unquote(get_arg_names(a, []))
       values = [unquote_splicing(a)]
-      keys |> Self.do_make_args(values, [])
+      Self.do_make_args(keys, values, [])
     end
   end
 
-  def do_make_args([], [], acc) do
-    acc |> Enum.reverse()
-  end
+  def do_make_args([] = _keys, [] = _values, args), do: Enum.reverse(args)
+  def do_make_args([_ | _] = _keys, [] = _values, args), do: args
+  def do_make_args([] = _keys, [_ | _] = _values, args), do: args
 
-  def do_make_args([_ | _], [], acc) do
-    acc
-  end
+  def do_make_args([key | key_rest], [value | value_rest], args),
+    do:
+      (
+        new_args = Keyword.put(args, key, value)
+        do_make_args(key_rest, value_rest, new_args)
+      )
 
-  def do_make_args([], [_ | _], acc) do
-    acc
-  end
-
-  def do_make_args([key | k_rest], [value | v_rest], acc) do
-    k_rest |> do_make_args(v_rest, Keyword.put(acc, key, value))
-  end
-
-  defp get_arg_names([], acc) do
-    acc |> Enum.reverse()
-  end
-
-  defp get_arg_names([{arg, _, _} | rest], acc) do
-    rest |> get_arg_names([arg | acc])
-  end
-
-  defp get_arg_names([_ | rest], acc) do
-    rest |> get_arg_names(acc)
-  end
+  defp get_arg_names([], names), do: Enum.reverse(names)
+  defp get_arg_names([{arg, _, _} | rest], names), do: get_arg_names(rest, [arg | names])
+  defp get_arg_names([_other_expr | rest], names), do: get_arg_names(rest, names)
 
   ###
   def merge_configs(configs, defconfigs) do
     quote do
       {names, configs} =
-        unquote(configs |> P.parse_configs() |> Macro.escape())
-        |> Map.pop(unquote(Const.names_key()))
+        Map.pop(
+          unquote(configs |> P.parse_configs() |> Macro.escape()),
+          unquote(Const.names_key())
+        )
 
       names
       |> Self.get_configs_by_names(unquote(defconfigs))
@@ -148,22 +137,17 @@ defmodule Argx.WithCheck.Use do
     end
   end
 
-  def get_configs_by_names([_ | _] = names, defconfigs) do
-    names
-    |> Enum.reduce(%{}, fn name, acc ->
-      configs = defconfigs |> U.list_to_map() |> Map.get(name, nil)
-      (configs && acc |> Map.merge(configs)) || acc
-    end)
-  end
+  def get_configs_by_names([name | _] = defconfig_names, defconfigs) when is_atom(name),
+    do:
+      Enum.reduce(defconfig_names, %{}, fn name, configs ->
+        config = defconfigs |> U.list_to_map() |> Map.get(name, nil)
+        (config && Map.merge(configs, config)) || configs
+      end)
 
-  def get_configs_by_names(_, _) do
-    %{}
-  end
+  def get_configs_by_names(_other_defconfig_names, _defconfigs), do: %{}
 
   ###
-  def make_real_f_name(f) do
-    U.make_fun_name("real", f)
-  end
+  def make_real_f_name(f), do: U.make_fun_name("real", f)
 
   def reg_attr do
     quote do

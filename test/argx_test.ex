@@ -103,11 +103,13 @@ defmodule ArgxTest do
       @moduledoc false
 
       defconfig(AbcRule, one(:map, :optional))
-      defconfig(XyzRule, [two(:integer), three(:string, :optional)])
+      defconfig(XyzRule, [two(:integer, :auto), three(:float, :auto)])
+      defconfig(ListRule, cargoes(:list))
 
-      with_check configs(AbcRule, XyzRule, house(:string)) do
-        def get_one(one, two, three, house) do
-          one <> two <> three <> house
+      with_check configs(AbcRule, XyzRule, ListRule, house(:string)) do
+        def get_one(one, two, three, house, cargoes) do
+          {one, two, three, house, cargoes}
+          :ok
         end
       end
 
@@ -117,7 +119,8 @@ defmodule ArgxTest do
     end
 
     test "ok" do
-      assert {:err, {:error, [error_type: [:one, :two]]}} == Example3.get_one("1", "2", "3", "a")
+      result = Example3.get_one(%{}, 1, 3.1, "house", [1, 2, 3])
+      assert :ok == result
     end
   end
 end

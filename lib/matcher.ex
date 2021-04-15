@@ -3,176 +3,155 @@ defmodule Argx.Matcher do
 
   import Argx.{Checker, Converter, Defaulter, Parser, Util}
 
-  def match(m, f, [_ | _] = args_kw, %{} = configs) when is_atom(m) and is_atom(f) do
-    are_keys_equal!(f, args_kw, configs)
+  def match(m, f, [{_arg_name, _arg_value} | _] = args, %{} = configs)
+      when is_atom(m) and is_atom(f) do
+    are_keys_equal!(f, args, configs)
 
     configs =
-      args_kw
+      args
       |> Keyword.keys()
       |> sort_by_keys(configs)
 
-    args_kw =
-      args_kw
+    args =
+      args
       |> set_default(configs, m)
       |> convert(configs, m)
 
-    {[], args_kw, configs}
+    {[], args, configs}
     |> lacked()
-    |> drop_checked_keys(args_kw, configs)
+    |> drop_checked_keys(args, configs)
     |> error_type()
-    |> drop_checked_keys(args_kw, configs)
+    |> drop_checked_keys(args, configs)
     |> out_of_range()
-    |> post_match(args_kw)
+    |> post_match(args)
   end
 
-  def match(_, _, _, _) do
-    :match_error
-  end
+  def match(_, _, _, _), do: :match_error
 
   ###
-  defp lacked({acc_errors, args_kw, configs}) do
-    do_lacked(acc_errors, args_kw, configs)
-  end
+  defp lacked({errors, args, configs}), do: do_lacked(errors, args, configs)
 
-  defp do_lacked([], [], []) do
-    []
-  end
+  defp do_lacked([], [], []), do: []
 
-  defp do_lacked(acc_errors, [], []) do
-    {:error, acc_errors}
-  end
+  defp do_lacked(errors, [], []), do: {:error, errors}
 
   defp do_lacked(
-         acc_errors,
+         errors,
          [{k1, nil} | rest1],
          [{k2, %Argx.Config{optional: false}} | rest2]
        )
        when k1 == k2 do
-    acc_errors
-    |> do_acc_errors(:lacked, k1)
+    errors
+    |> reduce_errors(:lacked, k1)
     |> do_lacked(rest1, rest2)
   end
 
   defp do_lacked(
-         acc_errors,
+         errors,
          [{k1, _} | rest1],
          [{k2, _} | rest2]
        )
        when k1 == k2 do
-    do_lacked(acc_errors, rest1, rest2)
+    do_lacked(errors, rest1, rest2)
   end
 
   ###
-  defp error_type({acc_errors, args_kw, configs}) do
-    do_error_type(acc_errors, args_kw, configs)
-  end
+  defp error_type({errors, args, configs}), do: do_error_type(errors, args, configs)
 
-  defp do_error_type([], [], []) do
-    []
-  end
+  defp do_error_type([], [], []), do: []
 
-  defp do_error_type(acc_errors, [], []) do
-    {:error, acc_errors}
-  end
+  defp do_error_type(errors, [], []), do: {:error, errors}
 
   defp do_error_type(
-         acc_errors,
+         errors,
          [{k1, nil} | rest1],
          [{k2, %Argx.Config{optional: true}} | rest2]
        )
        when k1 == k2 do
-    do_error_type(acc_errors, rest1, rest2)
+    do_error_type(errors, rest1, rest2)
   end
 
   defp do_error_type(
-         acc_errors,
+         errors,
          [{k1, v1} | rest1],
          [{k2, %Argx.Config{type: type}} | rest2]
        )
        when k1 == k2 do
-    if some_type?(v1, type) do
-      acc_errors
-    else
-      do_acc_errors(acc_errors, :error_type, k1)
-    end
+    v1
+    |> some_type?(type)
+    |> if(
+      do: errors,
+      else: reduce_errors(errors, :error_type, k1)
+    )
     |> do_error_type(rest1, rest2)
   end
 
   ###
-  defp out_of_range({acc_errors, args_kw, configs}) do
-    do_out_of_range(acc_errors, args_kw, configs)
-  end
+  defp out_of_range({errors, args, configs}), do: do_out_of_range(errors, args, configs)
 
-  defp do_out_of_range([], [], []) do
-    []
-  end
+  defp do_out_of_range([], [], []), do: []
 
-  defp do_out_of_range(acc_errors, [], []) do
-    {:error, acc_errors}
-  end
+  defp do_out_of_range(errors, [], []), do: {:error, errors}
 
   defp do_out_of_range(
-         acc_errors,
+         errors,
          [{k1, nil} | rest1],
          [{k2, %Argx.Config{optional: true}} | rest2]
        )
        when k1 == k2 do
-    do_out_of_range(acc_errors, rest1, rest2)
+    do_out_of_range(errors, rest1, rest2)
   end
 
   defp do_out_of_range(
-         acc_errors,
+         errors,
          [{k1, _} | rest1],
          [{k2, %Argx.Config{range: nil}} | rest2]
        )
        when k1 == k2 do
-    do_out_of_range(acc_errors, rest1, rest2)
+    do_out_of_range(errors, rest1, rest2)
   end
 
   defp do_out_of_range(
-         acc_errors,
+         errors,
          [{k1, v1} | rest1],
          [{k2, %Argx.Config{type: type, range: range}} | rest2]
        )
        when k1 == k2 do
-    if in_range?(v1, parse_range(range), type) do
-      acc_errors
-    else
-      do_acc_errors(acc_errors, :out_of_range, k1)
-    end
+    v1
+    |> in_range?(parse_range(range), type)
+    |> if(
+      do: errors,
+      else: reduce_errors(errors, :out_of_range, k1)
+    )
     |> do_out_of_range(rest1, rest2)
   end
 
   ###
-  defp do_acc_errors(acc, check_type, field) do
-    {nil, acc} =
-      Keyword.get_and_update(acc, check_type, fn current ->
+  defp reduce_errors(errors, check_type, field) do
+    {nil, new_errors} =
+      Keyword.get_and_update(errors, check_type, fn current ->
         new_value = (current && [field | current]) || [field]
         {nil, new_value}
       end)
 
-    acc
+    new_errors
   end
 
-  defp drop_checked_keys([], args_kw, configs) do
-    {[], args_kw, configs}
+  defp drop_checked_keys([], args, configs), do: {[], args, configs}
+
+  defp drop_checked_keys({:error, errors}, args, configs) do
+    drop_checked_keys(errors, errors, args, configs)
   end
 
-  defp drop_checked_keys({:error, errors}, args_kw, configs) do
-    errors |> drop_checked_keys(errors, args_kw, configs)
-  end
+  defp drop_checked_keys([], errors, args, configs), do: {errors, args, configs}
 
-  defp drop_checked_keys([], errors, args_kw, configs) do
-    {errors, args_kw, configs}
-  end
-
-  defp drop_checked_keys([{_check_type, keys} | rest], errors, args_kw, configs) do
-    args_kw = Keyword.drop(args_kw, keys)
+  defp drop_checked_keys([{_check_type, keys} | rest], errors, args, configs) do
+    args = Keyword.drop(args, keys)
     configs = Keyword.drop(configs, keys)
-    rest |> drop_checked_keys(errors, args_kw, configs)
+    drop_checked_keys(rest, errors, args, configs)
   end
 
-  defp post_match({:error, errors}, _) do
+  defp post_match({:error, errors}, _args) do
     errors =
       errors
       |> Enum.reverse()
@@ -183,7 +162,5 @@ defmodule Argx.Matcher do
     {:error, errors}
   end
 
-  defp post_match([], args_kw) do
-    Keyword.values(args_kw)
-  end
+  defp post_match([], args), do: Keyword.values(args)
 end
