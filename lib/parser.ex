@@ -134,6 +134,8 @@ defmodule Argx.Parser do
     )
   end
 
+  defp every_item([_other_expr | rest], items), do: every_item(rest, items)
+
   ###
   def parse_defconfig_name({:__aliases__, _, [name]}), do: name
   def parse_defconfig_name(_expr), do: raise(Argx.Error, "defconfig name should be atom")
