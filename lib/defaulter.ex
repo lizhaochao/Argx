@@ -1,7 +1,7 @@
 defmodule Argx.Defaulter do
   @moduledoc false
 
-  import Argx.Util
+  alias Argx.Util
 
   def set_default(
         [{_arg_name1, _arg_value1} | _] = args,
@@ -36,7 +36,7 @@ defmodule Argx.Defaulter do
 
   defp get_default({{:., _, [{:__aliases__, _, [_ | _] = m}, f]}, _, a}, _) do
     m
-    |> make_module_name()
+    |> Util.make_module_name()
     |> apply(f, a)
   end
 

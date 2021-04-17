@@ -1,11 +1,11 @@
 defmodule Argx.Parser do
   @moduledoc false
 
-  alias Argx.Const, as: Con
+  alias Argx.Const
 
-  @allowed_fun_types Con.allowed_fun_types()
-  @allowed_types Con.allowed_types()
-  @names_key Con.names_key()
+  @allowed_fun_types Const.allowed_fun_types()
+  @allowed_types Const.allowed_types()
+  @names_key Const.names_key()
 
   ###
   def parse_fun(block), do: do_parse_fun(block, %{})

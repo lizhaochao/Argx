@@ -1,18 +1,16 @@
 defmodule Argx.Defconfig.Use do
   @moduledoc false
 
-  alias Argx.Checker, as: C
-  alias Argx.Const
+  alias Argx.{Checker, Const, Parser}
   alias Argx.Defconfig.Use, as: Self
-  alias Argx.Parser, as: P
 
   defmacro __using__(_opts) do
     quote do
       defmacro defconfig(name, configs) do
-        C.check_defconfig!(name, configs)
+        Checker.check_defconfig!(name, configs)
 
-        name = P.parse_defconfig_name(name)
-        configs = P.parse_configs(configs)
+        name = Parser.parse_defconfig_name(name)
+        configs = Parser.parse_configs(configs)
         attr = Macro.escape(%{name => configs})
 
         quote do
@@ -43,12 +41,7 @@ end
 defmodule Argx.WithCheck.Use do
   @moduledoc false
 
-  alias Argx.Checker, as: C
-  alias Argx.Const
-  alias Argx.Formatter, as: F
-  alias Argx.Matcher, as: M
-  alias Argx.Parser, as: P
-  alias Argx.Util, as: U
+  alias Argx.{Checker, Const, Formatter, Matcher, Parser, Util}
   alias Argx.WithCheck.Use, as: Self
 
   defmacro __using__(_opts) do
@@ -56,14 +49,14 @@ defmodule Argx.WithCheck.Use do
       @defconfigs {:@, [], [{Const.defconfigs_key(), [], nil}]}
 
       defmacro with_check(configs, do: block) do
-        C.check!(configs, block)
+        Checker.check!(configs, block)
 
         %{
           f: f,
           a: a,
           guard: guard,
           block: block
-        } = P.parse_fun(block)
+        } = Parser.parse_fun(block)
 
         real_f_name = Self.make_real_f_name(f)
         use_m = __MODULE__
@@ -77,7 +70,7 @@ defmodule Argx.WithCheck.Use do
             configs = unquote(Self.merge_configs(configs, @defconfigs))
 
             __MODULE__
-            |> M.match(unquote(f), args, configs)
+            |> Matcher.match(unquote(f), args, configs)
             |> Self.post_match(unquote(use_m), __MODULE__, unquote(real_f_name))
           end
 
@@ -91,7 +84,7 @@ defmodule Argx.WithCheck.Use do
 
   ###
   def post_match({:error, _} = err, use_m, current_m, _) do
-    F.format_errors(err, use_m, current_m)
+    Formatter.format_errors(err, use_m, current_m)
   end
 
   def post_match([_ | _] = new_args, _, current_m, real_f_name) do
@@ -127,7 +120,7 @@ defmodule Argx.WithCheck.Use do
     quote do
       {names, configs} =
         Map.pop(
-          unquote(configs |> P.parse_configs() |> Macro.escape()),
+          unquote(configs |> Parser.parse_configs() |> Macro.escape()),
           unquote(Const.names_key())
         )
 
@@ -140,14 +133,14 @@ defmodule Argx.WithCheck.Use do
   def get_configs_by_names([name | _] = defconfig_names, defconfigs) when is_atom(name),
     do:
       Enum.reduce(defconfig_names, %{}, fn name, configs ->
-        config = defconfigs |> U.list_to_map() |> Map.get(name, nil)
+        config = defconfigs |> Util.list_to_map() |> Map.get(name, nil)
         (config && Map.merge(configs, config)) || configs
       end)
 
   def get_configs_by_names(_other_defconfig_names, _defconfigs), do: %{}
 
   ###
-  def make_real_f_name(f), do: U.make_fun_name("real", f)
+  def make_real_f_name(f), do: Util.make_fun_name("real", f)
 
   def reg_attr do
     quote do

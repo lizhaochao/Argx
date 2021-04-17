@@ -1,21 +1,21 @@
 defmodule Argx.Matcher do
   @moduledoc false
 
-  import Argx.{Checker, Converter, Defaulter, Parser, Util}
+  alias Argx.{Checker, Converter, Defaulter, Parser, Util}
 
   def match(m, f, [{_arg_name, _arg_value} | _] = args, %{} = configs)
       when is_atom(m) and is_atom(f) do
-    are_keys_equal!(f, args, configs)
+    Checker.are_keys_equal!(f, args, configs)
 
     configs =
       args
       |> Keyword.keys()
-      |> sort_by_keys(configs)
+      |> Util.sort_by_keys(configs)
 
     args =
       args
-      |> set_default(configs, m)
-      |> convert(configs, m)
+      |> Defaulter.set_default(configs, m)
+      |> Converter.convert(configs, m)
 
     {[], args, configs}
     |> lacked()
@@ -78,7 +78,7 @@ defmodule Argx.Matcher do
        )
        when k1 == k2 do
     v1
-    |> some_type?(type)
+    |> Checker.some_type?(type)
     |> if(
       do: errors,
       else: reduce_errors(errors, :error_type, k1)
@@ -118,7 +118,7 @@ defmodule Argx.Matcher do
        )
        when k1 == k2 do
     v1
-    |> in_range?(parse_range(range), type)
+    |> Checker.in_range?(Parser.parse_range(range), type)
     |> if(
       do: errors,
       else: reduce_errors(errors, :out_of_range, k1)
