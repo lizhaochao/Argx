@@ -58,6 +58,7 @@ defmodule Argx.Parser do
   def parse_configs([_ | _] = configs), do: do_parse_configs(configs, %{})
   def parse_configs({@configs_keyword, _, [_ | _] = configs}), do: do_parse_configs(configs, %{})
   def parse_configs({@configs_keyword, _, []}), do: raise(Argx.Error, "configs is empty")
+  def parse_configs([]), do: raise(Argx.Error, "configs is empty")
 
   defp do_parse_configs([], configs) do
     new_configs =
@@ -166,7 +167,7 @@ defmodule Argx.Parser do
     |> String.to_atom()
   end
 
-  def parse_defconfig_name(_other_expr), do: raise(Argx.Error, "defconfig name should be atom")
+  def parse_defconfig_name(_other), do: raise(Argx.Error, "defconfig name should be atom/string")
 
   ###
   def parse_range(v) when is_number(v), do: [v, v]

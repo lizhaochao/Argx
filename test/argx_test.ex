@@ -103,8 +103,9 @@ defmodule ArgxTest do
       @moduledoc false
 
       defconfig(AbcRule, one(:map, :optional))
-      defconfig(XyzRule, [two(:integer, :auto), three(:float, :auto)])
+      defconfig(XyzRule, [two(:integer, :auto) || 2, three(:float, :auto)])
       defconfig(ListRule, cargoes(:list))
+      defconfig(EmptyRule, student(:map) || 2)
 
       with_check configs(AbcRule, XyzRule, ListRule, house(:string)) do
         def get_one(one, two, three, house, cargoes) do
