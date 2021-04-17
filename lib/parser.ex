@@ -4,8 +4,10 @@ defmodule Argx.Parser do
   alias Argx.Const
 
   @allowed_fun_types Const.allowed_fun_types()
+  @not_support_types Const.not_support_types()
   @allowed_types Const.allowed_types()
   @names_key Const.names_key()
+  @configs_keyword Const.configs_keyword()
 
   ###
   def parse_fun(block), do: do_parse_fun(block, %{})
@@ -33,40 +35,57 @@ defmodule Argx.Parser do
     |> Map.put(:guard, guard)
   end
 
-  defp do_parse_fun({f, _, [{_, _, nil} | _] = a}, parts) do
+  defp do_parse_fun({f, _, [{_, _, _} | _] = a}, parts) when f not in @not_support_types do
     parts
     |> Map.put(:f, f)
     |> Map.put(:a, a)
   end
 
-  defp do_parse_fun({f, _, nil}, parts) do
+  defp do_parse_fun({f, _, _}, parts) when f not in @not_support_types do
     parts
     |> Map.put(:f, f)
     |> Map.put(:a, [])
   end
 
-  defp do_parse_fun(_other_expr, _parts), do: nil
+  defp do_parse_fun({type, _, [_ | _]}, _parts), do: raise(Argx.Error, "not support #{type}")
+  defp do_parse_fun(_other_expr, _parts), do: raise(Argx.Error, "unknown function")
 
   ###
-  def parse_configs({:configs, _, [_expr | _] = configs}) do
-    do_parse_configs(configs, %{})
-  end
-
-  def parse_configs([_expr | _] = configs) do
-    do_parse_configs(configs, %{})
-  end
-
-  def parse_configs(configs) do
+  def parse_configs({name, _, _} = configs) when name != @configs_keyword do
     do_parse_configs([configs], %{})
   end
 
-  defp do_parse_configs([], configs), do: configs
+  def parse_configs([_ | _] = configs), do: do_parse_configs(configs, %{})
+  def parse_configs({@configs_keyword, _, [_ | _] = configs}), do: do_parse_configs(configs, %{})
+  def parse_configs({@configs_keyword, _, []}), do: raise(Argx.Error, "configs is empty")
+
+  defp do_parse_configs([], configs) do
+    new_configs =
+      configs
+      |> Map.get(@names_key)
+      |> is_nil()
+      |> if(
+        do: configs,
+        else:
+          (
+            {_, new_configs} =
+              Map.get_and_update(configs, @names_key, fn curr ->
+                new_value = curr && MapSet.to_list(curr)
+                {curr, new_value}
+              end)
+
+            new_configs
+          )
+      )
+
+    new_configs
+  end
 
   defp do_parse_configs([{:__aliases__, _, [defconfig_name]} | rest], configs) do
     {_, new_configs} =
-      Map.get_and_update(configs, @names_key, fn current ->
-        new_value = (current && [defconfig_name | current]) || [defconfig_name]
-        {current, new_value}
+      Map.get_and_update(configs, @names_key, fn curr ->
+        new_value = (curr && MapSet.put(curr, defconfig_name)) || MapSet.new([defconfig_name])
+        {curr, new_value}
       end)
 
     do_parse_configs(rest, new_configs)
@@ -134,12 +153,23 @@ defmodule Argx.Parser do
     )
   end
 
-  defp every_item([_other_expr | rest], items), do: every_item(rest, items)
+  defp every_item([other_expr | _rest], _items), do: raise(Argx.Error, "unknown #{other_expr}")
 
   ###
-  def parse_defconfig_name({:__aliases__, _, [name]}), do: name
-  def parse_defconfig_name(_expr), do: raise(Argx.Error, "defconfig name should be atom")
+  def parse_defconfig_name(name) when is_atom(name), do: name
+  def parse_defconfig_name(name) when is_bitstring(name), do: String.to_atom(name)
 
+  def parse_defconfig_name({:__aliases__, _, [_ | _] = parts}) do
+    parts
+    |> Enum.map(fn part -> to_string(part) end)
+    |> Enum.join("_")
+    |> String.to_atom()
+  end
+
+  def parse_defconfig_name(_other_expr), do: raise(Argx.Error, "defconfig name should be atom")
+
+  ###
   def parse_range(v) when is_number(v), do: [v, v]
   def parse_range({:.., _, [l, r]}), do: [l, r]
+  def parse_range(other), do: raise(Argx.Error, "not support #{inspect(other)}")
 end

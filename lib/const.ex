@@ -8,4 +8,7 @@ defmodule Argx.Const do
   def allowed_functionalities, do: [:optional, :auto]
 
   def allowed_fun_types, do: [:def, :defp]
+  def not_support_types, do: [:@, :defmodule, :use, :require, :import, :alias]
+
+  def configs_keyword, do: :configs
 end
