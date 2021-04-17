@@ -15,7 +15,7 @@ defmodule Argx.Matcher do
     args =
       args
       |> Defaulter.set_default(configs, m)
-      |> Converter.convert(configs, m)
+      |> Converter.convert(configs)
 
     {[], args, configs}
     |> lacked()
