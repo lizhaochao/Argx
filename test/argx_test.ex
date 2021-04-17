@@ -1,19 +1,15 @@
-defmodule Argx.A.B.C.Helper do
+defmodule Test.Helper.Defaulter do
   @moduledoc false
 
-  def get_default_cargoes do
-    [:default_cargoes]
-  end
+  def get_default, do: "default"
 end
 
-defmodule MyArgx1 do
+defmodule TestArgx do
   @moduledoc false
 
   use Argx
 
-  def format_errors(errors) do
-    errors
-  end
+  def format_errors(errors), do: errors
 end
 
 defmodule ArgxTest do
@@ -21,107 +17,114 @@ defmodule ArgxTest do
 
   use ExUnit.Case
 
-  import MyArgx1
+  import TestArgx
 
-  describe "no defconfig" do
-    defmodule Example1 do
+  describe "with_check" do
+    defmodule TestArgx.A do
       @moduledoc false
-
+      @fixed_curr_ts 1_618_653_110
       with_check configs(
-                   cargoes(:list) || Argx.A.B.C.Helper.get_default_cargoes(),
-                   number(:integer, :auto),
-                   amount(:float, :auto, 1..3),
-                   price(:float, :auto, :optional, 5..11)
+                   one(:float, :auto),
+                   two(:integer, :optional) || get_curr_ts(),
+                   three(:string, 1..10),
+                   four(:list) || [1, 2, 3],
+                   five(:map),
+                   six(:string, :optional, 7) || Test.Helper.Defaulter.get_default()
                  ) do
-        def create(number, amount, price, cargoes) do
-          {number, amount, price, cargoes}
+        def get(one, two, three, four, five, six) do
+          {one, two, three, four, five, six}
         end
       end
+
+      def get_curr_ts, do: @fixed_curr_ts
     end
 
-    test "normal ok" do
-      assert {1, 1.1, 10.0, [:a, :b]} == Example1.create(1, 1.1, 10.0, [:a, :b])
-      assert {"11", "11.33", 18, []} == Example1.real_create__macro("11", "11.33", 18, [])
+    test "ok" do
+      result1 = TestArgx.A.get(1.1, 2, "ljy", [1, 2], %{a: 1}, "hellocc")
+      assert {1.1, 2, "ljy", [1, 2], %{a: 1}, "hellocc"} == result1
+
+      result2 = TestArgx.A.get(1.1, nil, "ljy", nil, %{a: 1}, nil)
+      expected_two = TestArgx.A.get_curr_ts()
+      expected_six = Test.Helper.Defaulter.get_default()
+      assert {1.1, expected_two, "ljy", [1, 2, 3], %{a: 1}, expected_six} == result2
     end
 
-    test "set default ok" do
-      assert {1, 1.1, 10.0, [1]} == Example1.create(1, 1.1, 10.0, [1])
-    end
+    test "error" do
+      result = TestArgx.A.get(nil, "good", "", 1.23, [], "hello")
 
-    test "auto convert ok" do
-      assert {1, 1.1, 10.0, [:default_cargoes]} == Example1.create(1, "1.1", 10.0, nil)
-    end
-
-    test "default && convert ok" do
-      assert {1, 1.1, 10.0, [:default_cargoes]} == Example1.create(1, "1.1", 10, nil)
-    end
-
-    test "lacked" do
-      assert {:error, [lacked: [:number]]} == Example1.create(nil, "1.1", "10.0", [])
-      assert {:error, [lacked: [:number, :amount]]} == Example1.create(nil, nil, "10.0", [])
-      assert {:error, [lacked: [:number, :amount]]} == Example1.create(nil, nil, nil, [])
-    end
-
-    test "lacked & error type" do
-      assert {:error, [lacked: [:number], error_type: [:amount, :cargoes]]} ==
-               Example1.create(nil, "a", nil, 1)
-
-      assert {:error, [lacked: [:number], error_type: [:amount, :price, :cargoes]]} ==
-               Example1.create(nil, "a", "b", 1)
-    end
-
-    test "lacked & error type & out of range" do
-      assert {:error,
-              [
-                {:lacked, [:number]},
-                {:error_type, [:cargoes]},
-                {:out_of_range, [:amount, :price]}
-              ]} == Example1.create(nil, "5.2", 3, "cargoes")
+      assert {
+               :error,
+               [
+                 lacked: [:one],
+                 error_type: [:two, :four, :five],
+                 out_of_range: [:three, :six]
+               ]
+             } == result
     end
   end
 
   describe "defconfig" do
-    defmodule Example2 do
+    defmodule TestArgx.B do
       @moduledoc false
 
-      defconfig(AbcRule, reason(:map, :optional))
+      defconfig(Rule, one(:string, :optional, 7) || Test.Helper.Defaulter.get_default())
 
-      with_check configs(AbcRule) do
-        def approve(reason) do
-          {reason}
+      with_check configs(Rule) do
+        def get(one) do
+          {one}
         end
       end
     end
 
     test "ok" do
-      assert {:error, [error_type: [:reason]]} == Example2.approve("name")
+      assert {"hellocc"} == TestArgx.B.get("hellocc")
+      assert {"default"} == TestArgx.B.get(nil)
+    end
+
+    test "error" do
+      assert {:error, [error_type: [:one]]} == TestArgx.B.get(:hello)
+      assert {:error, [out_of_range: [:one]]} == TestArgx.B.get("hello")
     end
   end
 
-  describe "mix defconfig & with_check config" do
-    defmodule Example3 do
+  describe "mixed defconfig & with_check" do
+    defmodule TestArgx.C do
       @moduledoc false
 
-      defconfig(AbcRule, one(:map, :optional))
-      defconfig(XyzRule, [two(:integer, :auto) || 2, three(:float, :auto)])
-      defconfig(ListRule, cargoes(:list))
-      defconfig(EmptyRule, student(:map) || 2)
+      defconfig(RuleA, one(:map, :optional))
+      defconfig(RuleB, two(:integer, :auto) || 99)
+      defconfig(RuleC, [three(:list, 2), four(:float, :auto)])
 
-      with_check configs(AbcRule, XyzRule, ListRule, house(:string)) do
-        def get_one(one, two, three, house, cargoes) do
-          {one, two, three, house, cargoes}
-          :ok
+      with_check configs(RuleA, RuleB, RuleC, five(:string)) do
+        def get(one, two, three, four, five) do
+          {one, two, three, four, five}
         end
       end
 
       def format_errors(errors) do
-        {:err, errors}
+        {:custom_err, errors}
       end
     end
 
     test "ok" do
-      result = Example3.get_one(%{}, 1, 3.1, "house", [1, 2, 3])
-      assert :ok == result
+      assert {%{}, 1, [1, 2], 1.23, "hello"} == TestArgx.C.get(%{}, 1, [1, 2], 1.23, "hello")
+      assert {%{}, 99, [1, 2], 1.23, "hello"} == TestArgx.C.get(%{}, nil, [1, 2], 1.23, "hello")
+    end
+
+    test "error" do
+      result = TestArgx.C.get(1, "a", [3], nil, 1.23)
+
+      assert {
+               :custom_err,
+               {
+                 :error,
+                 [
+                   lacked: [:four],
+                   error_type: [:one, :two, :five],
+                   out_of_range: [:three]
+                 ]
+               }
+             } == result
     end
   end
 end
