@@ -40,6 +40,7 @@ defmodule Argx.Checker do
   def some_type?(v, :string), do: is_bitstring(v)
   def some_type?(v, :list), do: is_list(v)
   def some_type?(v, :map), do: is_map(v)
+  def some_type?(v, :boolean), do: is_boolean(v)
   def some_type?(_v, _other_type), do: false
 
   def in_range?(v, [l, r], :integer) when is_integer(v) do
@@ -63,6 +64,10 @@ defmodule Argx.Checker do
   def in_range?(v, [l, r], :map) when is_map(v) do
     len = map_size(v)
     (len >= l and len <= r) or (len == l and len == r)
+  end
+
+  def in_range?(v, [_l, _r], :boolean) when is_boolean(v) do
+    true
   end
 
   def in_range?(_v, _range, _other_type), do: false

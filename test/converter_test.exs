@@ -164,16 +164,18 @@ defmodule ConverterTest do
     end
   end
 
-  describe "to_type - other type" do
+  describe "to_type - boolean" do
     test "boolean" do
       assert true === C.to_type(true, :boolean)
       assert false === C.to_type(false, :boolean)
-      assert 1 === C.to_type(1, :boolean)
-      assert 0 === C.to_type(0, :boolean)
-      assert true === C.to_type(true, :list)
-      assert false === C.to_type(false, :list)
+      assert true === C.to_type(1, :boolean)
+      assert false === C.to_type(0, :boolean)
+      assert true === C.to_type("1", :boolean)
+      assert false === C.to_type("0", :boolean)
     end
+  end
 
+  describe "to_type - other type" do
     test "string" do
       assert "" === C.to_type("", :string)
       assert "string" === C.to_type("string", :string)

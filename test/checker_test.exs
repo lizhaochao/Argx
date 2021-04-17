@@ -88,6 +88,22 @@ defmodule CheckerTest do
     end
   end
 
+  describe "some_type? - boolean" do
+    test "true" do
+      [true, false]
+      |> Enum.each(fn map ->
+        assert C.some_type?(map, :boolean)
+      end)
+    end
+
+    test "false" do
+      [-1, 0, 1, -1.0, -1.1, 0.0, 1.0, 1.1, "str", :atom, {1, 2}, %{}]
+      |> Enum.each(fn not_map ->
+        refute C.some_type?(not_map, :boolean)
+      end)
+    end
+  end
+
   describe "some_type? - other" do
     test "false" do
       refute C.some_type?([1, 2, 3], :map)
@@ -215,6 +231,28 @@ defmodule CheckerTest do
       range = [3, 3]
       refute C.in_range?(%{a: 1, b: 2}, range, :map)
       refute C.in_range?(%{a: 1, b: 2, c: 3, d: 4}, range, :map)
+    end
+  end
+
+  describe "in_range? - boolean" do
+    test "true" do
+      range = [1, 3]
+      assert C.in_range?(true, range, :boolean)
+      assert C.in_range?(false, range, :boolean)
+
+      range = [3, 3]
+      assert C.in_range?(true, range, :boolean)
+      assert C.in_range?(false, range, :boolean)
+    end
+
+    test "false" do
+      range = [1, 3]
+      refute C.in_range?("true", range, :boolean)
+      refute C.in_range?(1, range, :boolean)
+
+      range = [3, 3]
+      refute C.in_range?(1.23, range, :boolean)
+      refute C.in_range?("false", range, :boolean)
     end
   end
 
