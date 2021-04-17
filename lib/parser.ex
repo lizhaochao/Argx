@@ -110,7 +110,8 @@ defmodule Argx.Parser do
       optional: false,
       type: nil,
       range: nil,
-      default: default
+      default: default,
+      empty: false
     }
 
     items = every_item(items, config)
@@ -137,6 +138,13 @@ defmodule Argx.Parser do
     every_item(
       rest,
       Map.put(items, :auto, true)
+    )
+  end
+
+  defp every_item([:empty | rest], items) do
+    every_item(
+      rest,
+      Map.put(items, :empty, true)
     )
   end
 

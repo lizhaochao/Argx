@@ -268,6 +268,27 @@ defmodule CheckerTest do
   end
 
   ###
+  describe "empty?" do
+    test "true" do
+      assert C.empty?(0, :integer)
+      assert C.empty?(0.0, :float)
+      assert C.empty?("", :string)
+      assert C.empty?([], :list)
+      assert C.empty?(%{}, :map)
+    end
+
+    test "false" do
+      refute C.empty?(-1, :integer)
+      refute C.empty?(1, :integer)
+      refute C.empty?(-1.0, :float)
+      refute C.empty?(1.0, :float)
+      refute C.empty?("a", :string)
+      refute C.empty?([1], :list)
+      refute C.empty?(%{a: 1}, :map)
+    end
+  end
+
+  ###
   describe "are_keys_equal!" do
     test "ok" do
       f_name = :get

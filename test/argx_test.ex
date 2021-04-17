@@ -26,11 +26,11 @@ defmodule ArgxTest do
       with_check configs(
                    one(:float, :auto),
                    two(:integer, :optional) || get_curr_ts(),
-                   three(:string, 1..10),
+                   three(:string, :empty, 1..10),
                    four(:list) || [1, 2, 3],
-                   five(:map),
+                   five(:map, :empty),
                    six(:string, :optional, 7) || Test.Helper.Defaulter.get_default(),
-                   seven(:boolean, :auto)
+                   seven(:boolean, :empty, :auto)
                  ) do
         def get(one, two, three, four, five, six, seven) do
           {one, two, three, four, five, six, seven}
@@ -51,14 +51,14 @@ defmodule ArgxTest do
     end
 
     test "error" do
-      result = TestArgx.A.get(nil, "good", "", 1.23, [], "hello", nil)
+      result = TestArgx.A.get(nil, "good", "", 1.23, %{}, "hello", nil)
 
       assert {
                :error,
                [
-                 lacked: [:one, :seven],
-                 error_type: [:two, :four, :five],
-                 out_of_range: [:three, :six]
+                 lacked: [:one, :three, :five, :seven],
+                 error_type: [:two, :four],
+                 out_of_range: [:six]
                ]
              } == result
     end
@@ -94,7 +94,7 @@ defmodule ArgxTest do
 
       defconfig(RuleA, one(:map, :optional))
       defconfig(RuleB, two(:integer, :auto) || 99)
-      defconfig(RuleC, [three(:list, 2), four(:float, :auto)])
+      defconfig(RuleC, [three(:list, 2), four(:float, :auto, :empty)])
 
       with_check configs(RuleA, RuleB, RuleC, five(:string), six(:boolean, :auto)) do
         def get(one, two, three, four, five, six) do
@@ -116,7 +116,7 @@ defmodule ArgxTest do
     end
 
     test "error" do
-      result = TestArgx.C.get(1, "a", [3], nil, 1.23, nil)
+      result = TestArgx.C.get(1, "a", [3], 0.0, 1.23, nil)
 
       assert {
                :custom_err,

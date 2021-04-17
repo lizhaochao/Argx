@@ -1,7 +1,7 @@
 defmodule Argx.Config do
   @moduledoc false
 
-  @enforce_keys [:type, :optional, :auto, :range, :default]
+  @enforce_keys [:type, :optional, :auto, :range, :default, :empty]
   defstruct @enforce_keys
 end
 

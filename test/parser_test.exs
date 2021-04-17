@@ -169,7 +169,8 @@ defmodule ParserTest do
                    default: nil,
                    optional: false,
                    range: nil,
-                   type: type
+                   type: type,
+                   empty: false
                  }
                } == P.parse_configs(expr)
       end)
@@ -186,7 +187,8 @@ defmodule ParserTest do
                    default: nil,
                    optional: true,
                    range: nil,
-                   type: type
+                   type: type,
+                   empty: false
                  }
                } == P.parse_configs(expr)
       end)
@@ -203,7 +205,8 @@ defmodule ParserTest do
                    default: nil,
                    optional: true,
                    range: nil,
-                   type: type
+                   type: type,
+                   empty: false
                  }
                } == P.parse_configs(expr)
       end)
@@ -226,7 +229,8 @@ defmodule ParserTest do
               default: nil,
               optional: true,
               range: parsed_range,
-              type: parsed_type
+              type: parsed_type,
+              empty: false
             }
           } = P.parse_configs(Enum.at(expr, idx))
 
@@ -254,7 +258,8 @@ defmodule ParserTest do
                      default: default,
                      optional: true,
                      range: 33,
-                     type: type
+                     type: type,
+                     empty: false
                    }
                  } == P.parse_configs(expr)
         end)
@@ -276,7 +281,8 @@ defmodule ParserTest do
                    default: 99,
                    optional: true,
                    range: {:.., [context: __MODULE__, import: Kernel], [1, 11]},
-                   type: :list
+                   type: :list,
+                   empty: false
                  }
                } == P.parse_configs(expr)
       end)
@@ -323,7 +329,8 @@ defmodule ParserTest do
                  default: nil,
                  optional: false,
                  range: nil,
-                 type: :string
+                 type: :string,
+                 empty: false
                }
              } == P.parse_configs(expr1)
 
@@ -333,7 +340,8 @@ defmodule ParserTest do
                  default: nil,
                  optional: false,
                  range: nil,
-                 type: :list
+                 type: :list,
+                 empty: false
                }
              } == P.parse_configs(expr2)
 
@@ -343,14 +351,16 @@ defmodule ParserTest do
                  default: nil,
                  optional: false,
                  range: nil,
-                 type: :map
+                 type: :map,
+                 empty: false
                },
                name: %Argx.Config{
                  auto: false,
                  default: nil,
                  optional: false,
                  range: nil,
-                 type: :string
+                 type: :string,
+                 empty: false
                }
              } == P.parse_configs(expr3)
     end
@@ -364,14 +374,16 @@ defmodule ParserTest do
                  default: nil,
                  optional: false,
                  range: nil,
-                 type: :string
+                 type: :string,
+                 empty: false
                },
                house: %Argx.Config{
                  auto: false,
                  default: nil,
                  optional: false,
                  range: nil,
-                 type: :map
+                 type: :map,
+                 empty: false
                },
                __names__: [:RuleA, :RuleB]
              } == P.parse_configs(expr)
@@ -386,14 +398,16 @@ defmodule ParserTest do
                  default: nil,
                  optional: false,
                  range: nil,
-                 type: :string
+                 type: :string,
+                 empty: false
                },
                house: %Argx.Config{
                  auto: false,
                  default: nil,
                  optional: false,
                  range: nil,
-                 type: :map
+                 type: :map,
+                 empty: false
                },
                __names__: [:RuleA, :RuleB]
              } == P.parse_configs(expr)

@@ -5,7 +5,7 @@ defmodule Argx.Const do
   def defconfigs_key, do: :__defconfigs__
 
   def allowed_types, do: [:list, :map, :string, :integer, :float, :boolean]
-  def allowed_functionalities, do: [:optional, :auto]
+  def allowed_functionalities, do: [:optional, :auto, :empty]
 
   def allowed_fun_types, do: [:def, :defp]
   def not_support_types, do: [:@, :defmodule, :use, :require, :import, :alias]

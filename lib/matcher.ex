@@ -37,22 +37,37 @@ defmodule Argx.Matcher do
 
   defp do_lacked(
          errors,
-         [{k1, nil} | rest1],
-         [{k2, %Argx.Config{optional: false}} | rest2]
+         [{arg_name, nil} | arg_rest],
+         [{arg_name2, %Argx.Config{optional: false}} | config_rest]
        )
-       when k1 == k2 do
+       when arg_name == arg_name2 do
     errors
-    |> reduce_errors(:lacked, k1)
-    |> do_lacked(rest1, rest2)
+    |> reduce_errors(:lacked, arg_name)
+    |> do_lacked(arg_rest, config_rest)
   end
 
   defp do_lacked(
          errors,
-         [{k1, _} | rest1],
-         [{k2, _} | rest2]
+         [{arg_name, arg_value} | arg_rest],
+         [{arg_name2, %Argx.Config{optional: false, type: type, empty: true}} | config_rest]
        )
-       when k1 == k2 do
-    do_lacked(errors, rest1, rest2)
+       when arg_name == arg_name2 do
+    arg_value
+    |> Checker.empty?(type)
+    |> if(
+      do: reduce_errors(errors, :lacked, arg_name),
+      else: errors
+    )
+    |> do_lacked(arg_rest, config_rest)
+  end
+
+  defp do_lacked(
+         errors,
+         [{arg_name, _} | arg_rest],
+         [{arg_name2, _} | config_rest]
+       )
+       when arg_name == arg_name2 do
+    do_lacked(errors, arg_rest, config_rest)
   end
 
   ###
