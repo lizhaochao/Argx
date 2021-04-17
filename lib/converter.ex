@@ -9,8 +9,8 @@ defmodule Argx.Converter do
     do_convert(args, configs, [])
   end
 
-  def convert([{_, _} | _], [{_, _} | _]), do: raise(Argx.Error, "not in the same order.")
-  def convert([], [{_, _} | _]), do: raise(Argx.Error, "args is empty")
+  def convert([_ | _], [_ | _]), do: raise(Argx.Error, "not in the same order.")
+  def convert([], [_ | _]), do: raise(Argx.Error, "args is empty")
   def convert([{_, _} | _], []), do: raise(Argx.Error, "configs is empty")
   def convert([], []), do: raise(Argx.Error, "both args and configs are empty")
 

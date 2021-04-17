@@ -35,9 +35,7 @@ defmodule Argx.Util do
   ###
   def make_module_name([_ | _] = parts) do
     [Elixir | parts]
-    |> Enum.map(fn part ->
-      to_string(part)
-    end)
+    |> Enum.map(fn part -> to_string(part) end)
     |> Enum.join(".")
     |> String.to_atom()
   end
