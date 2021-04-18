@@ -4,7 +4,7 @@ defmodule Test.Helper.Defaulter do
   def get_default, do: "default"
 end
 
-defmodule TestArgx do
+defmodule Project.Argx do
   @moduledoc false
 
   use Argx
@@ -17,10 +17,10 @@ defmodule ArgxTest do
 
   use ExUnit.Case
 
-  import TestArgx
+  import Project.Argx
 
   describe "with_check" do
-    defmodule TestArgx.A do
+    defmodule Project.Argx.A do
       @moduledoc false
       @fixed_curr_ts 1_618_653_110
       with_check configs(
@@ -41,17 +41,17 @@ defmodule ArgxTest do
     end
 
     test "ok" do
-      result1 = TestArgx.A.get(1.1, 2, "ljy", [1, 2], %{a: 1}, "hellocc", "1")
+      result1 = Project.Argx.A.get(1.1, 2, "ljy", [1, 2], %{a: 1}, "hellocc", "1")
       assert {1.1, 2, "ljy", [1, 2], %{a: 1}, "hellocc", true} == result1
 
-      result2 = TestArgx.A.get(1.1, nil, "ljy", nil, %{a: 1}, nil, true)
-      expected_two = TestArgx.A.get_curr_ts()
+      result2 = Project.Argx.A.get(1.1, nil, "ljy", nil, %{a: 1}, nil, true)
+      expected_two = Project.Argx.A.get_curr_ts()
       expected_six = Test.Helper.Defaulter.get_default()
       assert {1.1, expected_two, "ljy", [1, 2, 3], %{a: 1}, expected_six, true} == result2
     end
 
     test "error" do
-      result = TestArgx.A.get(nil, "good", "", 1.23, %{}, "hello", nil)
+      result = Project.Argx.A.get(nil, "good", "", 1.23, %{}, "hello", nil)
 
       assert {
                :error,
@@ -65,7 +65,7 @@ defmodule ArgxTest do
   end
 
   describe "defconfig" do
-    defmodule TestArgx.B do
+    defmodule Project.Argx.B do
       @moduledoc false
 
       defconfig(Rule, one(:string, :optional, 7) || Test.Helper.Defaulter.get_default())
@@ -78,18 +78,18 @@ defmodule ArgxTest do
     end
 
     test "ok" do
-      assert {"hellocc"} == TestArgx.B.get("hellocc")
-      assert {"default"} == TestArgx.B.get(nil)
+      assert {"hellocc"} == Project.Argx.B.get("hellocc")
+      assert {"default"} == Project.Argx.B.get(nil)
     end
 
     test "error" do
-      assert {:error, [error_type: [:one]]} == TestArgx.B.get(:hello)
-      assert {:error, [out_of_range: [:one]]} == TestArgx.B.get("hello")
+      assert {:error, [error_type: [:one]]} == Project.Argx.B.get(:hello)
+      assert {:error, [out_of_range: [:one]]} == Project.Argx.B.get("hello")
     end
   end
 
   describe "mixed defconfig & with_check" do
-    defmodule TestArgx.C do
+    defmodule Project.Argx.C do
       @moduledoc false
 
       defconfig(RuleA, one(:map, :optional))
@@ -116,15 +116,15 @@ defmodule ArgxTest do
     end
 
     test "ok" do
-      result1 = TestArgx.C.get(%{}, 1, [1, 2], 1.23, "hello", true)
+      result1 = Project.Argx.C.get(%{}, 1, [1, 2], 1.23, "hello", true)
       assert {%{}, 1, [1, 2], 1.23, "hello", true, :first} == result1
 
-      result2 = TestArgx.C.get(%{}, nil, [1, 2], 1.23, "hello", 1)
+      result2 = Project.Argx.C.get(%{}, nil, [1, 2], 1.23, "hello", 1)
       assert {%{}, 99, [1, 2], 1.23, "hello", true, :first} == result2
     end
 
     test "error" do
-      result = TestArgx.C.get(1, "a", [3], 0.0, 1.23, nil)
+      result = Project.Argx.C.get(1, "a", [3], 0.0, 1.23, nil)
 
       assert {
                :custom_err,
