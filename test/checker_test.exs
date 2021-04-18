@@ -6,6 +6,27 @@ defmodule CheckerTest do
   alias Argx.Checker, as: C
 
   ###
+  describe "check!" do
+    test "block ok" do
+      configs = quote do: configs(Rule)
+
+      block =
+        quote do
+          def get(name) when is_bitstring(name) do
+            name
+          end
+
+          def get(names) when is_list(names) do
+            names
+          end
+        end
+
+      result = C.check!(configs, block)
+      assert :ok == result
+    end
+  end
+
+  ###
   describe "some_type? - integer" do
     test "true" do
       [-1, 0, 1]

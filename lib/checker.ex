@@ -9,11 +9,12 @@ defmodule Argx.Checker do
   ###
   def check!(configs, block) do
     with :ok <- check_configs(configs),
-         :ok <- check_block(block) do
-      :ok
+         :ok = ok <- check_block(block) do
+      ok
     else
       :configs_error -> raise Argx.Error, "not found #{@configs_keyword} keyword"
       :block_error -> raise Argx.Error, "unknown function type"
+      :block_empty_error -> raise Argx.Error, "required one function at least"
       _ -> :ok
     end
   end
@@ -21,7 +22,9 @@ defmodule Argx.Checker do
   defp check_configs({configs_keyword, _, _}) when configs_keyword == @configs_keyword, do: :ok
   defp check_configs(_), do: :configs_error
 
+  defp check_block({:__block__, _, [expr | _]}), do: check_block(expr)
   defp check_block({fun_type, _, _}) when fun_type in @allowed_fun_types, do: :ok
+  defp check_block({:__block__, [], []}), do: :block_empty_error
   defp check_block(_), do: :block_error
 
   ###

@@ -97,8 +97,16 @@ defmodule ArgxTest do
       defconfig(RuleC, [three(:list, 2), four(:float, :auto, :empty)])
 
       with_check configs(RuleA, RuleB, RuleC, five(:string), six(:boolean, :auto)) do
+        def get(one, two, three, four, five, six) when is_bitstring(five) do
+          {one, two, three, four, five, six, :first}
+        end
+
+        def get(one, two, three, four, five, six) when is_integer(two) do
+          {one, two, three, four, five, six, :second}
+        end
+
         def get(one, two, three, four, five, six) do
-          {one, two, three, four, five, six}
+          {one, two, three, four, five, six, :else}
         end
       end
 
@@ -109,10 +117,10 @@ defmodule ArgxTest do
 
     test "ok" do
       result1 = TestArgx.C.get(%{}, 1, [1, 2], 1.23, "hello", true)
-      assert {%{}, 1, [1, 2], 1.23, "hello", true} == result1
+      assert {%{}, 1, [1, 2], 1.23, "hello", true, :first} == result1
 
       result2 = TestArgx.C.get(%{}, nil, [1, 2], 1.23, "hello", 1)
-      assert {%{}, 99, [1, 2], 1.23, "hello", true} == result2
+      assert {%{}, 99, [1, 2], 1.23, "hello", true, :first} == result2
     end
 
     test "error" do

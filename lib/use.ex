@@ -51,33 +51,42 @@ defmodule Argx.WithCheck.Use do
       defmacro with_check(configs, do: block) do
         Checker.check!(configs, block)
 
-        %{
-          f: f,
-          a: a,
-          guard: guard,
-          block: block
-        } = Parser.parse_fun(block)
-
-        real_f_name = Self.make_real_f_name(f)
+        funs = Parser.parse_fun(block)
         use_m = __MODULE__
 
-        quote do
-          # ignore undefined module attribute warning
-          unquote(Self.reg_attr())
-
-          def unquote(f)(unquote_splicing(a)) when unquote(guard) do
-            args = unquote(Self.make_args(a))
-            configs = unquote(Self.merge_configs(configs, @defconfigs))
-
-            __MODULE__
-            |> Matcher.match(unquote(f), args, configs)
-            |> Self.post_match(unquote(use_m), __MODULE__, unquote(real_f_name))
+        ignore_attr_warning_expr =
+          quote do
+            [unquote(Self.reg_attr())]
           end
 
-          def unquote(real_f_name)(unquote_splicing(a)) do
-            unquote(block)
-          end
-        end
+        funs_expr =
+          Enum.map(funs, fn fun ->
+            %{
+              f: f,
+              a: a,
+              guard: guard,
+              block: block
+            } = fun
+
+            real_f_name = Self.make_real_f_name(f)
+
+            quote do
+              def unquote(f)(unquote_splicing(a)) when unquote(guard) do
+                args = unquote(Self.make_args(a))
+                configs = unquote(Self.merge_configs(configs, @defconfigs))
+
+                __MODULE__
+                |> Matcher.match(unquote(f), args, configs)
+                |> Self.post_match(unquote(use_m), __MODULE__, unquote(real_f_name))
+              end
+
+              def unquote(real_f_name)(unquote_splicing(a)) when unquote(guard) do
+                unquote(block)
+              end
+            end
+          end)
+
+        ignore_attr_warning_expr ++ funs_expr
       end
     end
   end

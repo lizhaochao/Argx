@@ -88,6 +88,57 @@ defmodule ParserTest do
     end
   end
 
+  describe "parse_fun two function" do
+    test "guard" do
+      m = __MODULE__
+
+      block =
+        quote do
+          def get(name) when is_bitstring(name), do: name
+          def get(names) when is_list(names), do: names
+        end
+
+      result = P.parse_fun(block)
+
+      assert [
+               %{
+                 a: [{:name, [], m}],
+                 block: {:name, [], m},
+                 f: :get,
+                 guard: {:is_bitstring, [context: m, import: Kernel], [{:name, [], m}]}
+               },
+               %{
+                 a: [{:names, [], m}],
+                 block: {:names, [], m},
+                 f: :get,
+                 guard: {:is_list, [context: m, import: Kernel], [{:names, [], m}]}
+               }
+             ]
+             |> MapSet.new() == MapSet.new(result)
+    end
+
+    test "no guard" do
+      m = __MODULE__
+
+      block =
+        quote do
+          defp get(name), do: name
+          defp get(name), do: name
+        end
+
+      result = P.parse_fun(block)
+
+      assert [
+               %{
+                 a: [{:name, [], m}],
+                 block: {:name, [], m},
+                 f: :get,
+                 guard: true
+               }
+             ] == result
+    end
+  end
+
   describe "parse_fun error" do
     test "module attribute" do
       block =
@@ -506,12 +557,14 @@ defmodule ParserTest do
 
   ### Assertions
   def assert_parse_fun_result(result) do
-    %{
-      f: f,
-      a: a,
-      guard: guard,
-      block: block
-    } = result
+    [
+      %{
+        f: f,
+        a: a,
+        guard: guard,
+        block: block
+      }
+    ] = result
 
     m = __MODULE__
 

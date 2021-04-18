@@ -10,7 +10,15 @@ defmodule Argx.Parser do
   @configs_keyword Const.configs_keyword()
 
   ###
-  def parse_fun(block), do: do_parse_fun(block, %{})
+  def parse_fun({:__block__, _, [_ | _] = block}), do: parse_fun(block, [])
+  def parse_fun(block), do: parse_fun([block], [])
+
+  def parse_fun([], funs), do: funs |> MapSet.new() |> MapSet.to_list()
+
+  def parse_fun([expr | rest], funs) do
+    fun = do_parse_fun(expr, %{})
+    parse_fun(rest, [fun | funs])
+  end
 
   defp do_parse_fun({type, _, fun}, parts) when type in @allowed_fun_types do
     do_parse_fun(fun, parts)
