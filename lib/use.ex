@@ -51,8 +51,9 @@ defmodule Argx.WithCheck.Use do
       defmacro with_check(configs, do: block) do
         Checker.check!(configs, block)
 
-        funs = Parser.parse_fun(block)
         use_m = __MODULE__
+        funs = Parser.parse_fun(block)
+        configs = Self.merge_configs(configs, @defconfigs)
 
         ignore_attr_warning_expr =
           quote do
@@ -73,10 +74,9 @@ defmodule Argx.WithCheck.Use do
             quote do
               def unquote(f)(unquote_splicing(a)) when unquote(guard) do
                 args = unquote(Self.make_args(a))
-                configs = unquote(Self.merge_configs(configs, @defconfigs))
 
                 __MODULE__
-                |> Matcher.match(unquote(f), args, configs)
+                |> Matcher.match(unquote(f), args, unquote(configs))
                 |> Self.post_match(unquote(use_m), __MODULE__, unquote(real_f_name))
               end
 
