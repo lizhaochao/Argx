@@ -29,7 +29,7 @@ defmodule Argx.Matcher do
   def match(_, _, _, _), do: :match_error
 
   ###
-  defp lacked({errors, args, configs}), do: do_lacked(errors, args, configs)
+  def lacked({errors, args, configs}), do: do_lacked(errors, args, configs)
 
   defp do_lacked([], [], []), do: []
 
@@ -71,7 +71,7 @@ defmodule Argx.Matcher do
   end
 
   ###
-  defp error_type({errors, args, configs}), do: do_error_type(errors, args, configs)
+  def error_type({errors, args, configs}), do: do_error_type(errors, args, configs)
 
   defp do_error_type([], [], []), do: []
 
@@ -102,7 +102,7 @@ defmodule Argx.Matcher do
   end
 
   ###
-  defp out_of_range({errors, args, configs}), do: do_out_of_range(errors, args, configs)
+  def out_of_range({errors, args, configs}), do: do_out_of_range(errors, args, configs)
 
   defp do_out_of_range([], [], []), do: []
 
@@ -110,11 +110,11 @@ defmodule Argx.Matcher do
 
   defp do_out_of_range(
          errors,
-         [{arg_name, nil} | arg_name],
+         [{arg_name, nil} | arg_rest],
          [{arg_name2, %Argx.Config{optional: true}} | config_rest]
        )
        when arg_name == arg_name2 do
-    do_out_of_range(errors, arg_name, config_rest)
+    do_out_of_range(errors, arg_rest, config_rest)
   end
 
   defp do_out_of_range(
@@ -152,9 +152,9 @@ defmodule Argx.Matcher do
     new_errors
   end
 
-  defp drop_checked_keys([], args, configs), do: {[], args, configs}
+  def drop_checked_keys([], args, configs), do: {[], args, configs}
 
-  defp drop_checked_keys({:error, errors}, args, configs) do
+  def drop_checked_keys({:error, errors}, args, configs) do
     drop_checked_keys(errors, errors, args, configs)
   end
 
@@ -166,7 +166,7 @@ defmodule Argx.Matcher do
     drop_checked_keys(rest, errors, args, configs)
   end
 
-  defp post_match({:error, errors}, _args) do
+  def post_match({:error, errors}, _args) do
     errors =
       errors
       |> Enum.reverse()
@@ -177,5 +177,5 @@ defmodule Argx.Matcher do
     {:error, errors}
   end
 
-  defp post_match([], args), do: Keyword.values(args)
+  def post_match([], args), do: Keyword.values(args)
 end
