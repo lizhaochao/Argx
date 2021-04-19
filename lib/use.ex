@@ -179,6 +179,7 @@ defmodule Argx.WithCheck.Use do
 
   def get_configs_by_names(_other_defconfig_names, _defconfigs), do: %{}
 
+  def get_general_configs([]), do: %{}
   def get_general_configs(general_module), do: apply(general_module, :__get_defconfigs__, [])
 
   ###
