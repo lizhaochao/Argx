@@ -5,8 +5,6 @@ defmodule Argx.Matcher do
 
   def match(m, f, [{_arg_name, _arg_value} | _] = args, %{} = configs)
       when is_atom(m) and is_atom(f) do
-    Checker.are_keys_equal!(f, args, configs)
-
     configs =
       args
       |> Keyword.keys()

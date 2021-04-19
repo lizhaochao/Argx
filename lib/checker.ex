@@ -84,18 +84,27 @@ defmodule Argx.Checker do
 
   def are_keys_equal!(
         f_name,
-        [{_arg_name, _arg_value} | _] = args,
+        arg_names,
         %{} = configs
       )
-      when is_atom(f_name) do
-    arg_keys = args |> Keyword.keys() |> Enum.sort()
-    config_keys = configs |> Map.keys() |> Enum.sort()
+      when is_atom(f_name) and is_list(arg_names) do
+    arg_names = Enum.sort(arg_names)
+    arg_names2 = configs |> Map.keys() |> Enum.sort()
 
-    arg_keys
-    |> Kernel.==(config_keys)
+    arg_names
+    |> Kernel.==(arg_names2)
     |> if(
       do: :ok,
-      else: raise(Argx.Error, "#{f_name} function has arg not config")
+      else:
+        (
+          diff_names = (arg_names -- arg_names2) ++ (arg_names2 -- arg_names)
+          msg = "
+          >> #{f_name} function:
+          >> there are some args that not found configs.
+          >> have a try to check #{inspect(diff_names)} args."
+
+          raise Argx.Error, msg
+        )
     )
   end
 end

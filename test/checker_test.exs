@@ -313,33 +313,33 @@ defmodule CheckerTest do
   describe "are_keys_equal!" do
     test "ok" do
       f_name = :get
-      args1 = [a: 1, b: 2]
-      args2 = [b: 1, a: 2]
+      arg_names1 = [:a, :b]
+      arg_names2 = [:b, :a]
       configs1 = %{a: %{}, b: %{}}
       configs2 = %{b: %{}, a: %{}}
-      assert :ok == C.are_keys_equal!(f_name, args1, configs1)
-      assert :ok == C.are_keys_equal!(f_name, args1, configs2)
-      assert :ok == C.are_keys_equal!(f_name, args2, configs1)
-      assert :ok == C.are_keys_equal!(f_name, args2, configs2)
+      assert :ok == C.are_keys_equal!(f_name, arg_names1, configs1)
+      assert :ok == C.are_keys_equal!(f_name, arg_names1, configs2)
+      assert :ok == C.are_keys_equal!(f_name, arg_names2, configs1)
+      assert :ok == C.are_keys_equal!(f_name, arg_names2, configs2)
     end
 
     test "error" do
       f_name = :get
-      args1 = [a: 1, b: 2]
-      args2 = [b: 1, a: 2]
-      args3 = [c: 1, b: 1, a: 2]
+      arg_names1 = [:a, :b]
+      arg_names2 = [:b, :a]
+      arg_names3 = [:c, :b, :a]
       configs = %{d: %{}, a: %{}}
 
       assert_raise Argx.Error, fn ->
-        C.are_keys_equal!(f_name, args1, configs)
+        C.are_keys_equal!(f_name, arg_names1, configs)
       end
 
       assert_raise Argx.Error, fn ->
-        C.are_keys_equal!(f_name, args2, configs)
+        C.are_keys_equal!(f_name, arg_names2, configs)
       end
 
       assert_raise Argx.Error, fn ->
-        C.are_keys_equal!(f_name, args3, configs)
+        C.are_keys_equal!(f_name, arg_names3, configs)
       end
     end
   end

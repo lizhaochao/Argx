@@ -108,7 +108,14 @@ defmodule Argx.WithCheck.Use do
 
         ignore_attr_warning_expr =
           quote do
-            [unquote(Self.reg_attr())]
+            unquote(Self.reg_attr())
+          end
+
+        are_keys_equal_expr =
+          quote do
+            [%{f: f, a: a} | _] = unquote(Macro.escape(funs))
+            arg_names = Self.get_arg_names(a)
+            Checker.are_keys_equal!(f, arg_names, unquote(configs))
           end
 
         funs_expr =
@@ -131,7 +138,7 @@ defmodule Argx.WithCheck.Use do
             end
           end)
 
-        ignore_attr_warning_expr ++ funs_expr
+        [ignore_attr_warning_expr] ++ [are_keys_equal_expr] ++ funs_expr
       end
     end
   end
