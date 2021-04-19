@@ -60,7 +60,7 @@ defmodule Argx.WithCheck.Use do
   alias Argx.{Checker, Const, Formatter, Matcher, Parser, Util}
   alias Argx.WithCheck.Use, as: Self
 
-  defmacro __using__(general_module) do
+  defmacro __using__(general_m) do
     quote do
       @defconfigs {:@, [], [{Const.defconfigs_key(), [], nil}]}
 
@@ -69,9 +69,10 @@ defmodule Argx.WithCheck.Use do
 
         use_m = __MODULE__
         funs = Parser.parse_fun(block)
+        general_m = unquote(general_m)
 
         configs =
-          unquote(general_module)
+          general_m
           |> Self.get_general_configs()
           |> Macro.escape()
           |> Self.merge_defconfigs(@defconfigs)
@@ -100,7 +101,12 @@ defmodule Argx.WithCheck.Use do
 
                 __MODULE__
                 |> Matcher.match(unquote(f), args, unquote(configs))
-                |> Self.post_match(unquote(use_m), __MODULE__, unquote(real_f_name))
+                |> Self.post_match(
+                  unquote(use_m),
+                  unquote(general_m),
+                  __MODULE__,
+                  unquote(real_f_name)
+                )
               end
 
               def unquote(real_f_name)(unquote_splicing(a)) when unquote(guard) do
@@ -115,11 +121,11 @@ defmodule Argx.WithCheck.Use do
   end
 
   ###
-  def post_match({:error, _} = err, use_m, current_m, _) do
-    Formatter.format_errors(err, use_m, current_m)
+  def post_match({:error, _} = err, use_m, general_m, current_m, _) do
+    Formatter.fmt_errors(err, use_m, general_m, current_m)
   end
 
-  def post_match([_ | _] = new_args, _, current_m, real_f_name) do
+  def post_match([_ | _] = new_args, _use_m, _general_m, current_m, real_f_name) do
     apply(current_m, real_f_name, new_args)
   end
 
@@ -180,7 +186,7 @@ defmodule Argx.WithCheck.Use do
   def get_configs_by_names(_other_defconfig_names, _defconfigs), do: %{}
 
   def get_general_configs([]), do: %{}
-  def get_general_configs(general_module), do: apply(general_module, :__get_defconfigs__, [])
+  def get_general_configs(general_m), do: apply(general_m, :__get_defconfigs__, [])
 
   ###
   def make_real_f_name(f), do: Util.make_fun_name("real", f)

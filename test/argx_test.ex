@@ -9,7 +9,7 @@ defmodule Project.Argx do
 
   use Argx, Project.Argx.General
 
-  def format_errors(errors), do: errors
+  def fmt_errors(errors), do: errors
 end
 
 defmodule Project.Argx.General do
@@ -20,6 +20,8 @@ defmodule Project.Argx.General do
   defconfig(GeneralA, a(:string))
   defconfig(GeneralB, b(:integer))
   defconfig(GeneralC, [c(:float), d(:boolean)])
+
+  def fmt_errors(errors), do: {:gen, errors}
 end
 
 defmodule ArgxTest do
@@ -72,14 +74,15 @@ defmodule ArgxTest do
     test "error" do
       result = Project.Argx.A.get(nil, "good", "", 1.23, %{}, "hello", nil)
 
-      assert {
-               :error,
-               [
-                 lacked: [:one, :three, :five, :seven],
-                 error_type: [:two, :four],
-                 out_of_range: [:six]
-               ]
-             } == result
+      assert {:gen,
+              {
+                :error,
+                [
+                  lacked: [:one, :three, :five, :seven],
+                  error_type: [:two, :four],
+                  out_of_range: [:six]
+                ]
+              }} == result
     end
   end
 
@@ -102,8 +105,8 @@ defmodule ArgxTest do
     end
 
     test "error" do
-      assert {:error, [error_type: [:one]]} == Project.Argx.B.get(:hello)
-      assert {:error, [out_of_range: [:one]]} == Project.Argx.B.get("hello")
+      assert {:gen, {:error, [error_type: [:one]]}} == Project.Argx.B.get(:hello)
+      assert {:gen, {:error, [out_of_range: [:one]]}} == Project.Argx.B.get("hello")
     end
   end
 
@@ -147,7 +150,7 @@ defmodule ArgxTest do
         end
       end
 
-      def format_errors(errors) do
+      def fmt_errors(errors) do
         {:custom_err, errors}
       end
     end

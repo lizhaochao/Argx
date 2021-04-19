@@ -65,7 +65,7 @@
 
   ### Callback
 
-  ```format_errors/1```
+  ```fmt_errors/1```
 
   we can define in 2 places.
   ```
@@ -79,7 +79,7 @@
     end
 
     # higher priority
-    def format_errors(errors) do
+    def fmt_errors(errors) do
       errors
     end
   end
@@ -89,7 +89,7 @@
   defmodule Project.Util.Validator do
     use Argx
 
-    def format_errors(errors) do
+    def fmt_errors(errors) do
       {:error, 1000, errors}
     end
   end
