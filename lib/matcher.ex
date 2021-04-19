@@ -79,26 +79,26 @@ defmodule Argx.Matcher do
 
   defp do_error_type(
          errors,
-         [{k1, nil} | rest1],
-         [{k2, %Argx.Config{optional: true}} | rest2]
+         [{arg_name, nil} | arg_rest],
+         [{arg_name2, %Argx.Config{optional: true}} | config_rest]
        )
-       when k1 == k2 do
-    do_error_type(errors, rest1, rest2)
+       when arg_name == arg_name2 do
+    do_error_type(errors, arg_rest, config_rest)
   end
 
   defp do_error_type(
          errors,
-         [{k1, v1} | rest1],
-         [{k2, %Argx.Config{type: type}} | rest2]
+         [{arg_name, arg_value} | arg_rest],
+         [{arg_name2, %Argx.Config{type: type}} | config_rest]
        )
-       when k1 == k2 do
-    v1
+       when arg_name == arg_name2 do
+    arg_value
     |> Checker.some_type?(type)
     |> if(
       do: errors,
-      else: reduce_errors(errors, :error_type, k1)
+      else: reduce_errors(errors, :error_type, arg_name)
     )
-    |> do_error_type(rest1, rest2)
+    |> do_error_type(arg_rest, config_rest)
   end
 
   ###
@@ -110,35 +110,35 @@ defmodule Argx.Matcher do
 
   defp do_out_of_range(
          errors,
-         [{k1, nil} | rest1],
-         [{k2, %Argx.Config{optional: true}} | rest2]
+         [{arg_name, nil} | arg_name],
+         [{arg_name2, %Argx.Config{optional: true}} | config_rest]
        )
-       when k1 == k2 do
-    do_out_of_range(errors, rest1, rest2)
+       when arg_name == arg_name2 do
+    do_out_of_range(errors, arg_name, config_rest)
   end
 
   defp do_out_of_range(
          errors,
-         [{k1, _} | rest1],
-         [{k2, %Argx.Config{range: nil}} | rest2]
+         [{arg_name, _} | arg_rest],
+         [{arg_name2, %Argx.Config{range: nil}} | config_rest]
        )
-       when k1 == k2 do
-    do_out_of_range(errors, rest1, rest2)
+       when arg_name == arg_name2 do
+    do_out_of_range(errors, arg_rest, config_rest)
   end
 
   defp do_out_of_range(
          errors,
-         [{k1, v1} | rest1],
-         [{k2, %Argx.Config{type: type, range: range}} | rest2]
+         [{arg_name, arg_value} | arg_rest],
+         [{arg_name2, %Argx.Config{type: type, range: range}} | config_rest]
        )
-       when k1 == k2 do
-    v1
+       when arg_name == arg_name2 do
+    arg_value
     |> Checker.in_range?(Parser.parse_range(range), type)
     |> if(
       do: errors,
-      else: reduce_errors(errors, :out_of_range, k1)
+      else: reduce_errors(errors, :out_of_range, arg_name)
     )
-    |> do_out_of_range(rest1, rest2)
+    |> do_out_of_range(arg_rest, config_rest)
   end
 
   ###
