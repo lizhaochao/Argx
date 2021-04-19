@@ -17,7 +17,7 @@ defmodule Project.Argx.General do
 
   use Argx.General
 
-  defconfig(GeneralA, a(:string))
+  defconfig(GeneralA, a(:boolean))
   defconfig(GeneralB, b(:integer))
   defconfig(GeneralC, [c(:float), d(:boolean)])
 
@@ -123,20 +123,19 @@ defmodule ArgxTest do
                    RuleB,
                    five(:string),
                    RuleC,
-                   six(:boolean, :auto),
                    GeneralA,
                    GeneralC
                  ) do
-        def get(one, two, three, four, five, six, a, c, d) when is_bitstring(one) do
-          {one, two, three, four, five, six, a, c, d, :first}
+        def get(one, two, three, four, five, a, c, d) when is_bitstring(one) do
+          {one, two, three, four, five, a, c, d, :first}
         end
 
-        def get(one, two, three, four, five, six, a, c, d) when is_nil(one) do
-          {one, two, three, four, five, six, a, c, d, :i_am_nil}
+        def get(one, two, three, four, five, a, c, d) when is_nil(one) do
+          {one, two, three, four, five, a, c, d, :i_am_nil}
         end
 
-        def get(one, two, three, four, five, six, a, c, d) do
-          {one, two, three, four, five, six, a, c, d, :else}
+        def get(one, two, three, four, five, a, c, d) do
+          {one, two, three, four, five, a, c, d, :else}
         end
       end
 
@@ -156,22 +155,22 @@ defmodule ArgxTest do
     end
 
     test "get - ok" do
-      result1 = Project.Argx.C.get(%{}, 1, [1, 2], 1.23, "hello", true, "a", 9.9, true)
-      assert {%{}, 1, [1, 2], 1.23, "hello", true, "a", 9.9, true, :else} == result1
+      result1 = Project.Argx.C.get(%{}, 1, [1, 2], 1.23, "hello", true, 9.9, true)
+      assert {%{}, 1, [1, 2], 1.23, "hello", true, 9.9, true, :else} == result1
 
-      result2 = Project.Argx.C.get(nil, nil, [1, 2], 1.23, "hello", 1, "a", 9.9, true)
-      assert {nil, 99, [1, 2], 1.23, "hello", true, "a", 9.9, true, :i_am_nil} == result2
+      result2 = Project.Argx.C.get(nil, nil, [1, 2], 1.23, "hello", false, 9.9, true)
+      assert {nil, 99, [1, 2], 1.23, "hello", false, 9.9, true, :i_am_nil} == result2
     end
 
     test "get - error" do
-      result = Project.Argx.C.get(1, "a", [3], 0.0, 1.23, nil, nil, nil, "d")
+      result = Project.Argx.C.get(1, "a", [3], 0.0, 1.23, nil, nil, "d")
 
       assert {
                :custom_err,
                {
                  :error,
                  [
-                   lacked: [:four, :six, :a, :c],
+                   lacked: [:four, :a, :c],
                    error_type: [:one, :two, :five, :d],
                    out_of_range: [:three]
                  ]
