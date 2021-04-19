@@ -137,12 +137,22 @@ defmodule ArgxTest do
         end
       end
 
+      with_check configs(RuleA) do
+        def post(one) when is_map(one) do
+          {one, :first}
+        end
+
+        def post(one) when is_nil(one) do
+          {:error, :second}
+        end
+      end
+
       def format_errors(errors) do
         {:custom_err, errors}
       end
     end
 
-    test "ok" do
+    test "get - ok" do
       result1 = Project.Argx.C.get(%{}, 1, [1, 2], 1.23, "hello", true, "a", 9.9, true)
       assert {%{}, 1, [1, 2], 1.23, "hello", true, "a", 9.9, true, :first} == result1
 
@@ -150,7 +160,7 @@ defmodule ArgxTest do
       assert {%{}, 99, [1, 2], 1.23, "hello", true, "a", 9.9, true, :first} == result2
     end
 
-    test "error" do
+    test "get - error" do
       result = Project.Argx.C.get(1, "a", [3], 0.0, 1.23, nil, nil, nil, "d")
 
       assert {
@@ -164,6 +174,16 @@ defmodule ArgxTest do
                  ]
                }
              } == result
+    end
+
+    test "post - ok" do
+      result = Project.Argx.C.post(%{})
+      assert {%{}, :first} == result
+    end
+
+    test "post - error" do
+      result = Project.Argx.C.post(nil)
+      assert {:error, :second} == result
     end
   end
 end
