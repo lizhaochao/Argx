@@ -136,3 +136,32 @@ defmodule Argx do
     end
   end
 end
+
+defmodule Argx.General do
+  @moduledoc false
+
+  alias Argx.Const
+  alias Argx.General, as: Self
+
+  defmacro __using__(_opts) do
+    quote do
+      import Argx.Defconfig.Import
+
+      def __get_defconfigs__() do
+        Self.get_defconfigs(__MODULE__)
+      end
+    end
+  end
+
+  def get_defconfigs(m) do
+    :functions
+    |> m.__info__()
+    |> Enum.filter(fn {f_name, _arity} ->
+      f_name |> to_string() |> Kernel.=~(to_string(Const.defconfigs_key()))
+    end)
+    |> Enum.reduce(%{}, fn {f_name, _arity}, general_configs ->
+      configs = apply(m, f_name, [])
+      Map.merge(general_configs, configs)
+    end)
+  end
+end
