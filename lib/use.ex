@@ -1,7 +1,7 @@
 defmodule Argx.Defconfig.Use do
   @moduledoc false
 
-  alias Argx.{Checker, Const, Parser}
+  alias Argx.{Checker, Const, Parser, Util}
   alias Argx.Defconfig.Use, as: Self
 
   defmacro __using__(_opts) do
@@ -12,6 +12,7 @@ defmodule Argx.Defconfig.Use do
         name = Parser.parse_defconfig_name(name)
         configs = Parser.parse_configs(configs)
         attr = Macro.escape(%{name => configs})
+        f_name = Self.make_get_f_name(name)
 
         quote do
           unquote(Self.reg_attr())
@@ -21,9 +22,18 @@ defmodule Argx.Defconfig.Use do
             unquote(Const.defconfigs_key()),
             unquote(attr)
           )
+
+          def unquote(f_name)() do
+            unquote(attr)
+          end
         end
       end
     end
+  end
+
+  def make_get_f_name(name) do
+    ["__get", Const.defconfigs_key(), name, "__"]
+    |> Util.to_fun_name()
   end
 
   def reg_attr do
@@ -38,13 +48,48 @@ defmodule Argx.Defconfig.Use do
   end
 end
 
+defmodule Argx.Defconfig.Import do
+  @moduledoc false
+
+  use Argx.Defconfig.Use
+end
+
+defmodule Argx.General do
+  @moduledoc false
+
+  alias Argx.Const
+  alias Argx.General, as: Self
+
+  defmacro __using__(_opts) do
+    quote do
+      import Argx.Defconfig.Import
+
+      def __get_defconfigs__() do
+        Self.get_defconfigs(__MODULE__)
+      end
+    end
+  end
+
+  def get_defconfigs(m) do
+    :functions
+    |> m.__info__()
+    |> Enum.filter(fn {f_name, _arity} ->
+      f_name |> to_string() |> Kernel.=~(to_string(Const.defconfigs_key()))
+    end)
+    |> Enum.reduce(%{}, fn {f_name, _arity}, general_configs ->
+      configs = apply(m, f_name, [])
+      Map.merge(general_configs, configs)
+    end)
+  end
+end
+
 defmodule Argx.WithCheck.Use do
   @moduledoc false
 
   alias Argx.{Checker, Const, Formatter, Matcher, Parser, Util}
   alias Argx.WithCheck.Use, as: Self
 
-  defmacro __using__(_opts) do
+  defmacro __using__(general_module) do
     quote do
       @defconfigs {:@, [], [{Const.defconfigs_key(), [], nil}]}
 
@@ -53,7 +98,13 @@ defmodule Argx.WithCheck.Use do
 
         use_m = __MODULE__
         funs = Parser.parse_fun(block)
-        configs = Self.merge_configs(configs, @defconfigs)
+
+        configs =
+          unquote(general_module)
+          |> Self.get_general_configs()
+          |> Macro.escape()
+          |> Self.merge_defconfigs(@defconfigs)
+          |> Self.merge_configs(configs)
 
         ignore_attr_warning_expr =
           quote do
@@ -62,13 +113,7 @@ defmodule Argx.WithCheck.Use do
 
         funs_expr =
           Enum.map(funs, fn fun ->
-            %{
-              f: f,
-              a: a,
-              guard: guard,
-              block: block
-            } = fun
-
+            %{f: f, a: a, guard: guard, block: block} = fun
             real_f_name = Self.make_real_f_name(f)
 
             quote do
@@ -113,19 +158,26 @@ defmodule Argx.WithCheck.Use do
   def do_make_args([_ | _] = _keys, [] = _values, args), do: args
   def do_make_args([] = _keys, [_ | _] = _values, args), do: args
 
-  def do_make_args([key | key_rest], [value | value_rest], args),
-    do:
-      (
-        new_args = Keyword.put(args, key, value)
-        do_make_args(key_rest, value_rest, new_args)
-      )
+  def do_make_args([key | key_rest], [value | value_rest], args) do
+    new_args = Keyword.put(args, key, value)
+    do_make_args(key_rest, value_rest, new_args)
+  end
 
   defp get_arg_names([], names), do: Enum.reverse(names)
   defp get_arg_names([{arg, _, _} | rest], names), do: get_arg_names(rest, [arg | names])
   defp get_arg_names([_other_expr | rest], names), do: get_arg_names(rest, names)
 
   ###
-  def merge_configs(configs, defconfigs) do
+  def merge_defconfigs(general_configs, defconfigs) do
+    quote do
+      Map.merge(
+        unquote(general_configs),
+        Util.list_to_map(unquote(defconfigs))
+      )
+    end
+  end
+
+  def merge_configs(defconfigs, configs) do
     quote do
       {names, configs} =
         Map.pop(
@@ -139,14 +191,16 @@ defmodule Argx.WithCheck.Use do
     end
   end
 
-  def get_configs_by_names([name | _] = defconfig_names, defconfigs) when is_atom(name),
-    do:
-      Enum.reduce(defconfig_names, %{}, fn name, configs ->
-        config = defconfigs |> Util.list_to_map() |> Map.get(name, nil)
-        (config && Map.merge(configs, config)) || configs
-      end)
+  def get_configs_by_names([name | _] = defconfig_names, defconfigs) when is_atom(name) do
+    Enum.reduce(defconfig_names, %{}, fn name, configs ->
+      config = Map.get(defconfigs, name)
+      (config && Map.merge(configs, config)) || configs
+    end)
+  end
 
   def get_configs_by_names(_other_defconfig_names, _defconfigs), do: %{}
+
+  def get_general_configs(general_module), do: apply(general_module, :__get_defconfigs__, [])
 
   ###
   def make_real_f_name(f), do: Util.make_fun_name("real", f)

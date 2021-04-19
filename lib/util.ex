@@ -15,9 +15,7 @@ defmodule Argx.Util do
   def make_fun_name(prefix, name) do
     name
     |> fun_name_rule(prefix)
-    |> IO.iodata_to_binary()
-    |> String.downcase()
-    |> String.to_atom()
+    |> to_fun_name()
   end
 
   defp fun_name_rule(name, prefix) when is_bitstring(name) do
@@ -30,6 +28,14 @@ defmodule Argx.Util do
 
   defp fun_name_rule(_, _) do
     []
+  end
+
+  def to_fun_name(parts) do
+    parts
+    |> Enum.map(fn part -> to_string(part) end)
+    |> IO.iodata_to_binary()
+    |> String.downcase()
+    |> String.to_atom()
   end
 
   ###

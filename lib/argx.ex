@@ -129,10 +129,10 @@ defmodule Argx do
   (3). integer to float
   """
 
-  defmacro __using__(_opts) do
+  defmacro __using__(general_module) do
     quote do
       use Argx.Defconfig.Use
-      use Argx.WithCheck.Use
+      use Argx.WithCheck.Use, unquote(general_module)
     end
   end
 end
