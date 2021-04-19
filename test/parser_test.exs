@@ -134,6 +134,12 @@ defmodule ParserTest do
                  block: {:name, [], m},
                  f: :get,
                  guard: true
+               },
+               %{
+                 a: [{:name, [], m}],
+                 block: {:name, [], m},
+                 f: :get,
+                 guard: true
                }
              ] == result
     end

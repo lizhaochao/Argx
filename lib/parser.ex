@@ -13,7 +13,7 @@ defmodule Argx.Parser do
   def parse_fun({:__block__, _, [_ | _] = block}), do: parse_fun(block, [])
   def parse_fun(block), do: parse_fun([block], [])
 
-  def parse_fun([], funs), do: funs |> MapSet.new() |> MapSet.to_list()
+  def parse_fun([], funs), do: Enum.reverse(funs)
 
   def parse_fun([expr | rest], funs) do
     fun = do_parse_fun(expr, %{})
