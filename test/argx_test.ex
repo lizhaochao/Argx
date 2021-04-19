@@ -127,12 +127,12 @@ defmodule ArgxTest do
                    GeneralA,
                    GeneralC
                  ) do
-        def get(one, two, three, four, five, six, a, c, d) when is_bitstring(five) do
+        def get(one, two, three, four, five, six, a, c, d) when is_bitstring(one) do
           {one, two, three, four, five, six, a, c, d, :first}
         end
 
-        def get(one, two, three, four, five, six, a, c, d) when is_integer(two) do
-          {one, two, three, four, five, six, a, c, d, :second}
+        def get(one, two, three, four, five, six, a, c, d) when is_nil(one) do
+          {one, two, three, four, five, six, a, c, d, :i_am_nil}
         end
 
         def get(one, two, three, four, five, six, a, c, d) do
@@ -157,10 +157,10 @@ defmodule ArgxTest do
 
     test "get - ok" do
       result1 = Project.Argx.C.get(%{}, 1, [1, 2], 1.23, "hello", true, "a", 9.9, true)
-      assert {%{}, 1, [1, 2], 1.23, "hello", true, "a", 9.9, true, :first} == result1
+      assert {%{}, 1, [1, 2], 1.23, "hello", true, "a", 9.9, true, :else} == result1
 
-      result2 = Project.Argx.C.get(%{}, nil, [1, 2], 1.23, "hello", 1, "a", 9.9, true)
-      assert {%{}, 99, [1, 2], 1.23, "hello", true, "a", 9.9, true, :first} == result2
+      result2 = Project.Argx.C.get(nil, nil, [1, 2], 1.23, "hello", 1, "a", 9.9, true)
+      assert {nil, 99, [1, 2], 1.23, "hello", true, "a", 9.9, true, :i_am_nil} == result2
     end
 
     test "get - error" do
