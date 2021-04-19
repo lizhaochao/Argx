@@ -148,7 +148,7 @@ defmodule Argx.WithCheck.Use do
   ###
   def make_args(a) do
     quote do
-      keys = unquote(get_arg_names(a, []))
+      keys = unquote(get_arg_names(a))
       values = [unquote_splicing(a)]
       Self.do_make_args(keys, values, [])
     end
@@ -163,9 +163,10 @@ defmodule Argx.WithCheck.Use do
     do_make_args(key_rest, value_rest, new_args)
   end
 
-  defp get_arg_names([], names), do: Enum.reverse(names)
-  defp get_arg_names([{arg, _, _} | rest], names), do: get_arg_names(rest, [arg | names])
-  defp get_arg_names([_other_expr | rest], names), do: get_arg_names(rest, names)
+  def get_arg_names(args), do: do_get_arg_names(args, [])
+  defp do_get_arg_names([], names), do: Enum.reverse(names)
+  defp do_get_arg_names([{arg, _, _} | rest], names), do: do_get_arg_names(rest, [arg | names])
+  defp do_get_arg_names([_other_expr | rest], names), do: do_get_arg_names(rest, names)
 
   ###
   def merge_defconfigs(general_configs, defconfigs) do
