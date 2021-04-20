@@ -3,8 +3,7 @@ defmodule Argx.Matcher do
 
   alias Argx.{Checker, Converter, Defaulter, Parser, Util}
 
-  def match(m, f, [{_arg_name, _arg_value} | _] = args, %{} = configs)
-      when is_atom(m) and is_atom(f) do
+  def match(m, [{_arg_name, _arg_value} | _] = args, %{} = configs) when is_atom(m) do
     configs =
       args
       |> Keyword.keys()

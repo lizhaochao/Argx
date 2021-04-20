@@ -90,32 +90,32 @@ defmodule Argx.WithCheck.Use do
             Checker.are_keys_equal!(f, arg_names, unquote(configs))
           end
 
-        funs_expr =
-          Enum.map(funs, fn fun ->
-            %{f: f, a: a, guard: guard, block: block} = fun
-            real_f_name = Self.make_real_f_name(f)
+        Enum.map(funs, fn fun ->
+          %{f: f, a: a, guard: guard, block: block} = fun
+          real_f_name = Self.make_real_f_name(f)
 
-            quote do
-              def unquote(f)(unquote_splicing(a)) when unquote(guard) do
-                args = unquote(Self.make_args(a))
+          quote do
+            unquote(ignore_attr_warning_expr)
+            unquote(are_keys_equal_expr)
 
-                __MODULE__
-                |> Matcher.match(unquote(f), args, unquote(configs))
-                |> Self.post_match(
-                  unquote(use_m),
-                  unquote(general_m),
-                  __MODULE__,
-                  unquote(real_f_name)
-                )
-              end
+            def unquote(f)(unquote_splicing(a)) when unquote(guard) do
+              args = unquote(Self.make_args(a))
 
-              def unquote(real_f_name)(unquote_splicing(a)) when unquote(guard) do
-                unquote(block)
-              end
+              __MODULE__
+              |> Matcher.match(args, unquote(configs))
+              |> Self.post_match(
+                unquote(use_m),
+                unquote(general_m),
+                __MODULE__,
+                unquote(real_f_name)
+              )
             end
-          end)
 
-        [ignore_attr_warning_expr] ++ [are_keys_equal_expr] ++ funs_expr
+            def unquote(real_f_name)(unquote_splicing(a)) when unquote(guard) do
+              unquote(block)
+            end
+          end
+        end)
       end
     end
   end
