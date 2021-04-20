@@ -51,7 +51,8 @@ end
 defmodule Argx.WithCheck.Use do
   @moduledoc false
 
-  alias Argx.{Checker, Const, Formatter, Matcher, Parser, Util}
+  alias Argx.{Checker, Const, Formatter, Parser, Util}
+  alias Argx.Inner.Matcher
   alias Argx.WithCheck.Use, as: Self
 
   defmacro __using__(general_m) do
