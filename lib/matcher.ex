@@ -4,28 +4,44 @@ defmodule Argx.Inner.Matcher do
   alias Argx.{Checker, Converter, Defaulter, Parser, Util}
 
   def match(m, [{_arg_name, _arg_value} | _] = args, %{} = configs) when is_atom(m) do
-    configs =
-      args
-      |> Keyword.keys()
-      |> Util.sort_by_keys(configs)
+    configs = Enum.into(configs, [])
 
-    args =
+    new_args =
+      configs
+      |> Keyword.keys()
+      |> Util.sort_by_keys(args)
+      |> Defaulter.set_default(configs, m)
+      |> Converter.convert(configs)
+
+    do_match(new_args, configs)
+  end
+
+  def match(_, _, _, _), do: :match_error
+
+  def match_by_check(m, [{_arg_name, _arg_value} | _] = args, %{} = configs) when is_atom(m) do
+    configs = args |> Keyword.keys() |> Util.sort_by_keys(configs)
+
+    new_args =
       args
       |> Defaulter.set_default(configs, m)
       |> Converter.convert(configs)
 
+    do_match(new_args, configs)
+  end
+
+  def match_by_check(_, _, _, _), do: :match_error
+
+  ###
+  def do_match(args, configs) do
     {[], args, configs}
     |> lacked()
     |> drop_checked_keys(args, configs)
     |> error_type()
     |> drop_checked_keys(args, configs)
     |> out_of_range()
-    |> post_match(args)
+    |> output_result(args)
   end
 
-  def match(_, _, _, _), do: :match_error
-
-  ###
   def lacked({errors, args, configs}), do: do_lacked(errors, args, configs)
 
   defp do_lacked([], [], []), do: []
@@ -163,16 +179,5 @@ defmodule Argx.Inner.Matcher do
     drop_checked_keys(rest, errors, args, configs)
   end
 
-  def post_match({:error, errors}, _args) do
-    errors =
-      errors
-      |> Enum.reverse()
-      |> Enum.map(fn {type, fields} ->
-        {type, Enum.reverse(fields)}
-      end)
-
-    {:error, errors}
-  end
-
-  def post_match([], args), do: Keyword.values(args)
+  def output_result(errors, new_args), do: {errors, new_args}
 end

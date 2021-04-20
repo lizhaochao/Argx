@@ -39,14 +39,17 @@ defmodule InnerMatcherTest do
       }
     ]
 
-    assert {:error, [lacked: [:one], error_type: [:two], out_of_range: [:three]]} ==
+    assert {
+             {:error, [out_of_range: [:three], error_type: [:two], lacked: [:one]]},
+             args
+           } ==
              {errors, args, configs}
              |> M.lacked()
              |> M.drop_checked_keys(args, configs)
              |> M.error_type()
              |> M.drop_checked_keys(args, configs)
              |> M.out_of_range()
-             |> M.post_match(args)
+             |> M.output_result(args)
   end
 
   describe "lacked" do

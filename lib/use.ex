@@ -102,7 +102,7 @@ defmodule Argx.WithCheck.Use do
               args = unquote(Self.make_args(a))
 
               __MODULE__
-              |> Matcher.match(args, unquote(configs))
+              |> Matcher.match_by_check(args, unquote(configs))
               |> Self.post_match(
                 unquote(use_m),
                 unquote(general_m),
@@ -117,12 +117,20 @@ defmodule Argx.WithCheck.Use do
   end
 
   ###
-  def post_match({:error, _} = err, use_m, general_m, current_m, _) do
-    Formatter.fmt_errors(err, use_m, general_m, current_m)
+  def post_match({{:error, errors}, _args}, use_m, general_m, current_m, _) do
+    errors =
+      errors
+      |> Enum.reverse()
+      |> Enum.map(fn {type, fields} ->
+        {type, Enum.reverse(fields)}
+      end)
+
+    Formatter.fmt_errors({:error, errors}, use_m, general_m, current_m)
   end
 
-  def post_match([_ | _] = new_args, _use_m, _general_m, current_m, real_f_name) do
-    apply(current_m, real_f_name, new_args)
+  # TODO: argx is [] will happen what
+  def post_match({_errors, [_ | _] = new_args}, _use_m, _general_m, current_m, real_f_name) do
+    apply(current_m, real_f_name, Keyword.values(new_args))
   end
 
   ###

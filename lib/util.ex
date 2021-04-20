@@ -47,6 +47,11 @@ defmodule Argx.Util do
   end
 
   ###
+  def sort_by_keys(keys, keyword) when is_list(keyword) do
+    map = Enum.into(keyword, %{})
+    sort_by_keys(keys, map)
+  end
+
   def sort_by_keys(keys, %{} = map) do
     keys
     |> Enum.reduce([], fn key, item ->
