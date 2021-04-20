@@ -60,4 +60,26 @@ defmodule Argx.Util do
     end)
     |> Enum.reverse()
   end
+
+  def prune_names([_ | _] = names), do: Enum.map(names, fn name -> prune_names(name) end)
+  def prune_names(name) when is_atom(name), do: name |> inspect() |> prune_names()
+  def prune_names(":" <> name_rest), do: name_rest |> prune_names()
+  def prune_names(name) when is_bitstring(name), do: String.to_atom(name)
+  def prune_names(other_name), do: other_name
+
+  ###
+  def get_configs_by_names(%{} = defconfigs, [_ | _] = names) do
+    names
+    |> prune_names()
+    |> Enum.reduce(%{}, fn name, configs ->
+      defconfigs
+      |> Map.fetch(name)
+      |> case do
+        {:ok, %{} = config} -> Map.merge(configs, config)
+        :error -> raise Argx.Error, "not found config by #{name}"
+      end
+    end)
+  end
+
+  def get_configs_by_names(_other_defconfigs, _other_names), do: %{}
 end

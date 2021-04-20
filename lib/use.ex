@@ -128,7 +128,6 @@ defmodule Argx.WithCheck.Use do
     Formatter.fmt_errors({:error, errors}, use_m, general_m, current_m)
   end
 
-  # TODO: argx is [] will happen what
   def post_match({_errors, [_ | _] = new_args}, _use_m, _general_m, current_m, real_f_name) do
     apply(current_m, real_f_name, Keyword.values(new_args))
   end
@@ -174,20 +173,11 @@ defmodule Argx.WithCheck.Use do
           unquote(Const.names_key())
         )
 
-      names
-      |> Self.get_configs_by_names(unquote(defconfigs))
+      unquote(defconfigs)
+      |> Util.get_configs_by_names(names)
       |> Map.merge(configs)
     end
   end
-
-  def get_configs_by_names([name | _] = defconfig_names, defconfigs) when is_atom(name) do
-    Enum.reduce(defconfig_names, %{}, fn name, configs ->
-      config = Map.get(defconfigs, name)
-      (config && Map.merge(configs, config)) || configs
-    end)
-  end
-
-  def get_configs_by_names(_other_defconfig_names, _defconfigs), do: %{}
 
   def get_general_configs([]), do: %{}
   def get_general_configs(general_m), do: apply(general_m, :__get_defconfigs__, [])

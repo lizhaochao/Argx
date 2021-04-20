@@ -159,7 +159,7 @@ defmodule Argx.General do
     end
   end
 
-  def get_defconfigs(m) do
+  def get_defconfigs(m) when is_atom(m) do
     :functions
     |> m.__info__()
     |> Enum.filter(fn {f_name, _arity} ->
@@ -170,12 +170,14 @@ defmodule Argx.General do
       Map.merge(general_configs, configs)
     end)
   end
+
+  def get_defconfigs(_other_m), do: %{}
 end
 
 defmodule Argx.Matcher do
   @moduledoc false
 
-  alias Argx.{Const, Formatter}
+  alias Argx.{Formatter, General, Util}
   alias Argx.Inner.Matcher
   alias Argx.Matcher, as: Self
 
@@ -193,57 +195,22 @@ defmodule Argx.Matcher do
     end
   end
 
-  def do_match(args, config_names, current_m, general_m) when is_list(args) do
-    config_names = prune_config_name(config_names)
-
+  def do_match(args, names, current_m, general_m) when is_list(args) do
     configs =
       current_m
       |> get_configs(general_m)
-      |> get_configs_by_names(config_names)
+      |> Util.get_configs_by_names(names)
 
     current_m
     |> Matcher.match(args, configs)
     |> post_match(general_m, current_m)
   end
 
-  def prune_config_name(name) when is_bitstring(name), do: name
-  def prune_config_name(name) when is_atom(name), do: String.to_atom("#{inspect(name)}")
-  def prune_config_name([_ | _] = names), do: Enum.map(names, fn x -> prune_config_name(x) end)
-  def prune_config_name(other_name), do: other_name
-
-  def get_configs_by_names(%{} = defconfigs, [_ | _] = names) do
-    Enum.reduce(names, %{}, fn name, configs ->
-      defconfigs
-      |> Map.fetch(name)
-      |> case do
-        {:ok, %{} = config} -> Map.merge(configs, config)
-        :error -> raise Argx.Error, "not found config by #{name}"
-      end
-    end)
-  end
-
-  def get_configs_by_names(_other_defconfigs, _other_names), do: %{}
-
   def get_configs(current_m, general_m) do
-    defconfigs = get_defconfigs(current_m)
-    general_configs = get_general_configs(general_m)
+    defconfigs = General.get_defconfigs(current_m)
+    general_configs = General.get_defconfigs(general_m)
     Map.merge(general_configs, defconfigs)
   end
-
-  def get_defconfigs(m) do
-    :functions
-    |> m.__info__()
-    |> Enum.filter(fn {f_name, _arity} ->
-      f_name |> to_string() |> Kernel.=~(to_string(Const.defconfigs_key()))
-    end)
-    |> Enum.reduce(%{}, fn {f_name, _arity}, general_configs ->
-      configs = apply(m, f_name, [])
-      Map.merge(general_configs, configs)
-    end)
-  end
-
-  def get_general_configs([]), do: %{}
-  def get_general_configs(general_m), do: apply(general_m, :__get_defconfigs__, [])
 
   def post_match({errors, _args}, general_m, current_m) do
     Formatter.fmt_errors(errors, nil, general_m, current_m)
