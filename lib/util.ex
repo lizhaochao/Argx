@@ -46,6 +46,8 @@ defmodule Argx.Util do
     |> String.to_atom()
   end
 
+  def make_module_name(_other_parts), do: nil
+
   ###
   def sort_by_keys(keys, keyword) when is_list(keyword) do
     map = Enum.into(keyword, %{})

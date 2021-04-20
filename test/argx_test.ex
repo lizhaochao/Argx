@@ -68,9 +68,9 @@ defmodule ArgxTest do
     defmodule Project.Argx.B do
       @moduledoc false
 
-      defconfig(Rule, one(:string, :optional, 7) || Project.Helper.get_default())
+      defconfig("rule", one(:string, :optional, 7) || Project.Helper.get_default())
 
-      with_check configs(Rule) do
+      with_check configs("rule") do
         def get(one) do
           {one}
         end

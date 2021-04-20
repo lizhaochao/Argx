@@ -1,7 +1,7 @@
 defmodule Argx.Parser do
   @moduledoc false
 
-  alias Argx.Const
+  alias Argx.{Const, Util}
 
   @allowed_fun_types Const.allowed_fun_types()
   @not_support_types Const.not_support_types()
@@ -69,34 +69,33 @@ defmodule Argx.Parser do
   def parse_configs([]), do: raise(Argx.Error, "configs is empty")
 
   defp do_parse_configs([], configs) do
-    new_configs =
-      configs
-      |> Map.get(@names_key)
-      |> is_nil()
-      |> if(
-        do: configs,
-        else:
-          (
-            {_, new_configs} =
-              Map.get_and_update(configs, @names_key, fn curr ->
-                new_value = curr && MapSet.to_list(curr)
-                {curr, new_value}
-              end)
+    configs
+    |> Map.get(@names_key)
+    |> is_nil()
+    |> if(
+      do: configs,
+      else:
+        (
+          {_, new_configs} =
+            Map.get_and_update(configs, @names_key, fn curr ->
+              new_value = curr && MapSet.to_list(curr)
+              {curr, new_value}
+            end)
 
-            new_configs
-          )
-      )
-
-    new_configs
+          new_configs
+        )
+    )
   end
 
-  defp do_parse_configs([{:__aliases__, _, [defconfig_name]} | rest], configs) do
-    {_, new_configs} =
-      Map.get_and_update(configs, @names_key, fn curr ->
-        new_value = (curr && MapSet.put(curr, defconfig_name)) || MapSet.new([defconfig_name])
-        {curr, new_value}
-      end)
+  defp do_parse_configs([{:__aliases__, _, [defconfig_name]} | rest], configs)
+       when is_atom(defconfig_name) do
+    new_configs = reduce_defconfig_names(configs, @names_key, defconfig_name)
+    do_parse_configs(rest, new_configs)
+  end
 
+  defp do_parse_configs([defconfig_name | rest], configs)
+       when is_bitstring(defconfig_name) or is_atom(defconfig_name) do
+    new_configs = reduce_defconfig_names(configs, @names_key, defconfig_name)
     do_parse_configs(rest, new_configs)
   end
 
@@ -104,6 +103,18 @@ defmodule Argx.Parser do
     config_map = every_config(config)
     new_configs = Map.merge(configs, config_map)
     do_parse_configs(rest, new_configs)
+  end
+
+  defp reduce_defconfig_names(%{} = configs, names_key, name) do
+    name = Util.prune_names(name)
+
+    {_, new_configs} =
+      Map.get_and_update(configs, names_key, fn curr ->
+        new_value = (curr && MapSet.put(curr, name)) || MapSet.new([name])
+        {curr, new_value}
+      end)
+
+    new_configs
   end
 
   defp every_config({:||, _, [{field, _, items}, default]}) do
