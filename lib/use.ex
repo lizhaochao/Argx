@@ -95,6 +95,11 @@ defmodule Argx.WithCheck.Use do
           real_f_name = Self.make_real_f_name(f)
 
           quote do
+            # Decorator will decorate the closest function.
+            def unquote(real_f_name)(unquote_splicing(a)) when unquote(guard) do
+              unquote(block)
+            end
+
             unquote(ignore_attr_warning_expr)
             unquote(are_keys_equal_expr)
 
@@ -109,10 +114,6 @@ defmodule Argx.WithCheck.Use do
                 __MODULE__,
                 unquote(real_f_name)
               )
-            end
-
-            def unquote(real_f_name)(unquote_splicing(a)) when unquote(guard) do
-              unquote(block)
             end
           end
         end)
