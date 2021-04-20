@@ -7,21 +7,9 @@ end
 defmodule Project.Argx do
   @moduledoc false
 
-  use Argx, Project.Argx.General
+  use Argx
 
   def fmt_errors(errors), do: errors
-end
-
-defmodule Project.Argx.General do
-  @moduledoc false
-
-  use Argx.General
-
-  defconfig(GeneralA, a(:boolean))
-  defconfig(GeneralB, b(:integer))
-  defconfig(GeneralC, [c(:float), d(:boolean)])
-
-  def fmt_errors(errors), do: {:gen, errors}
 end
 
 defmodule ArgxTest do
@@ -30,15 +18,6 @@ defmodule ArgxTest do
   use ExUnit.Case
 
   import Project.Argx
-
-  describe "general configs" do
-    test "__get_defconfigs__" do
-      assert MapSet.new([:GeneralA, :GeneralB, :GeneralC]) ==
-               Elixir.Project.Argx.General.__get_defconfigs__()
-               |> Map.keys()
-               |> MapSet.new()
-    end
-  end
 
   describe "with_check" do
     defmodule Project.Argx.A do
@@ -74,15 +53,14 @@ defmodule ArgxTest do
     test "error" do
       result = Project.Argx.A.get(nil, "good", "", 1.23, %{}, "hello", nil)
 
-      assert {:gen,
-              {
-                :error,
-                [
-                  lacked: [:one, :three, :five, :seven],
-                  error_type: [:two, :four],
-                  out_of_range: [:six]
-                ]
-              }} == result
+      assert {
+               :error,
+               [
+                 lacked: [:one, :three, :five, :seven],
+                 error_type: [:two, :four],
+                 out_of_range: [:six]
+               ]
+             } == result
     end
   end
 
@@ -105,8 +83,8 @@ defmodule ArgxTest do
     end
 
     test "error" do
-      assert {:gen, {:error, [error_type: [:one]]}} == Project.Argx.B.get(:hello)
-      assert {:gen, {:error, [out_of_range: [:one]]}} == Project.Argx.B.get("hello")
+      assert {:error, [error_type: [:one]]} == Project.Argx.B.get(:hello)
+      assert {:error, [out_of_range: [:one]]} == Project.Argx.B.get("hello")
     end
   end
 
@@ -122,20 +100,18 @@ defmodule ArgxTest do
                    RuleA,
                    RuleB,
                    five(:string),
-                   RuleC,
-                   GeneralA,
-                   GeneralC
+                   RuleC
                  ) do
-        def get(one, two, three, four, five, a, c, d) when is_bitstring(one) do
-          {one, two, three, four, five, a, c, d, :first}
+        def get(one, two, three, four, five) when is_bitstring(one) do
+          {one, two, three, four, five, :first}
         end
 
-        def get(one, two, three, four, five, a, c, d) when is_nil(one) do
-          {one, two, three, four, five, a, c, d, :i_am_nil}
+        def get(one, two, three, four, five) when is_nil(one) do
+          {one, two, three, four, five, :i_am_nil}
         end
 
-        def get(one, two, three, four, five, a, c, d) do
-          {one, two, three, four, five, a, c, d, :else}
+        def get(one, two, three, four, five) do
+          {one, two, three, four, five, :else}
         end
       end
 
@@ -155,23 +131,23 @@ defmodule ArgxTest do
     end
 
     test "get - ok" do
-      result1 = Project.Argx.C.get(%{}, 1, [1, 2], 1.23, "hello", true, 9.9, true)
-      assert {%{}, 1, [1, 2], 1.23, "hello", true, 9.9, true, :else} == result1
+      result1 = Project.Argx.C.get(%{}, 1, [1, 2], 1.23, "hello")
+      assert {%{}, 1, [1, 2], 1.23, "hello", :else} == result1
 
-      result2 = Project.Argx.C.get(nil, nil, [1, 2], 1.23, "hello", false, 9.9, true)
-      assert {nil, 99, [1, 2], 1.23, "hello", false, 9.9, true, :i_am_nil} == result2
+      result2 = Project.Argx.C.get(nil, nil, [1, 2], 1.23, "hello")
+      assert {nil, 99, [1, 2], 1.23, "hello", :i_am_nil} == result2
     end
 
     test "get - error" do
-      result = Project.Argx.C.get(1, "a", [3], 0.0, 1.23, nil, nil, "d")
+      result = Project.Argx.C.get(1, "a", [3], 0.0, 1.23)
 
       assert {
                :custom_err,
                {
                  :error,
                  [
-                   lacked: [:four, :a, :c],
-                   error_type: [:one, :two, :five, :d],
+                   lacked: [:four],
+                   error_type: [:one, :two, :five],
                    out_of_range: [:three]
                  ]
                }
