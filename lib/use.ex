@@ -48,12 +48,6 @@ defmodule Argx.Defconfig.Use do
   end
 end
 
-defmodule Argx.Defconfig.Import do
-  @moduledoc false
-
-  use Argx.Defconfig.Use
-end
-
 defmodule Argx.WithCheck.Use do
   @moduledoc false
 
