@@ -2,22 +2,25 @@ defmodule Argx.Formatter do
   @moduledoc false
 
   def fmt_errors(errors, use_m, general_m, current_m) do
+    f_name = :fmt_errors
+    arity = 1
+
     cond do
-      function_exported?(current_m, :fmt_errors, 1) ->
-        apply(current_m, :fmt_errors, [errors])
+      module_name?(current_m) && function_exported?(current_m, f_name, arity) ->
+        apply(current_m, f_name, [errors])
 
-      function_exported?(general_m, :fmt_errors, 1) ->
-        apply(general_m, :fmt_errors, [errors])
+      module_name?(general_m) && function_exported?(general_m, f_name, arity) ->
+        apply(general_m, f_name, [errors])
 
-      function_exported?(use_m, :fmt_errors, 1) ->
-        apply(use_m, :fmt_errors, [errors])
+      module_name?(use_m) && function_exported?(use_m, f_name, arity) ->
+        apply(use_m, f_name, [errors])
 
       true ->
         default(errors)
     end
   end
 
-  def default({:error, errors}) do
+  defp default({:error, errors}) do
     fields_ph = "{{fields}}"
 
     result =
@@ -38,4 +41,7 @@ defmodule Argx.Formatter do
 
     {:error, result}
   end
+
+  defp module_name?(name) when is_atom(name), do: true
+  defp module_name?(_other_name), do: false
 end
