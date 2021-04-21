@@ -1,13 +1,12 @@
 defmodule Argx do
   @moduledoc false
 
-  alias Argx.{Formatter, General, Util}
-  alias Argx.Inner.Matcher
+  alias Argx.{Formatter, Defconfig, Matcher, Util}
   alias Argx, as: Self
 
   defmacro __using__(general_m) do
     quote do
-      import Argx.Defconfig
+      import Argx.Inner.Defconfig
 
       def match(%{} = args, config_names) do
         args |> Enum.into([]) |> Self.do_match(config_names, __MODULE__, unquote(general_m))
@@ -31,8 +30,8 @@ defmodule Argx do
   end
 
   def get_configs(current_m, general_m) do
-    defconfigs = General.get_defconfigs(current_m)
-    general_configs = General.get_defconfigs(general_m)
+    defconfigs = Defconfig.get_defconfigs(current_m)
+    general_configs = Defconfig.get_defconfigs(general_m)
     Map.merge(general_configs, defconfigs)
   end
 
@@ -183,18 +182,12 @@ end
 defmodule Argx.Defconfig do
   @moduledoc false
 
-  use Argx.Defconfig.Use
-end
-
-defmodule Argx.General do
-  @moduledoc false
-
   alias Argx.Const
-  alias Argx.General, as: Self
+  alias Argx.Defconfig, as: Self
 
   defmacro __using__(_opts) do
     quote do
-      import Argx.Defconfig
+      import Argx.Inner.Defconfig
 
       def __get_defconfigs__() do
         Self.get_defconfigs(__MODULE__)

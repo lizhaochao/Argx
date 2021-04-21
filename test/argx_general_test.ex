@@ -9,7 +9,7 @@ end
 defmodule ProjectB.Argx.General do
   @moduledoc false
 
-  use Argx.General
+  use Argx.Defconfig
 
   defconfig(GeneralA, a(:boolean))
   defconfig(GeneralB, b(:integer))

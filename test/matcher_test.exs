@@ -1,9 +1,9 @@
-defmodule InnerMatcherTest do
+defmodule MatcherTest do
   @moduledoc false
 
   use ExUnit.Case
 
-  alias Argx.Inner.Matcher, as: M
+  alias Argx.Matcher, as: M
 
   test "match error" do
     errors = []

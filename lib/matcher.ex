@@ -1,4 +1,4 @@
-defmodule Argx.Inner.Matcher do
+defmodule Argx.Matcher do
   @moduledoc false
 
   alias Argx.{Checker, Converter, Defaulter, Parser, Util}

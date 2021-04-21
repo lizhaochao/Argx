@@ -1,7 +1,7 @@
 defmodule Project.Argx.General do
   @moduledoc false
 
-  use Argx.General
+  use Argx.Defconfig
 
   defconfig(GeneralA, a(:string))
   defconfig(GeneralB, b(:integer))
