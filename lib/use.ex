@@ -61,16 +61,21 @@ defmodule Argx.WithCheck.Use do
       defmacro with_check(configs, do: block) do
         Checker.check!(configs, block)
 
-        use_m = __MODULE__
         funs = Parser.parse_fun(block)
+        [fun | _] = funs
+        f = Map.get(fun, :f)
+        a = Map.get(fun, :a)
+
+        use_m = __MODULE__
         general_m = unquote(general_m)
+        arg_names = Self.get_arg_names(a)
 
         configs =
           general_m
           |> Self.get_general_configs()
           |> Macro.escape()
           |> Self.merge_defconfigs(@defconfigs)
-          |> Self.merge_configs(configs)
+          |> Self.merge_configs(configs, arg_names)
 
         ignore_attr_warning_expr =
           quote do
@@ -79,38 +84,48 @@ defmodule Argx.WithCheck.Use do
 
         are_keys_equal_expr =
           quote do
-            [%{f: f, a: a} | _] = unquote(Macro.escape(funs))
-            arg_names = Self.get_arg_names(a)
-            Checker.are_keys_equal!(f, arg_names, unquote(configs))
+            Checker.are_keys_equal!(unquote(f), unquote(arg_names), unquote(configs))
           end
 
-        Enum.map(funs, fn fun ->
-          %{f: f, a: a, guard: guard, block: block} = fun
-          real_f_name = Self.make_real_f_name(f)
+        fun_expr =
+          Enum.map(funs, fn fun ->
+            %{f: f, a: a, guard: guard, block: block} = fun
+            real_f_name = Self.make_real_f_name(f)
 
+            quote do
+              # Decorator will decorate the closest function.
+              def unquote(real_f_name)(unquote_splicing(a)) when unquote(guard) do
+                unquote(block)
+              end
+
+              unquote(ignore_attr_warning_expr)
+              unquote(are_keys_equal_expr)
+
+              def unquote(f)(unquote_splicing(a)) when unquote(guard) do
+                args = unquote(Self.make_args(a))
+
+                __MODULE__
+                |> Matcher.match_by_with_check(args, unquote(configs))
+                |> Self.post_match(
+                  unquote(use_m),
+                  unquote(general_m),
+                  __MODULE__,
+                  unquote(real_f_name)
+                )
+              end
+            end
+          end)
+
+        configs_f_name = Self.make_configs_f_name(f)
+
+        configs_fun_expr =
           quote do
-            # Decorator will decorate the closest function.
-            def unquote(real_f_name)(unquote_splicing(a)) when unquote(guard) do
-              unquote(block)
-            end
-
-            unquote(ignore_attr_warning_expr)
-            unquote(are_keys_equal_expr)
-
-            def unquote(f)(unquote_splicing(a)) when unquote(guard) do
-              args = unquote(Self.make_args(a))
-
-              __MODULE__
-              |> Matcher.match_by_with_check(args, unquote(configs))
-              |> Self.post_match(
-                unquote(use_m),
-                unquote(general_m),
-                __MODULE__,
-                unquote(real_f_name)
-              )
+            def unquote(configs_f_name)() do
+              unquote(configs)
             end
           end
-        end)
+
+        fun_expr ++ [configs_fun_expr]
       end
     end
   end
@@ -164,7 +179,7 @@ defmodule Argx.WithCheck.Use do
     end
   end
 
-  def merge_configs(defconfigs, configs) do
+  def merge_configs(defconfigs, configs, arg_names) do
     quote do
       {names, configs} =
         Map.pop(
@@ -172,9 +187,15 @@ defmodule Argx.WithCheck.Use do
           unquote(Const.names_key())
         )
 
-      unquote(defconfigs)
-      |> Util.get_configs_by_names(names)
-      |> Map.merge(configs)
+      merged_configs =
+        unquote(defconfigs)
+        |> Util.get_configs_by_names(names)
+        |> Map.merge(configs)
+
+      Util.sort_by_keys(
+        merged_configs,
+        unquote(arg_names)
+      )
     end
   end
 
@@ -183,6 +204,7 @@ defmodule Argx.WithCheck.Use do
 
   ###
   def make_real_f_name(f), do: Util.make_fun_name("real", f)
+  def make_configs_f_name(f), do: Util.make_fun_name("get_#{f}_configs")
 
   def reg_attr do
     quote do

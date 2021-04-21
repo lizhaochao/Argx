@@ -85,11 +85,10 @@ defmodule Argx.Checker do
   def are_keys_equal!(
         f_name,
         arg_names,
-        %{} = configs
+        configs
       )
-      when is_atom(f_name) and is_list(arg_names) do
-    arg_names = Enum.sort(arg_names)
-    arg_names2 = configs |> Map.keys() |> Enum.sort()
+      when is_atom(f_name) and is_list(arg_names) and is_list(configs) do
+    arg_names2 = Keyword.keys(configs)
 
     arg_names
     |> Kernel.==(arg_names2)
@@ -107,4 +106,6 @@ defmodule Argx.Checker do
         )
     )
   end
+
+  def are_keys_equal!(_f_name, _arg_names, _configs), do: raise(Argx.Error, "data type error")
 end

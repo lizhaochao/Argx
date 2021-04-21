@@ -7,9 +7,8 @@ defmodule Argx.Matcher do
     configs = Enum.into(configs, [])
 
     new_args =
-      configs
-      |> Keyword.keys()
-      |> Util.sort_by_keys(args)
+      args
+      |> Util.sort_by_keys(Keyword.keys(configs))
       |> Defaulter.set_default(configs, m)
       |> Converter.convert(configs)
 
@@ -18,10 +17,8 @@ defmodule Argx.Matcher do
 
   def match(_, _, _, _), do: :match_error
 
-  def match_by_with_check(m, [{_arg_name, _arg_value} | _] = args, %{} = configs)
+  def match_by_with_check(m, [{_arg_name, _arg_value} | _] = args, [_ | _] = configs)
       when is_atom(m) do
-    configs = args |> Keyword.keys() |> Util.sort_by_keys(configs)
-
     new_args =
       args
       |> Defaulter.set_default(configs, m)

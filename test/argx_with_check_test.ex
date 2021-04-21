@@ -62,6 +62,12 @@ defmodule ArgxWithCheckTest do
                ]
              } == result
     end
+
+    test "get configs" do
+      configs = ProjectA.Argx.A.__get_get_configs__()
+      arg_names = Keyword.keys(configs)
+      assert [:one, :two, :three, :four, :five, :six, :seven] == arg_names
+    end
   end
 
   describe "defconfig" do
