@@ -1,4 +1,47 @@
 defmodule Argx do
+  @moduledoc false
+
+  alias Argx.{Formatter, General, Util}
+  alias Argx.Inner.Matcher
+  alias Argx, as: Self
+
+  defmacro __using__(general_m) do
+    quote do
+      import Argx.Defconfig
+
+      def match(%{} = args, config_names) do
+        args |> Enum.into([]) |> Self.do_match(config_names, __MODULE__, unquote(general_m))
+      end
+
+      def match(args, config_names) when is_list(args) do
+        Self.do_match(args, config_names, __MODULE__, unquote(general_m))
+      end
+    end
+  end
+
+  def do_match(args, names, current_m, general_m) when is_list(args) do
+    configs =
+      current_m
+      |> get_configs(general_m)
+      |> Util.get_configs_by_names(names)
+
+    current_m
+    |> Matcher.match(args, configs)
+    |> post_match(general_m, current_m)
+  end
+
+  def get_configs(current_m, general_m) do
+    defconfigs = General.get_defconfigs(current_m)
+    general_configs = General.get_defconfigs(general_m)
+    Map.merge(general_configs, defconfigs)
+  end
+
+  def post_match({errors, _args}, general_m, current_m) do
+    Formatter.fmt_errors(errors, nil, general_m, current_m)
+  end
+end
+
+defmodule Argx.WithCheck do
   @moduledoc """
 
   A DSL for validating function's args.
@@ -172,47 +215,4 @@ defmodule Argx.General do
   end
 
   def get_defconfigs(_other_m), do: %{}
-end
-
-defmodule Argx.Matcher do
-  @moduledoc false
-
-  alias Argx.{Formatter, General, Util}
-  alias Argx.Inner.Matcher
-  alias Argx.Matcher, as: Self
-
-  defmacro __using__(general_m) do
-    quote do
-      import Argx.Defconfig
-
-      def match(%{} = args, config_names) do
-        args |> Enum.into([]) |> Self.do_match(config_names, __MODULE__, unquote(general_m))
-      end
-
-      def match(args, config_names) when is_list(args) do
-        Self.do_match(args, config_names, __MODULE__, unquote(general_m))
-      end
-    end
-  end
-
-  def do_match(args, names, current_m, general_m) when is_list(args) do
-    configs =
-      current_m
-      |> get_configs(general_m)
-      |> Util.get_configs_by_names(names)
-
-    current_m
-    |> Matcher.match(args, configs)
-    |> post_match(general_m, current_m)
-  end
-
-  def get_configs(current_m, general_m) do
-    defconfigs = General.get_defconfigs(current_m)
-    general_configs = General.get_defconfigs(general_m)
-    Map.merge(general_configs, defconfigs)
-  end
-
-  def post_match({errors, _args}, general_m, current_m) do
-    Formatter.fmt_errors(errors, nil, general_m, current_m)
-  end
 end

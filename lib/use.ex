@@ -102,7 +102,7 @@ defmodule Argx.WithCheck.Use do
               args = unquote(Self.make_args(a))
 
               __MODULE__
-              |> Matcher.match_by_check(args, unquote(configs))
+              |> Matcher.match_by_with_check(args, unquote(configs))
               |> Self.post_match(
                 unquote(use_m),
                 unquote(general_m),

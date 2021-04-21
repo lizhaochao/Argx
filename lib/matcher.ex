@@ -18,7 +18,8 @@ defmodule Argx.Inner.Matcher do
 
   def match(_, _, _, _), do: :match_error
 
-  def match_by_check(m, [{_arg_name, _arg_value} | _] = args, %{} = configs) when is_atom(m) do
+  def match_by_with_check(m, [{_arg_name, _arg_value} | _] = args, %{} = configs)
+      when is_atom(m) do
     configs = args |> Keyword.keys() |> Util.sort_by_keys(configs)
 
     new_args =
@@ -29,7 +30,7 @@ defmodule Argx.Inner.Matcher do
     do_match(new_args, configs)
   end
 
-  def match_by_check(_, _, _, _), do: :match_error
+  def match_by_with_check(_, _, _, _), do: :match_error
 
   ###
   def do_match(args, configs) do
