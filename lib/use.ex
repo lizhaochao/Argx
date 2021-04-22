@@ -3,6 +3,7 @@ defmodule Argx.Defconfig.Use do
 
   alias Argx.{Checker, Const, Parser, Util}
   alias Argx.Defconfig.Use, as: Self
+  alias Argx.Use.Helper
 
   defmacro __using__(_opts) do
     quote do
@@ -12,38 +13,23 @@ defmodule Argx.Defconfig.Use do
         name = Parser.parse_defconfig_name(name)
         configs = Parser.parse_configs(configs)
         attr = Macro.escape(%{name => configs})
-        f_name = Self.make_get_f_name(name)
+        f_name = Helper.make_get_general_configs_f_name(name)
 
-        quote do
-          unquote(Self.reg_attr())
-
-          Module.put_attribute(
-            __MODULE__,
-            unquote(Const.defconfigs_key()),
-            unquote(attr)
-          )
-
-          def unquote(f_name)() do
-            unquote(attr)
+        operate_attr_expr =
+          quote do
+            unquote(Helper.reg_attr())
+            unquote(Helper.put_attr(attr))
           end
-        end
+
+        configs_fun_expr =
+          quote do
+            def unquote(f_name)() do
+              unquote(attr)
+            end
+          end
+
+        [operate_attr_expr] ++ [configs_fun_expr]
       end
-    end
-  end
-
-  def make_get_f_name(name) do
-    ["__get", Const.defconfigs_key(), name, "__"]
-    |> Util.to_fun_name()
-  end
-
-  def reg_attr do
-    quote do
-      Module.register_attribute(
-        __MODULE__,
-        unquote(Const.defconfigs_key()),
-        accumulate: true,
-        persiste: true
-      )
     end
   end
 end
@@ -53,6 +39,7 @@ defmodule Argx.WithCheck.Use do
 
   alias Argx.{Checker, Const, Formatter, Matcher, Parser, Util}
   alias Argx.WithCheck.Use, as: Self
+  alias Argx.Use.Helper
 
   defmacro __using__(general_m) do
     quote do
@@ -69,7 +56,7 @@ defmodule Argx.WithCheck.Use do
         use_m = __MODULE__
         general_m = unquote(general_m)
         arg_names = Self.get_arg_names(a)
-        configs_f_name = Self.make_configs_f_name(f)
+        configs_f_name = Helper.make_get_fun_configs_f_name(f)
 
         configs =
           general_m
@@ -79,7 +66,7 @@ defmodule Argx.WithCheck.Use do
           |> Self.merge_configs(configs, arg_names)
 
         # expr
-        ignore_attr_warning_expr = quote do: unquote(Self.reg_attr())
+        ignore_attr_warning_expr = quote do: unquote(Helper.reg_attr())
 
         are_keys_equal_expr =
           quote do: Checker.are_keys_equal!(unquote(f), unquote(arg_names), unquote(configs))
@@ -87,7 +74,7 @@ defmodule Argx.WithCheck.Use do
         funs_expr =
           Enum.map(funs, fn fun ->
             %{f: f, a: a, guard: guard, block: block} = fun
-            real_f_name = Self.make_real_f_name(f)
+            real_f_name = Helper.make_real_f_name(f)
 
             quote do
               # Decorator will decorate the closest function.
@@ -193,11 +180,24 @@ defmodule Argx.WithCheck.Use do
 
   def get_general_configs([]), do: %{}
   def get_general_configs(general_m), do: apply(general_m, :__get_defconfigs__, [])
+end
 
-  ###
-  def make_real_f_name(f), do: Util.make_fun_name("real", f)
-  def make_configs_f_name(f), do: Util.make_fun_name("get_#{f}_configs")
+defmodule Argx.Use.Helper do
+  @moduledoc false
 
+  alias Argx.{Const, Util}
+
+  @defconfigs_key Const.defconfigs_key()
+
+  ### make function name
+  def make_get_general_configs_f_name(name) do
+    Util.make_fun_name("get#{@defconfigs_key}#{name}")
+  end
+
+  def make_get_fun_configs_f_name(f), do: Util.make_fun_name("get_#{f}_configs")
+  def make_real_f_name(f), do: Util.make_fun_name("real_#{f}")
+
+  ### operate attr
   def reg_attr do
     quote do
       Module.register_attribute(
@@ -205,6 +205,16 @@ defmodule Argx.WithCheck.Use do
         unquote(Const.defconfigs_key()),
         accumulate: true,
         persiste: true
+      )
+    end
+  end
+
+  def put_attr(attr) do
+    quote do
+      Module.put_attribute(
+        __MODULE__,
+        unquote(Const.defconfigs_key()),
+        unquote(attr)
       )
     end
   end

@@ -18,27 +18,9 @@ defmodule Argx.Util do
     |> to_fun_name()
   end
 
-  def make_fun_name(prefix, name) do
-    name
-    |> fun_name_rule(prefix)
-    |> to_fun_name()
-  end
-
   defp fun_name_rule(name) when is_bitstring(name), do: ["__", name, "__"]
   defp fun_name_rule(name) when is_atom(name), do: name |> to_string() |> fun_name_rule()
   defp fun_name_rule(_), do: []
-
-  defp fun_name_rule(name, prefix) when is_bitstring(name) do
-    ["__", prefix, "_", name, "__"]
-  end
-
-  defp fun_name_rule(name, prefix) when is_atom(name) do
-    name |> to_string() |> fun_name_rule(prefix)
-  end
-
-  defp fun_name_rule(_, _) do
-    []
-  end
 
   def to_fun_name(parts) do
     parts
