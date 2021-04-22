@@ -176,8 +176,8 @@ defmodule Argx.WithCheck do
 
   defmacro __using__(general_m) do
     quote do
-      use Argx.Defconfig.Use
-      use Argx.WithCheck.Use, unquote(general_m)
+      use Argx.Use.Defconfig
+      use Argx.Use.WithCheck, unquote(general_m)
     end
   end
 end
