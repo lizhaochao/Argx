@@ -9,7 +9,7 @@ defmodule Argx do
       import Argx.Inner.Defconfig
 
       def match(%{} = args, config_names) do
-        args |> Enum.into([]) |> Self.do_match(config_names, __MODULE__, unquote(general_m))
+        args |> Enum.into([]) |> match(config_names)
       end
 
       def match(args, config_names) when is_list(args) do
@@ -18,11 +18,14 @@ defmodule Argx do
     end
   end
 
-  def do_match(args, names, current_m, general_m) when is_list(args) do
+  def do_match(args, config_names, current_m, general_m) when is_list(args) do
     configs =
       current_m
       |> get_configs(general_m)
-      |> Util.get_configs_by_names(names)
+      |> Util.get_configs_by_names(config_names)
+      |> Enum.into([])
+
+    args = Util.sort_by_keys(args, Keyword.keys(configs))
 
     current_m
     |> Matcher.match(args, configs)

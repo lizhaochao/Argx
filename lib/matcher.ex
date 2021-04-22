@@ -1,45 +1,26 @@
 defmodule Argx.Matcher do
   @moduledoc false
 
-  alias Argx.{Checker, Converter, Defaulter, Parser, Util}
+  alias Argx.{Checker, Converter, Defaulter, Parser}
 
-  def match(m, [{_arg_name, _arg_value} | _] = args, %{} = configs) when is_atom(m) do
-    configs = Enum.into(configs, [])
-
-    new_args =
-      args
-      |> Util.sort_by_keys(Keyword.keys(configs))
-      |> Defaulter.set_default(configs, m)
-      |> Converter.convert(configs)
-
-    do_match(new_args, configs)
-  end
-
-  def match(_, _, _, _), do: :match_error
-
-  def match_by_with_check(m, [{_arg_name, _arg_value} | _] = args, [_ | _] = configs)
-      when is_atom(m) do
+  def match(m, [{_arg_name, _arg_value} | _] = args, [_ | _] = configs) when is_atom(m) do
     new_args =
       args
       |> Defaulter.set_default(configs, m)
       |> Converter.convert(configs)
 
-    do_match(new_args, configs)
+    {[], new_args, configs}
+    |> lacked()
+    |> drop_checked_keys(new_args, configs)
+    |> error_type()
+    |> drop_checked_keys(new_args, configs)
+    |> out_of_range()
+    |> output_result(new_args)
   end
 
-  def match_by_with_check(_, _, _, _), do: :match_error
+  def match(_, _, _), do: :match_error
 
   ###
-  def do_match(args, configs) do
-    {[], args, configs}
-    |> lacked()
-    |> drop_checked_keys(args, configs)
-    |> error_type()
-    |> drop_checked_keys(args, configs)
-    |> out_of_range()
-    |> output_result(args)
-  end
-
   def lacked({errors, args, configs}), do: do_lacked(errors, args, configs)
 
   defp do_lacked([], [], []), do: []
