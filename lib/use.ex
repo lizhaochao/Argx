@@ -69,6 +69,7 @@ defmodule Argx.WithCheck.Use do
         use_m = __MODULE__
         general_m = unquote(general_m)
         arg_names = Self.get_arg_names(a)
+        configs_f_name = Self.make_configs_f_name(f)
 
         configs =
           general_m
@@ -77,17 +78,13 @@ defmodule Argx.WithCheck.Use do
           |> Self.merge_defconfigs(@defconfigs)
           |> Self.merge_configs(configs, arg_names)
 
-        ignore_attr_warning_expr =
-          quote do
-            unquote(Self.reg_attr())
-          end
+        # expr
+        ignore_attr_warning_expr = quote do: unquote(Self.reg_attr())
 
         are_keys_equal_expr =
-          quote do
-            Checker.are_keys_equal!(unquote(f), unquote(arg_names), unquote(configs))
-          end
+          quote do: Checker.are_keys_equal!(unquote(f), unquote(arg_names), unquote(configs))
 
-        fun_expr =
+        funs_expr =
           Enum.map(funs, fn fun ->
             %{f: f, a: a, guard: guard, block: block} = fun
             real_f_name = Self.make_real_f_name(f)
@@ -97,9 +94,6 @@ defmodule Argx.WithCheck.Use do
               def unquote(real_f_name)(unquote_splicing(a)) when unquote(guard) do
                 unquote(block)
               end
-
-              unquote(ignore_attr_warning_expr)
-              unquote(are_keys_equal_expr)
 
               def unquote(f)(unquote_splicing(a)) when unquote(guard) do
                 args = unquote(Self.make_args(a))
@@ -116,8 +110,6 @@ defmodule Argx.WithCheck.Use do
             end
           end)
 
-        configs_f_name = Self.make_configs_f_name(f)
-
         configs_fun_expr =
           quote do
             def unquote(configs_f_name)() do
@@ -125,7 +117,7 @@ defmodule Argx.WithCheck.Use do
             end
           end
 
-        fun_expr ++ [configs_fun_expr]
+        [ignore_attr_warning_expr] ++ [are_keys_equal_expr] ++ funs_expr ++ [configs_fun_expr]
       end
     end
   end
