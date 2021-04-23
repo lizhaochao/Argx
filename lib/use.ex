@@ -86,9 +86,9 @@ defmodule Argx.Use.WithCheck do
                 __MODULE__
                 |> Matcher.match(args, unquote(configs))
                 |> Self.post_match(
-                  unquote(use_m),
-                  unquote(general_m),
                   __MODULE__,
+                  unquote(general_m),
+                  unquote(use_m),
                   unquote(real_f_name)
                 )
               end
@@ -108,19 +108,14 @@ defmodule Argx.Use.WithCheck do
   end
 
   ###
-  def post_match({{:error, errors}, _new_args}, use_m, general_m, current_m, _) do
-    errors =
-      errors
-      |> Enum.reverse()
-      |> Enum.map(fn {type, fields} ->
-        {type, Enum.reverse(fields)}
-      end)
-
-    Formatter.fmt_errors({:error, errors}, use_m, general_m, current_m)
+  def post_match({[] = _errors, [_ | _] = new_args}, current_m, _general_m, _use_m, real_f_name) do
+    apply(current_m, real_f_name, Keyword.values(new_args))
   end
 
-  def post_match({_errors, [_ | _] = new_args}, _use_m, _general_m, current_m, real_f_name) do
-    apply(current_m, real_f_name, Keyword.values(new_args))
+  def post_match({_errors, _new_args} = result, current_m, general_m, use_m, _real_f_name) do
+    result
+    |> Formatter.fmt_match_result()
+    |> Formatter.fmt_errors(current_m, general_m, use_m)
   end
 
   ###
@@ -219,7 +214,7 @@ defmodule Argx.Use.Helper do
     end
   end
 
-  ###
+  ### get configs
   def get_configs_by_names(%{} = all_configs, [_ | _] = names) do
     names
     |> Util.prune_names()

@@ -13,8 +13,8 @@ defmodule ProjectC do
     match(params, [OneRule])
   end
 
-  def fmt_errors([]), do: :ok
-  def fmt_errors(errors), do: :error
+  def fmt_errors({:error, _} = errors), do: errors
+  def fmt_errors(new_args), do: new_args
 end
 
 defmodule NestedTest do
@@ -29,7 +29,8 @@ defmodule NestedTest do
         %{a: "ab", b: 22, c: 3.32}
       ]
 
-      assert :ok == ProjectC.get(%{one: list_data})
+      expected_args = %{one: list_data}
+      assert expected_args == ProjectC.get(expected_args)
     end
 
     test "more fields" do
@@ -38,13 +39,15 @@ defmodule NestedTest do
         %{a: "ab", b: 22, c: 3.32}
       ]
 
-      assert :ok == ProjectC.get(%{one: list_data, two: 2.2})
+      expected_args = %{one: list_data}
+      args = Map.put(expected_args, :two, 2.2)
+      assert expected_args == ProjectC.get(args)
     end
   end
 
   describe "error" do
     test "empty map" do
-      assert :error == ProjectC.get(%{oen: "str"})
+      assert {:error, [lacked: [:one]]} == ProjectC.get(%{oen: nil})
     end
   end
 end

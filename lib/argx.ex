@@ -10,11 +10,13 @@ defmodule Argx do
       import Argx.Inner.Defconfig
 
       def match(%{} = args, config_names) when is_list(config_names) do
-        args |> Enum.into([]) |> match(config_names)
+        args
+        |> Enum.into([])
+        |> Self.do_match(config_names, __MODULE__, unquote(general_m), :map)
       end
 
       def match(args, config_names) when is_list(args) and is_list(config_names) do
-        Self.do_match(args, config_names, __MODULE__, unquote(general_m))
+        Self.do_match(args, config_names, __MODULE__, unquote(general_m), :keyword)
       end
 
       def match(_args, _config_names) do
@@ -23,7 +25,7 @@ defmodule Argx do
     end
   end
 
-  def do_match(args, config_names, current_m, general_m) when is_list(args) do
+  def do_match(args, config_names, current_m, general_m, origin_type) when is_list(args) do
     configs =
       current_m
       |> get_all_configs(general_m)
@@ -34,7 +36,7 @@ defmodule Argx do
 
     current_m
     |> Matcher.match(new_args, configs)
-    |> post_match(general_m, current_m)
+    |> post_match(current_m, general_m, origin_type)
   end
 
   defp get_all_configs(current_m, general_m) do
@@ -43,8 +45,10 @@ defmodule Argx do
     Map.merge(general_configs, defconfigs)
   end
 
-  defp post_match({errors, _args}, general_m, current_m) do
-    Formatter.fmt_errors(errors, nil, general_m, current_m)
+  defp post_match(result, current_m, general_m, origin_type) do
+    result
+    |> Formatter.fmt_match_result(origin_type)
+    |> Formatter.fmt_errors(current_m, general_m)
   end
 end
 
