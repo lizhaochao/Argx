@@ -39,7 +39,6 @@ defmodule Argx.Matcher do
   def lacked({errors, args, configs}), do: do_lacked(errors, args, configs)
 
   defp do_lacked([], [], []), do: []
-
   defp do_lacked(errors, [], []), do: {:error, errors}
 
   defp do_lacked(
@@ -81,7 +80,6 @@ defmodule Argx.Matcher do
   def error_type({errors, args, configs}), do: do_error_type(errors, args, configs)
 
   defp do_error_type([], [], []), do: []
-
   defp do_error_type(errors, [], []), do: {:error, errors}
 
   defp do_error_type(
@@ -112,7 +110,6 @@ defmodule Argx.Matcher do
   def out_of_range({errors, args, configs}), do: do_out_of_range(errors, args, configs)
 
   defp do_out_of_range([], [], []), do: []
-
   defp do_out_of_range(errors, [], []), do: {:error, errors}
 
   defp do_out_of_range(
