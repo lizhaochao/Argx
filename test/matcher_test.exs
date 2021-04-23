@@ -17,7 +17,8 @@ defmodule MatcherTest do
         range: nil,
         # following configs dont care
         auto: false,
-        default: "hi"
+        default: "hi",
+        nested: nil
       },
       two: %Argx.Config{
         type: :boolean,
@@ -26,7 +27,8 @@ defmodule MatcherTest do
         range: nil,
         # following configs dont care
         auto: false,
-        default: "hi"
+        default: "hi",
+        nested: nil
       },
       three: %Argx.Config{
         type: :integer,
@@ -35,7 +37,8 @@ defmodule MatcherTest do
         range: 10,
         # following configs dont care
         auto: false,
-        default: "hi"
+        default: "hi",
+        nested: nil
       }
     ]
 
@@ -67,7 +70,8 @@ defmodule MatcherTest do
             auto: false,
             default: "hi",
             range: 7,
-            type: :string
+            type: :string,
+            nested: nil
           }
         ]
 
@@ -89,7 +93,8 @@ defmodule MatcherTest do
             auto: false,
             default: "hi",
             range: 7,
-            type: :string
+            type: :string,
+            nested: nil
           }
         ]
 
@@ -111,7 +116,8 @@ defmodule MatcherTest do
             auto: false,
             default: "hi",
             range: 7,
-            type: :string
+            type: :string,
+            nested: nil
           }
         ]
 
@@ -133,7 +139,8 @@ defmodule MatcherTest do
             auto: false,
             default: "hi",
             range: 7,
-            type: :string
+            type: :string,
+            nested: nil
           }
         ]
 
@@ -155,7 +162,8 @@ defmodule MatcherTest do
             auto: false,
             default: "hi",
             range: 7,
-            type: :string
+            type: :string,
+            nested: nil
           }
         ]
 
@@ -179,7 +187,8 @@ defmodule MatcherTest do
             # following configs dont care
             auto: false,
             default: "hi",
-            range: 7
+            range: 7,
+            nested: nil
           }
         ]
 
@@ -201,7 +210,8 @@ defmodule MatcherTest do
             # following configs dont care
             auto: false,
             default: "hi",
-            range: 7
+            range: 7,
+            nested: nil
           }
         ]
 
@@ -223,7 +233,8 @@ defmodule MatcherTest do
             # following configs dont care
             auto: false,
             default: "hi",
-            range: 7
+            range: 7,
+            nested: nil
           }
         ]
 
@@ -245,7 +256,8 @@ defmodule MatcherTest do
             # following configs dont care
             auto: false,
             default: "hi",
-            range: 7
+            range: 7,
+            nested: nil
           }
         ]
 
@@ -267,7 +279,8 @@ defmodule MatcherTest do
             # following configs dont care
             auto: false,
             default: "hi",
-            range: 7
+            range: 7,
+            nested: nil
           }
         ]
 
@@ -291,7 +304,8 @@ defmodule MatcherTest do
             type: :string,
             empty: false,
             auto: false,
-            default: "hi"
+            default: "hi",
+            nested: nil
           }
         ]
 
@@ -313,7 +327,8 @@ defmodule MatcherTest do
             type: :string,
             empty: false,
             auto: false,
-            default: "hi"
+            default: "hi",
+            nested: nil
           }
         ]
 
@@ -335,7 +350,8 @@ defmodule MatcherTest do
             type: :string,
             empty: false,
             auto: false,
-            default: "hi"
+            default: "hi",
+            nested: nil
           }
         ]
 
@@ -357,7 +373,8 @@ defmodule MatcherTest do
             type: :string,
             empty: false,
             auto: false,
-            default: "hi"
+            default: "hi",
+            nested: nil
           }
         ]
 
@@ -379,7 +396,8 @@ defmodule MatcherTest do
             type: :string,
             empty: false,
             auto: false,
-            default: "hi"
+            default: "hi",
+            nested: nil
           }
         ]
 

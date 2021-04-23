@@ -227,7 +227,8 @@ defmodule ParserTest do
                    optional: false,
                    range: nil,
                    type: type,
-                   empty: false
+                   empty: false,
+                   nested: nil
                  }
                } == P.parse_configs(expr)
       end)
@@ -245,7 +246,8 @@ defmodule ParserTest do
                    optional: true,
                    range: nil,
                    type: type,
-                   empty: false
+                   empty: false,
+                   nested: nil
                  }
                } == P.parse_configs(expr)
       end)
@@ -263,7 +265,8 @@ defmodule ParserTest do
                    optional: true,
                    range: nil,
                    type: type,
-                   empty: false
+                   empty: false,
+                   nested: nil
                  }
                } == P.parse_configs(expr)
       end)
@@ -287,7 +290,8 @@ defmodule ParserTest do
               optional: true,
               range: parsed_range,
               type: parsed_type,
-              empty: false
+              empty: false,
+              nested: nil
             }
           } = P.parse_configs(Enum.at(expr, idx))
 
@@ -316,7 +320,8 @@ defmodule ParserTest do
                      optional: true,
                      range: 33,
                      type: type,
-                     empty: false
+                     empty: false,
+                     nested: nil
                    }
                  } == P.parse_configs(expr)
         end)
@@ -339,7 +344,8 @@ defmodule ParserTest do
                    optional: true,
                    range: {:.., [context: __MODULE__, import: Kernel], [1, 11]},
                    type: :list,
-                   empty: false
+                   empty: false,
+                   nested: nil
                  }
                } == P.parse_configs(expr)
       end)
@@ -387,7 +393,8 @@ defmodule ParserTest do
                  optional: false,
                  range: nil,
                  type: :string,
-                 empty: false
+                 empty: false,
+                 nested: nil
                }
              } == P.parse_configs(expr1)
 
@@ -398,7 +405,8 @@ defmodule ParserTest do
                  optional: false,
                  range: nil,
                  type: :list,
-                 empty: false
+                 empty: false,
+                 nested: nil
                }
              } == P.parse_configs(expr2)
 
@@ -409,7 +417,8 @@ defmodule ParserTest do
                  optional: false,
                  range: nil,
                  type: :map,
-                 empty: false
+                 empty: false,
+                 nested: nil
                },
                name: %Argx.Config{
                  auto: false,
@@ -417,7 +426,8 @@ defmodule ParserTest do
                  optional: false,
                  range: nil,
                  type: :string,
-                 empty: false
+                 empty: false,
+                 nested: nil
                }
              } == P.parse_configs(expr3)
     end
@@ -432,7 +442,8 @@ defmodule ParserTest do
                  optional: false,
                  range: nil,
                  type: :string,
-                 empty: false
+                 empty: false,
+                 nested: nil
                },
                house: %Argx.Config{
                  auto: false,
@@ -440,7 +451,8 @@ defmodule ParserTest do
                  optional: false,
                  range: nil,
                  type: :map,
-                 empty: false
+                 empty: false,
+                 nested: nil
                },
                __names__: [:RuleA, :RuleB]
              } == P.parse_configs(expr)
@@ -456,7 +468,8 @@ defmodule ParserTest do
                  optional: false,
                  range: nil,
                  type: :string,
-                 empty: false
+                 empty: false,
+                 nested: nil
                },
                house: %Argx.Config{
                  auto: false,
@@ -464,7 +477,8 @@ defmodule ParserTest do
                  optional: false,
                  range: nil,
                  type: :map,
-                 empty: false
+                 empty: false,
+                 nested: nil
                },
                __names__: [:RuleA, :RuleB]
              } == P.parse_configs(expr)

@@ -17,7 +17,8 @@ defmodule ConverterTest do
           range: nil,
           default: nil,
           optional: false,
-          empty: false
+          empty: false,
+          nested: nil
         }
       ]
 
@@ -34,7 +35,8 @@ defmodule ConverterTest do
           range: nil,
           default: nil,
           optional: false,
-          empty: false
+          empty: false,
+          nested: nil
         }
       ]
 
@@ -51,7 +53,8 @@ defmodule ConverterTest do
           range: nil,
           default: nil,
           optional: false,
-          empty: false
+          empty: false,
+          nested: nil
         },
         weight: %Argx.Config{
           type: :float,
@@ -59,7 +62,8 @@ defmodule ConverterTest do
           range: nil,
           default: nil,
           optional: false,
-          empty: false
+          empty: false,
+          nested: nil
         }
       ]
 
@@ -78,7 +82,8 @@ defmodule ConverterTest do
           range: nil,
           default: nil,
           optional: false,
-          empty: false
+          empty: false,
+          nested: nil
         },
         weight: %Argx.Config{
           type: :float,
@@ -86,7 +91,8 @@ defmodule ConverterTest do
           range: nil,
           default: nil,
           optional: false,
-          empty: false
+          empty: false,
+          nested: nil
         }
       ]
 
@@ -105,7 +111,8 @@ defmodule ConverterTest do
           range: nil,
           default: nil,
           optional: false,
-          empty: false
+          empty: false,
+          nested: nil
         }
       ]
 

@@ -130,7 +130,8 @@ defmodule Argx.Parser do
       type: nil,
       range: nil,
       default: default,
-      empty: false
+      empty: false,
+      nested: nil
     }
 
     items = every_item(items, config)
@@ -144,6 +145,17 @@ defmodule Argx.Parser do
       rest,
       Map.put(items, :type, type)
     )
+  end
+
+  defp every_item([{:list = type, {:__aliases__, _, [nested_name]}} | rest], items) do
+    items = put_nested_name(items, type, nested_name)
+    every_item(rest, items)
+  end
+
+  defp every_item([{:list = type, nested_name} | rest], items)
+       when is_bitstring(nested_name) or is_atom(nested_name) do
+    items = put_nested_name(items, type, nested_name)
+    every_item(rest, items)
   end
 
   defp every_item([:optional | rest], items) do
@@ -181,7 +193,15 @@ defmodule Argx.Parser do
     )
   end
 
-  defp every_item([other_expr | _rest], _items), do: raise(Argx.Error, "unknown #{other_expr}")
+  defp every_item([other_expr | _rest], _items) do
+    raise(Argx.Error, "unknown #{inspect(other_expr)}")
+  end
+
+  defp put_nested_name(items, type, nested_name) do
+    items
+    |> Map.put(:type, type)
+    |> Map.put(:nested, Util.prune_names(nested_name))
+  end
 
   ###
   def parse_defconfig_name(name) when is_atom(name), do: name

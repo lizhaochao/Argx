@@ -27,7 +27,8 @@ defmodule DefaulterTest do
           range: nil,
           default: 3,
           optional: false,
-          empty: false
+          empty: false,
+          nested: nil
         }
       ]
 
@@ -46,7 +47,8 @@ defmodule DefaulterTest do
           range: nil,
           default: fun_expr,
           optional: false,
-          empty: false
+          empty: false,
+          nested: nil
         }
       ]
 
@@ -65,7 +67,8 @@ defmodule DefaulterTest do
           range: nil,
           default: fun_expr,
           optional: false,
-          empty: false
+          empty: false,
+          nested: nil
         }
       ]
 
@@ -85,7 +88,8 @@ defmodule DefaulterTest do
           range: nil,
           default: 4.56,
           optional: false,
-          empty: false
+          empty: false,
+          nested: nil
         },
         weight: %Argx.Config{
           type: :float,
@@ -93,7 +97,8 @@ defmodule DefaulterTest do
           range: nil,
           default: 7,
           optional: false,
-          empty: false
+          empty: false,
+          nested: nil
         }
       ]
 
@@ -112,7 +117,8 @@ defmodule DefaulterTest do
           range: nil,
           default: 7,
           optional: false,
-          empty: false
+          empty: false,
+          nested: nil
         }
       ]
 

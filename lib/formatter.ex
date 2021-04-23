@@ -42,7 +42,7 @@ defmodule Argx.Formatter do
     {:error, result}
   end
 
-  defp default([] = ok), do: ok
+  defp default([]), do: :ok
 
   defp module_name?(name) when is_atom(name), do: true
   defp module_name?(_other_name), do: false

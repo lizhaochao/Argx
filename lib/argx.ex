@@ -2,18 +2,23 @@ defmodule Argx do
   @moduledoc false
 
   alias Argx.{Formatter, Defconfig, Matcher, Util}
+  alias Argx.Use.Helper
   alias Argx, as: Self
 
   defmacro __using__(general_m) do
     quote do
       import Argx.Inner.Defconfig
 
-      def match(%{} = args, config_names) do
+      def match(%{} = args, config_names) when is_list(config_names) do
         args |> Enum.into([]) |> match(config_names)
       end
 
-      def match(args, config_names) when is_list(args) do
+      def match(args, config_names) when is_list(args) and is_list(config_names) do
         Self.do_match(args, config_names, __MODULE__, unquote(general_m))
+      end
+
+      def match(_args, _config_names) do
+        raise(Argx.Error, "args must be map & config names must be list")
       end
     end
   end
@@ -21,24 +26,24 @@ defmodule Argx do
   def do_match(args, config_names, current_m, general_m) when is_list(args) do
     configs =
       current_m
-      |> get_configs(general_m)
-      |> Util.get_configs_by_names(config_names)
+      |> get_all_configs(general_m)
+      |> Helper.get_configs_by_names(config_names)
       |> Enum.into([])
 
-    args = Util.sort_by_keys(args, Keyword.keys(configs))
+    new_args = Util.sort_by_keys(args, Keyword.keys(configs))
 
     current_m
-    |> Matcher.match(args, configs)
+    |> Matcher.match(new_args, configs)
     |> post_match(general_m, current_m)
   end
 
-  def get_configs(current_m, general_m) do
+  defp get_all_configs(current_m, general_m) do
     defconfigs = Defconfig.get_defconfigs(current_m)
     general_configs = Defconfig.get_defconfigs(general_m)
     Map.merge(general_configs, defconfigs)
   end
 
-  def post_match({errors, _args}, general_m, current_m) do
+  defp post_match({errors, _args}, general_m, current_m) do
     Formatter.fmt_errors(errors, nil, general_m, current_m)
   end
 end

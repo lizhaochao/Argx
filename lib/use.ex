@@ -60,9 +60,7 @@ defmodule Argx.Use.WithCheck do
 
         configs =
           general_m
-          |> Self.get_general_configs()
-          |> Macro.escape()
-          |> Self.merge_defconfigs(@defconfigs)
+          |> Self.get_all_defconfigs(@defconfigs)
           |> Self.merge_configs(configs, arg_names)
 
         # expr
@@ -110,7 +108,7 @@ defmodule Argx.Use.WithCheck do
   end
 
   ###
-  def post_match({{:error, errors}, _args}, use_m, general_m, current_m, _) do
+  def post_match({{:error, errors}, _new_args}, use_m, general_m, current_m, _) do
     errors =
       errors
       |> Enum.reverse()
@@ -149,15 +147,6 @@ defmodule Argx.Use.WithCheck do
   defp do_get_arg_names([_other_expr | rest], names), do: do_get_arg_names(rest, names)
 
   ###
-  def merge_defconfigs(general_configs, defconfigs) do
-    quote do
-      Map.merge(
-        unquote(general_configs),
-        Util.list_to_map(unquote(defconfigs))
-      )
-    end
-  end
-
   def merge_configs(defconfigs, configs, arg_names) do
     quote do
       {names, configs} =
@@ -168,7 +157,7 @@ defmodule Argx.Use.WithCheck do
 
       merged_configs =
         unquote(defconfigs)
-        |> Util.get_configs_by_names(names)
+        |> Helper.get_configs_by_names(names)
         |> Map.merge(configs)
 
       Util.sort_by_keys(
@@ -178,8 +167,19 @@ defmodule Argx.Use.WithCheck do
     end
   end
 
-  def get_general_configs([]), do: %{}
-  def get_general_configs(general_m), do: apply(general_m, :__get_defconfigs__, [])
+  def get_all_defconfigs([] = _general_m, defconfigs_attr) do
+    quote do
+      Util.list_to_map(unquote(defconfigs_attr))
+    end
+  end
+
+  def get_all_defconfigs(general_m, defconfigs_attr) when is_atom(general_m) do
+    quote do
+      general_configs = apply(unquote(general_m), :__get_defconfigs__, [])
+      defconfigs = Util.list_to_map(unquote(defconfigs_attr))
+      Map.merge(general_configs, defconfigs)
+    end
+  end
 end
 
 defmodule Argx.Use.Helper do
@@ -216,6 +216,67 @@ defmodule Argx.Use.Helper do
         unquote(name),
         unquote(attr)
       )
+    end
+  end
+
+  ###
+  def get_configs_by_names(%{} = all_configs, [_ | _] = names) do
+    names
+    |> Util.prune_names()
+    |> Enum.reduce(%{}, fn name, name_configs ->
+      new_configs = drill_down(all_configs, name)
+      Map.merge(name_configs, new_configs)
+    end)
+  end
+
+  def get_configs_by_names(_other_all_configs, _other_names), do: %{}
+
+  defp drill_down(all_configs, name) do
+    configs = fetch_by_name(all_configs, name)
+
+    do_drill_down(
+      configs,
+      all_configs,
+      Enum.into(configs, [])
+    )
+  end
+
+  defp do_drill_down(new_config, _all_configs, []) do
+    new_config
+  end
+
+  defp do_drill_down(
+         new_config,
+         all_configs,
+         [{_field, %Argx.Config{nested: nil}} | rest]
+       ) do
+    do_drill_down(new_config, all_configs, rest)
+  end
+
+  defp do_drill_down(
+         new_config,
+         all_configs,
+         [{field, %Argx.Config{nested: nested_name} = map_value} | rest]
+       ) do
+    nested_configs = drill_down(all_configs, nested_name)
+    new_config = put_nested(new_config, field, map_value, nested_configs)
+    do_drill_down(new_config, all_configs, rest)
+  end
+
+  defp put_nested(%{} = config, key, %Argx.Config{} = value, %{} = nested_configs) do
+    Map.put(
+      config,
+      key,
+      Map.put(value, :nested, nested_configs)
+    )
+  end
+
+  defp fetch_by_name(%{} = configs, name) when is_atom(name) do
+    configs
+    |> Map.fetch(name)
+    |> case do
+      {:ok, config} -> config
+      :error -> raise(Argx.Error, "not found config by #{name}")
     end
   end
 end
