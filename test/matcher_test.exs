@@ -5,8 +5,9 @@ defmodule MatcherTest do
 
   alias Argx.Matcher, as: M
 
+  @default_path []
+
   test "traverse error" do
-    errors = []
     args = [one: "", two: [1, 2, 3], three: 9]
 
     configs = [
@@ -43,7 +44,8 @@ defmodule MatcherTest do
     ]
 
     expected_errors = [out_of_range: [:three], error_type: [:two], lacked: [:one]]
-    assert expected_errors == M.traverse(errors, args, configs)
+    {errors, _} = M.traverse(args, configs, __MODULE__)
+    assert expected_errors == errors
   end
 
   describe "lacked" do
@@ -67,7 +69,7 @@ defmodule MatcherTest do
           }
         }
 
-        {errors, _arg, _config} = M.lacked(errors, arg, configs)
+        {errors, _arg, _config} = M.lacked(errors, arg, configs, @default_path)
         assert [] == errors
       end)
     end
@@ -92,7 +94,7 @@ defmodule MatcherTest do
           }
         }
 
-        {errors, _arg, _config} = M.lacked(errors, arg, configs)
+        {errors, _arg, _config} = M.lacked(errors, arg, configs, @default_path)
         assert [] == errors
       end)
     end
@@ -117,7 +119,7 @@ defmodule MatcherTest do
           }
         }
 
-        {errors, _arg, _config} = M.lacked(errors, arg, configs)
+        {errors, _arg, _config} = M.lacked(errors, arg, configs, @default_path)
         assert [] == errors
       end)
     end
@@ -142,7 +144,7 @@ defmodule MatcherTest do
           }
         }
 
-        {errors, _arg, _config} = M.lacked(errors, arg, configs)
+        {errors, _arg, _config} = M.lacked(errors, arg, configs, @default_path)
         assert [lacked: [:one]] == errors
       end)
     end
@@ -167,7 +169,7 @@ defmodule MatcherTest do
           }
         }
 
-        {errors, _arg, _config} = M.lacked(errors, arg, configs)
+        {errors, _arg, _config} = M.lacked(errors, arg, configs, @default_path)
         assert [lacked: [:one]] == errors
       end)
     end
@@ -194,7 +196,7 @@ defmodule MatcherTest do
           }
         }
 
-        {errors, _arg, _config} = M.error_type({errors, arg, configs})
+        {errors, _arg, _config} = M.error_type({errors, arg, configs}, @default_path)
         assert [] == errors
       end)
     end
@@ -219,7 +221,7 @@ defmodule MatcherTest do
           }
         }
 
-        {errors, _arg, _config} = M.error_type({errors, arg, configs})
+        {errors, _arg, _config} = M.error_type({errors, arg, configs}, @default_path)
         assert [] == errors
       end)
     end
@@ -244,7 +246,7 @@ defmodule MatcherTest do
           }
         }
 
-        {errors, _arg, _config} = M.error_type({errors, arg, configs})
+        {errors, _arg, _config} = M.error_type({errors, arg, configs}, @default_path)
         assert [] == errors
       end)
     end
@@ -269,7 +271,7 @@ defmodule MatcherTest do
           }
         }
 
-        {errors, _arg, _config} = M.error_type({errors, arg, configs})
+        {errors, _arg, _config} = M.error_type({errors, arg, configs}, @default_path)
         assert [error_type: [:one]] == errors
       end)
     end
@@ -294,7 +296,7 @@ defmodule MatcherTest do
           }
         }
 
-        {errors, _arg, _config} = M.error_type({errors, arg, configs})
+        {errors, _arg, _config} = M.error_type({errors, arg, configs}, @default_path)
         assert [error_type: [:one]] == errors
       end)
     end
@@ -321,7 +323,7 @@ defmodule MatcherTest do
           }
         }
 
-        {errors, _arg, _config} = M.error_type({errors, arg, configs})
+        {errors, _arg, _config} = M.error_type({errors, arg, configs}, @default_path)
         assert [] == errors
       end)
     end
@@ -346,7 +348,7 @@ defmodule MatcherTest do
           }
         }
 
-        {errors, _arg, _config} = M.error_type({errors, arg, configs})
+        {errors, _arg, _config} = M.error_type({errors, arg, configs}, @default_path)
         assert [] == errors
       end)
     end
@@ -371,7 +373,7 @@ defmodule MatcherTest do
           }
         }
 
-        {errors, _arg, _config} = M.error_type({errors, arg, configs})
+        {errors, _arg, _config} = M.error_type({errors, arg, configs}, @default_path)
         assert [] == errors
       end)
     end
@@ -396,7 +398,7 @@ defmodule MatcherTest do
           }
         }
 
-        assert [out_of_range: [:one]] == M.out_of_range({errors, arg, configs})
+        assert [out_of_range: [:one]] == M.out_of_range({errors, arg, configs}, @default_path)
       end)
     end
 
@@ -420,7 +422,7 @@ defmodule MatcherTest do
           }
         }
 
-        assert [out_of_range: [:one]] == M.out_of_range({errors, arg, configs})
+        assert [out_of_range: [:one]] == M.out_of_range({errors, arg, configs}, @default_path)
       end)
     end
   end

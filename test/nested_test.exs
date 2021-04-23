@@ -3,7 +3,7 @@ defmodule ProjectC do
 
   use Argx
 
-  defconfig(MapRule, [y(:string), z(:integer)])
+  defconfig(MapRule, [y(:string), z(:integer, 1..10)])
   defconfig(MapRule2, [a(:string), b(:integer), c({:list, MapRule2})])
   defconfig(ListRule, _(:integer, :auto))
 
@@ -11,17 +11,9 @@ defmodule ProjectC do
   defconfig(TwoRule, two({:list, MapRule2}))
   defconfig(ThreeRule, three({:list, ListRule}))
 
-  def get1(params) do
-    match(params, [OneRule])
-  end
-
-  def get2(params) do
-    match(params, [TwoRule])
-  end
-
-  def get3(params) do
-    match(params, [ThreeRule])
-  end
+  def get1(params), do: match(params, [OneRule])
+  def get2(params), do: match(params, [TwoRule])
+  def get3(params), do: match(params, [ThreeRule])
 
   def fmt_errors({:error, _} = errors), do: errors
   def fmt_errors(new_args), do: new_args
@@ -32,27 +24,43 @@ defmodule NestedTest do
 
   use ExUnit.Case
 
+  alias Argx.Formatter
+
   describe "list" do
+    test "error - nested map" do
+      list_data = [
+        %{y: 21, z: nil},
+        %{y: 22, z: "bb"},
+        %{y: 22, z: 11}
+      ]
+
+      args = %{one: list_data}
+
+      expected =
+        {:error,
+         [
+           error_type: ["one:1:y", "one:2:y", "one:2:z", "one:3:y"],
+           lacked: ["one:1:z"],
+           out_of_range: ["one:3:z"]
+         ]}
+
+      assert expected == args |> ProjectC.get1() |> Formatter.reverse_errors()
+    end
+
     test "ok - nested map" do
       list_data = [
-        %{y: 21, z: "aa"},
-        %{y: 22, z: "bb"}
+        %{y: "aa", z: 1},
+        %{y: "bb", z: 2}
       ]
 
       expected_args = %{one: list_data}
       assert expected_args == ProjectC.get1(expected_args)
     end
 
-    test "ok - nested integer" do
-      list_data = [1, "2", "3"]
-      expected_args = %{one: list_data}
-      assert expected_args == ProjectC.get1(expected_args)
-    end
-
     test "ok - more fields" do
       list_data = [
-        %{y: "aa", z: 21},
-        %{y: "ab", z: 22}
+        %{y: "aa", z: 1},
+        %{y: "ab", z: 2}
       ]
 
       expected_args = %{one: list_data}
