@@ -13,9 +13,9 @@ defmodule Argx.Formatter do
   defp reverse_errors({:error, errors}) do
     sorted_errors =
       errors
-      |> Enum.reverse()
+      |> Enum.sort()
       |> Enum.map(fn {type, fields} ->
-        {type, Enum.reverse(fields)}
+        {type, Enum.sort(fields)}
       end)
 
     {:error, sorted_errors}

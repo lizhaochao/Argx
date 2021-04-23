@@ -24,141 +24,139 @@ defmodule Argx.Matcher do
       |> Defaulter.set_default(configs, m)
       |> Converter.convert(configs)
 
-    {[], new_args, configs}
-    |> lacked()
-    |> drop_checked_keys(new_args, configs)
-    |> error_type()
-    |> drop_checked_keys(new_args, configs)
-    |> out_of_range()
+    []
+    |> traverse(new_args, configs)
     |> output_result(new_args)
   end
 
   def match(_, _, _), do: :match_error
 
   ###
-  def lacked({errors, args, configs}), do: do_lacked(errors, args, configs)
+  def traverse(errors, [], []), do: errors
 
-  defp do_lacked([], [], []), do: []
-  defp do_lacked(errors, [], []), do: {:error, errors}
+  def traverse(
+        errors,
+        [{_arg_name, _arg_value} = arg | new_args_rest],
+        [{_arg_name2, %Argx.Config{}} = config | configs_rest]
+      ) do
+    new_errors =
+      errors
+      |> lacked(arg, config)
+      |> error_type()
+      |> out_of_range()
 
-  defp do_lacked(
+    traverse(new_errors, new_args_rest, configs_rest)
+  end
+
+  ###
+  def lacked(
+        errors,
+        {arg_name, nil},
+        {arg_name2, %Argx.Config{optional: false}}
+      )
+      when arg_name == arg_name2 do
+    reduce_errors(errors, arg_name, :lacked)
+  end
+
+  def lacked(
+        errors,
+        {arg_name, arg_value} = arg,
+        {arg_name2, %Argx.Config{optional: false, type: type, empty: true}} = config
+      )
+      when arg_name == arg_name2 do
+    if Checker.empty?(arg_value, type) do
+      reduce_errors(errors, arg_name, :lacked)
+    else
+      {errors, arg, config}
+    end
+  end
+
+  def lacked(
+        errors,
+        {arg_name, _} = arg,
+        {arg_name2, _} = config
+      )
+      when arg_name == arg_name2 do
+    {errors, arg, config}
+  end
+
+  ###
+  def error_type({errors, nil, nil}), do: {errors, nil, nil}
+  def error_type({errors, args, configs}), do: error_type(errors, args, configs)
+
+  defp error_type(
          errors,
-         [{arg_name, nil} | arg_rest],
-         [{arg_name2, %Argx.Config{optional: false}} | config_rest]
+         {arg_name, nil},
+         {arg_name2, %Argx.Config{optional: true}}
+       )
+       when arg_name == arg_name2 do
+    {errors, nil, nil}
+  end
+
+  defp error_type(
+         errors,
+         {arg_name, arg_value} = arg,
+         {arg_name2, %Argx.Config{type: type}} = config
+       )
+       when arg_name == arg_name2 do
+    if Checker.some_type?(arg_value, type) do
+      {errors, arg, config}
+    else
+      reduce_errors(errors, arg_name, :error_type)
+    end
+  end
+
+  ###
+  def out_of_range({errors, nil, nil}), do: errors
+  def out_of_range({errors, args, configs}), do: out_of_range(errors, args, configs)
+
+  defp out_of_range(
+         errors,
+         {arg_name, nil},
+         {arg_name2, %Argx.Config{optional: true}}
        )
        when arg_name == arg_name2 do
     errors
-    |> reduce_errors(:lacked, arg_name)
-    |> do_lacked(arg_rest, config_rest)
   end
 
-  defp do_lacked(
+  defp out_of_range(
          errors,
-         [{arg_name, arg_value} | arg_rest],
-         [{arg_name2, %Argx.Config{optional: false, type: type, empty: true}} | config_rest]
+         {arg_name, _},
+         {arg_name2, %Argx.Config{range: nil}}
        )
        when arg_name == arg_name2 do
-    arg_value
-    |> Checker.empty?(type)
-    |> if(
-      do: reduce_errors(errors, :lacked, arg_name),
-      else: errors
-    )
-    |> do_lacked(arg_rest, config_rest)
+    errors
   end
 
-  defp do_lacked(
+  defp out_of_range(
          errors,
-         [{arg_name, _} | arg_rest],
-         [{arg_name2, _} | config_rest]
+         {arg_name, arg_value},
+         {arg_name2, %Argx.Config{type: type, range: range}}
        )
        when arg_name == arg_name2 do
-    do_lacked(errors, arg_rest, config_rest)
+    if Checker.in_range?(arg_value, Parser.parse_range(range), type) do
+      errors
+    else
+      errors
+      |> reduce_errors(arg_name, :out_of_range)
+      |> out_of_range()
+    end
   end
 
   ###
-  def error_type({errors, args, configs}), do: do_error_type(errors, args, configs)
-
-  defp do_error_type([], [], []), do: []
-  defp do_error_type(errors, [], []), do: {:error, errors}
-
-  defp do_error_type(
-         errors,
-         [{arg_name, nil} | arg_rest],
-         [{arg_name2, %Argx.Config{optional: true}} | config_rest]
-       )
-       when arg_name == arg_name2 do
-    do_error_type(errors, arg_rest, config_rest)
-  end
-
-  defp do_error_type(
-         errors,
-         [{arg_name, arg_value} | arg_rest],
-         [{arg_name2, %Argx.Config{type: type}} | config_rest]
-       )
-       when arg_name == arg_name2 do
-    arg_value
-    |> Checker.some_type?(type)
-    |> if(
-      do: errors,
-      else: reduce_errors(errors, :error_type, arg_name)
-    )
-    |> do_error_type(arg_rest, config_rest)
-  end
-
-  ###
-  def out_of_range({errors, args, configs}), do: do_out_of_range(errors, args, configs)
-
-  defp do_out_of_range([], [], []), do: []
-  defp do_out_of_range(errors, [], []), do: {:error, errors}
-
-  defp do_out_of_range(
-         errors,
-         [{arg_name, nil} | arg_rest],
-         [{arg_name2, %Argx.Config{optional: true}} | config_rest]
-       )
-       when arg_name == arg_name2 do
-    do_out_of_range(errors, arg_rest, config_rest)
-  end
-
-  defp do_out_of_range(
-         errors,
-         [{arg_name, _} | arg_rest],
-         [{arg_name2, %Argx.Config{range: nil}} | config_rest]
-       )
-       when arg_name == arg_name2 do
-    do_out_of_range(errors, arg_rest, config_rest)
-  end
-
-  defp do_out_of_range(
-         errors,
-         [{arg_name, arg_value} | arg_rest],
-         [{arg_name2, %Argx.Config{type: type, range: range}} | config_rest]
-       )
-       when arg_name == arg_name2 do
-    arg_value
-    |> Checker.in_range?(Parser.parse_range(range), type)
-    |> if(
-      do: errors,
-      else: reduce_errors(errors, :out_of_range, arg_name)
-    )
-    |> do_out_of_range(arg_rest, config_rest)
-  end
-
-  ###
-  defp reduce_errors(errors, check_type, field) do
+  defp reduce_errors(errors, field, check_type) do
     {nil, new_errors} =
       Keyword.get_and_update(errors, check_type, fn current ->
         new_value = (current && [field | current]) || [field]
         {nil, new_value}
       end)
 
-    new_errors
+    {new_errors, nil, nil}
   end
 
   def drop_checked_keys([], args, configs), do: {[], args, configs}
 
-  def drop_checked_keys({:error, errors}, args, configs) do
+  def drop_checked_keys(errors, args, configs) do
     drop_checked_keys(errors, errors, args, configs)
   end
 
@@ -170,5 +168,6 @@ defmodule Argx.Matcher do
     drop_checked_keys(rest, errors, args, configs)
   end
 
-  def output_result(errors, new_args), do: {errors, new_args}
+  def output_result([], new_args), do: {[], new_args}
+  def output_result(errors, new_args), do: {{:error, errors}, new_args}
 end

@@ -56,8 +56,8 @@ defmodule ArgxWithCheckTest do
       assert {
                :error,
                [
-                 lacked: [:one, :three, :five, :seven],
-                 error_type: [:two, :four],
+                 error_type: [:four, :two],
+                 lacked: [:five, :one, :seven, :three],
                  out_of_range: [:six]
                ]
              } == result
@@ -152,8 +152,8 @@ defmodule ArgxWithCheckTest do
                {
                  :error,
                  [
+                   error_type: [:five, :one, :two],
                    lacked: [:four],
-                   error_type: [:one, :two, :five],
                    out_of_range: [:three]
                  ]
                }

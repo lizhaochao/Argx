@@ -5,7 +5,7 @@ defmodule MatcherTest do
 
   alias Argx.Matcher, as: M
 
-  test "match error" do
+  test "traverse error" do
     errors = []
     args = [one: "", two: [1, 2, 3], three: 9]
 
@@ -42,28 +42,20 @@ defmodule MatcherTest do
       }
     ]
 
-    assert {
-             {:error, [out_of_range: [:three], error_type: [:two], lacked: [:one]]},
-             args
-           } ==
-             {errors, args, configs}
-             |> M.lacked()
-             |> M.drop_checked_keys(args, configs)
-             |> M.error_type()
-             |> M.drop_checked_keys(args, configs)
-             |> M.out_of_range()
-             |> M.output_result(args)
+    expected_errors = [out_of_range: [:three], error_type: [:two], lacked: [:one]]
+    assert expected_errors == M.traverse(errors, args, configs)
   end
 
   describe "lacked" do
     test "case 1 - ok" do
       errors = []
-      args = [one: :hello]
+      arg = {:one, :hello}
 
       [{true, true}, {true, false}, {false, true}, {false, false}]
       |> Enum.each(fn {empty, optional} ->
-        configs = [
-          one: %Argx.Config{
+        configs = {
+          :one,
+          %Argx.Config{
             empty: empty,
             optional: optional,
             # following configs dont care
@@ -73,20 +65,22 @@ defmodule MatcherTest do
             type: :string,
             nested: nil
           }
-        ]
+        }
 
-        assert [] == M.lacked({errors, args, configs})
+        {errors, _arg, _config} = M.lacked(errors, arg, configs)
+        assert [] == errors
       end)
     end
 
     test "case 2 - ok" do
       errors = []
-      args = [one: ""]
+      arg = {:one, ""}
 
       [{false, true}, {false, false}]
       |> Enum.each(fn {empty, optional} ->
-        configs = [
-          one: %Argx.Config{
+        configs = {
+          :one,
+          %Argx.Config{
             empty: empty,
             optional: optional,
             # following configs dont care
@@ -96,20 +90,22 @@ defmodule MatcherTest do
             type: :string,
             nested: nil
           }
-        ]
+        }
 
-        assert [] == M.lacked({errors, args, configs})
+        {errors, _arg, _config} = M.lacked(errors, arg, configs)
+        assert [] == errors
       end)
     end
 
     test "case 3 - ok" do
       errors = []
-      args = [one: nil]
+      arg = {:one, nil}
 
       [{true, true}, {false, true}]
       |> Enum.each(fn {empty, optional} ->
-        configs = [
-          one: %Argx.Config{
+        configs = {
+          :one,
+          %Argx.Config{
             empty: empty,
             optional: optional,
             # following configs dont care
@@ -119,20 +115,22 @@ defmodule MatcherTest do
             type: :string,
             nested: nil
           }
-        ]
+        }
 
-        assert [] == M.lacked({errors, args, configs})
+        {errors, _arg, _config} = M.lacked(errors, arg, configs)
+        assert [] == errors
       end)
     end
 
     test "case 1 - error" do
       errors = []
-      args = [one: ""]
+      arg = {:one, ""}
 
       [{true, false}]
       |> Enum.each(fn {empty, optional} ->
-        configs = [
-          one: %Argx.Config{
+        configs = {
+          :one,
+          %Argx.Config{
             empty: empty,
             optional: optional,
             # following configs dont care
@@ -142,20 +140,22 @@ defmodule MatcherTest do
             type: :string,
             nested: nil
           }
-        ]
+        }
 
-        assert {:error, [lacked: [:one]]} == M.lacked({errors, args, configs})
+        {errors, _arg, _config} = M.lacked(errors, arg, configs)
+        assert [lacked: [:one]] == errors
       end)
     end
 
     test "case 2 - error" do
       errors = []
-      args = [one: nil]
+      arg = {:one, nil}
 
       [{true, false}, {false, false}]
       |> Enum.each(fn {empty, optional} ->
-        configs = [
-          one: %Argx.Config{
+        configs = {
+          :one,
+          %Argx.Config{
             empty: empty,
             optional: optional,
             # following configs dont care
@@ -165,9 +165,10 @@ defmodule MatcherTest do
             type: :string,
             nested: nil
           }
-        ]
+        }
 
-        assert {:error, [lacked: [:one]]} == M.lacked({errors, args, configs})
+        {errors, _arg, _config} = M.lacked(errors, arg, configs)
+        assert [lacked: [:one]] == errors
       end)
     end
   end
@@ -175,12 +176,13 @@ defmodule MatcherTest do
   describe "error type" do
     test "case 1 - ok" do
       errors = []
-      args = [one: "hello"]
+      arg = {:one, "hello"}
 
       [{:string, true}, {:string, false}]
       |> Enum.each(fn {type, optional} ->
-        configs = [
-          one: %Argx.Config{
+        configs = {
+          :one,
+          %Argx.Config{
             type: type,
             optional: optional,
             empty: false,
@@ -190,20 +192,22 @@ defmodule MatcherTest do
             range: 7,
             nested: nil
           }
-        ]
+        }
 
-        assert [] == M.error_type({errors, args, configs})
+        {errors, _arg, _config} = M.error_type({errors, arg, configs})
+        assert [] == errors
       end)
     end
 
     test "case 2 - ok" do
       errors = []
-      args = [one: ""]
+      arg = {:one, ""}
 
       [{:string, true}, {:string, false}]
       |> Enum.each(fn {type, optional} ->
-        configs = [
-          one: %Argx.Config{
+        configs = {
+          :one,
+          %Argx.Config{
             type: type,
             optional: optional,
             empty: false,
@@ -213,20 +217,22 @@ defmodule MatcherTest do
             range: 7,
             nested: nil
           }
-        ]
+        }
 
-        assert [] == M.error_type({errors, args, configs})
+        {errors, _arg, _config} = M.error_type({errors, arg, configs})
+        assert [] == errors
       end)
     end
 
     test "case 3 - ok" do
       errors = []
-      args = [one: nil]
+      arg = {:one, nil}
 
       [{:string, true}, {:integer, true}]
       |> Enum.each(fn {type, optional} ->
-        configs = [
-          one: %Argx.Config{
+        configs = {
+          :one,
+          %Argx.Config{
             type: type,
             optional: optional,
             empty: false,
@@ -236,20 +242,22 @@ defmodule MatcherTest do
             range: 7,
             nested: nil
           }
-        ]
+        }
 
-        assert [] == M.error_type({errors, args, configs})
+        {errors, _arg, _config} = M.error_type({errors, arg, configs})
+        assert [] == errors
       end)
     end
 
     test "case 1 - error" do
       errors = []
-      args = [one: "hello"]
+      arg = {:one, "hello"}
 
       [{:integer, true}, {:boolean, false}]
       |> Enum.each(fn {type, optional} ->
-        configs = [
-          one: %Argx.Config{
+        configs = {
+          :one,
+          %Argx.Config{
             type: type,
             optional: optional,
             empty: false,
@@ -259,20 +267,22 @@ defmodule MatcherTest do
             range: 7,
             nested: nil
           }
-        ]
+        }
 
-        assert {:error, [error_type: [:one]]} == M.error_type({errors, args, configs})
+        {errors, _arg, _config} = M.error_type({errors, arg, configs})
+        assert [error_type: [:one]] == errors
       end)
     end
 
     test "case 2 - error" do
       errors = []
-      args = [one: ""]
+      arg = {:one, ""}
 
       [{:integer, true}, {:boolean, false}]
       |> Enum.each(fn {type, optional} ->
-        configs = [
-          one: %Argx.Config{
+        configs = {
+          :one,
+          %Argx.Config{
             type: type,
             optional: optional,
             empty: false,
@@ -282,9 +292,10 @@ defmodule MatcherTest do
             range: 7,
             nested: nil
           }
-        ]
+        }
 
-        assert {:error, [error_type: [:one]]} == M.error_type({errors, args, configs})
+        {errors, _arg, _config} = M.error_type({errors, arg, configs})
+        assert [error_type: [:one]] == errors
       end)
     end
   end
@@ -292,12 +303,13 @@ defmodule MatcherTest do
   describe "out of range" do
     test "case 1 - ok" do
       errors = []
-      args = [one: "hello"]
+      arg = {:one, "hello"}
 
       [{5, true}, {5, false}, {nil, true}, {nil, false}]
       |> Enum.each(fn {range, optional} ->
-        configs = [
-          one: %Argx.Config{
+        configs = {
+          :one,
+          %Argx.Config{
             range: range,
             optional: optional,
             # following configs dont care
@@ -307,20 +319,22 @@ defmodule MatcherTest do
             default: "hi",
             nested: nil
           }
-        ]
+        }
 
-        assert [] == M.out_of_range({errors, args, configs})
+        {errors, _arg, _config} = M.error_type({errors, arg, configs})
+        assert [] == errors
       end)
     end
 
     test "case 2 - ok" do
       errors = []
-      args = [one: ""]
+      arg = {:one, ""}
 
       [{0, true}, {0, false}, {nil, true}, {nil, false}]
       |> Enum.each(fn {range, optional} ->
-        configs = [
-          one: %Argx.Config{
+        configs = {
+          :one,
+          %Argx.Config{
             range: range,
             optional: optional,
             # following configs dont care
@@ -330,20 +344,22 @@ defmodule MatcherTest do
             default: "hi",
             nested: nil
           }
-        ]
+        }
 
-        assert [] == M.out_of_range({errors, args, configs})
+        {errors, _arg, _config} = M.error_type({errors, arg, configs})
+        assert [] == errors
       end)
     end
 
     test "case 3 - ok" do
       errors = []
-      args = [one: nil]
+      arg = {:one, nil}
 
       [{5, true}, {nil, true}]
       |> Enum.each(fn {range, optional} ->
-        configs = [
-          one: %Argx.Config{
+        configs = {
+          :one,
+          %Argx.Config{
             range: range,
             optional: optional,
             # following configs dont care
@@ -353,20 +369,22 @@ defmodule MatcherTest do
             default: "hi",
             nested: nil
           }
-        ]
+        }
 
-        assert [] == M.out_of_range({errors, args, configs})
+        {errors, _arg, _config} = M.error_type({errors, arg, configs})
+        assert [] == errors
       end)
     end
 
     test "case 1 - error" do
       errors = []
-      args = [one: "hello"]
+      arg = {:one, "hello"}
 
       [{1, true}, {1, false}]
       |> Enum.each(fn {range, optional} ->
-        configs = [
-          one: %Argx.Config{
+        configs = {
+          :one,
+          %Argx.Config{
             range: range,
             optional: optional,
             # following configs dont care
@@ -376,20 +394,21 @@ defmodule MatcherTest do
             default: "hi",
             nested: nil
           }
-        ]
+        }
 
-        assert {:error, [out_of_range: [:one]]} == M.out_of_range({errors, args, configs})
+        assert [out_of_range: [:one]] == M.out_of_range({errors, arg, configs})
       end)
     end
 
     test "case 2 - error" do
       errors = []
-      args = [one: ""]
+      arg = {:one, ""}
 
       [{5, true}, {5, false}]
       |> Enum.each(fn {range, optional} ->
-        configs = [
-          one: %Argx.Config{
+        configs = {
+          :one,
+          %Argx.Config{
             range: range,
             optional: optional,
             # following configs dont care
@@ -399,9 +418,9 @@ defmodule MatcherTest do
             default: "hi",
             nested: nil
           }
-        ]
+        }
 
-        assert {:error, [out_of_range: [:one]]} == M.out_of_range({errors, args, configs})
+        assert [out_of_range: [:one]] == M.out_of_range({errors, arg, configs})
       end)
     end
   end

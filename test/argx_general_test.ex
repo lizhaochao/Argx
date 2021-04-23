@@ -80,8 +80,8 @@ defmodule ArgxGeneralTest do
                {
                  :error,
                  [
+                   error_type: [:d, :one, :two],
                    lacked: [:a],
-                   error_type: [:one, :two, :d],
                    out_of_range: [:c]
                  ]
                }
