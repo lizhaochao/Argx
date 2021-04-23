@@ -229,13 +229,15 @@ defmodule Argx.Use.Helper do
 
   def get_defconfigs(_other_m), do: %{}
 
-  def get_configs_by_modules(modules) do
+  def get_configs_by_modules([_ | _] = modules) do
     modules
     |> Enum.reduce(%{}, fn m, configs ->
       defconfigs = get_defconfigs(m)
       Map.merge(configs, defconfigs)
     end)
   end
+
+  def get_configs_by_modules(_other_modules), do: %{}
 
   def get_configs_by_names(%{} = all_configs, [_ | _] = names) do
     names
