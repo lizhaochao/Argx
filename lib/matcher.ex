@@ -154,20 +154,6 @@ defmodule Argx.Matcher do
     {new_errors, nil, nil}
   end
 
-  def drop_checked_keys([], args, configs), do: {[], args, configs}
-
-  def drop_checked_keys(errors, args, configs) do
-    drop_checked_keys(errors, errors, args, configs)
-  end
-
-  defp drop_checked_keys([], errors, args, configs), do: {errors, args, configs}
-
-  defp drop_checked_keys([{_check_type, keys} | rest], errors, args, configs) do
-    args = Keyword.drop(args, keys)
-    configs = Keyword.drop(configs, keys)
-    drop_checked_keys(rest, errors, args, configs)
-  end
-
   def output_result([], new_args), do: {[], new_args}
   def output_result(errors, new_args), do: {{:error, errors}, new_args}
 end
