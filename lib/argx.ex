@@ -1,7 +1,7 @@
 defmodule Argx do
   @moduledoc false
 
-  alias Argx.{Formatter, Defconfig, Matcher, Util}
+  alias Argx.{Formatter, Matcher, Util}
   alias Argx.Use.Helper
   alias Argx, as: Self
 
@@ -40,8 +40,8 @@ defmodule Argx do
   end
 
   defp get_all_configs(current_m, general_m) do
-    defconfigs = Defconfig.get_defconfigs(current_m)
-    general_configs = Defconfig.get_defconfigs(general_m)
+    defconfigs = Helper.get_defconfigs(current_m)
+    general_configs = Helper.get_defconfigs(general_m)
     Map.merge(general_configs, defconfigs)
   end
 
@@ -194,30 +194,15 @@ end
 defmodule Argx.Defconfig do
   @moduledoc false
 
-  alias Argx.Const
-  alias Argx.Defconfig, as: Self
+  alias Argx.Use.Helper
 
   defmacro __using__(_opts) do
     quote do
       import Argx.Inner.Defconfig
 
       def __get_defconfigs__() do
-        Self.get_defconfigs(__MODULE__)
+        Helper.get_defconfigs(__MODULE__)
       end
     end
   end
-
-  def get_defconfigs(m) when is_atom(m) do
-    :functions
-    |> m.__info__()
-    |> Enum.filter(fn {f_name, _arity} ->
-      f_name |> to_string() |> Kernel.=~(to_string(Const.defconfigs_key()))
-    end)
-    |> Enum.reduce(%{}, fn {f_name, _arity}, general_configs ->
-      configs = apply(m, f_name, [])
-      Map.merge(general_configs, configs)
-    end)
-  end
-
-  def get_defconfigs(_other_m), do: %{}
 end

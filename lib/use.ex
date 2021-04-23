@@ -170,7 +170,7 @@ defmodule Argx.Use.WithCheck do
 
   def get_all_defconfigs(general_m, defconfigs_attr) when is_atom(general_m) do
     quote do
-      general_configs = apply(unquote(general_m), :__get_defconfigs__, [])
+      general_configs = Helper.get_defconfigs(unquote(general_m))
       defconfigs = Util.list_to_map(unquote(defconfigs_attr))
       Map.merge(general_configs, defconfigs)
     end
@@ -215,6 +215,20 @@ defmodule Argx.Use.Helper do
   end
 
   ### get configs
+  def get_defconfigs(m) when is_atom(m) do
+    :functions
+    |> m.__info__()
+    |> Enum.filter(fn {f_name, _arity} ->
+      f_name |> to_string() |> Kernel.=~(to_string(Const.defconfigs_key()))
+    end)
+    |> Enum.reduce(%{}, fn {f_name, _arity}, general_configs ->
+      configs = apply(m, f_name, [])
+      Map.merge(general_configs, configs)
+    end)
+  end
+
+  def get_defconfigs(_other_m), do: %{}
+
   def get_configs_by_names(%{} = all_configs, [_ | _] = names) do
     names
     |> Util.prune_names()
