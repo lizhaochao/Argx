@@ -4,7 +4,7 @@ defmodule ProjectC do
   use Argx
 
   defconfig(MapRule, [y(:string), z(:integer, 1..10)])
-  defconfig(MapRule2, [a(:string), b(:integer), c({:list, MapRule2})])
+  defconfig(MapRule2, [a(:string), b(:integer), c({:list, MapRule})])
   defconfig(ListRule, _(:integer, :auto))
 
   defconfig(OneRule, one({:list, MapRule}))
@@ -27,7 +27,7 @@ defmodule NestedTest do
   alias Argx.Formatter
 
   describe "list" do
-    test "error - nested map" do
+    test "error - 1 level nested list" do
       list_data = [
         %{y: 21, z: nil},
         %{y: 22, z: "bb"},
@@ -47,14 +47,78 @@ defmodule NestedTest do
       assert expected == args |> ProjectC.get1() |> Formatter.reverse_errors()
     end
 
-    test "ok - nested map" do
+    test "error - 2 level nested list" do
       list_data = [
-        %{y: "aa", z: 1},
-        %{y: "bb", z: 2}
+        %{
+          a: 22,
+          b: "str",
+          c: [
+            %{y: 1.1, z: 99},
+            %{y: nil, z: "str"}
+          ]
+        },
+        %{
+          a: nil,
+          b: nil,
+          c: [
+            %{y: %{}, z: "str"},
+            %{y: 2.2, z: 88}
+          ]
+        }
       ]
 
-      expected_args = %{one: list_data}
-      assert expected_args == ProjectC.get1(expected_args)
+      args = %{two: list_data}
+
+      expected =
+        {:error,
+         [
+           error_type: [
+             "two:1:a",
+             "two:1:b",
+             "two:1:c:1:y",
+             "two:1:c:2:z",
+             "two:2:c:1:y",
+             "two:2:c:1:z",
+             "two:2:c:2:y"
+           ],
+           lacked: ["two:1:c:2:y", "two:2:a", "two:2:b"],
+           out_of_range: ["two:1:c:1:z", "two:2:c:2:z"]
+         ]}
+
+      assert expected == args |> ProjectC.get2() |> Formatter.reverse_errors()
+    end
+
+    test "ok - 1 level nested list" do
+      list_data = [
+        %{y: "yy", z: 2},
+        %{y: "yy", z: 2},
+        %{y: "yy", z: 2}
+      ]
+
+      args = %{one: list_data}
+      assert args == ProjectC.get1(args)
+    end
+
+    test "ok - 2 level nested list" do
+      list_data = [
+        %{
+          a: "aa",
+          b: 1,
+          c: [
+            %{y: "yy", z: 2}
+          ]
+        },
+        %{
+          a: "aa",
+          b: 1,
+          c: [
+            %{y: "yy", z: 2}
+          ]
+        }
+      ]
+
+      args = %{two: list_data}
+      assert args == ProjectC.get2(args)
     end
 
     test "ok - more fields" do

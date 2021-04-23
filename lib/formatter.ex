@@ -8,10 +8,7 @@ defmodule Argx.Formatter do
     {errors, new_args}
   end
 
-  def reverse_errors([]), do: []
-  def reverse_errors({:error, errors}), do: reverse_errors(errors)
-
-  def reverse_errors(errors) when is_list(errors) do
+  def reverse_errors([_ | _] = errors) do
     sorted_errors =
       errors
       |> Enum.sort()
@@ -21,6 +18,10 @@ defmodule Argx.Formatter do
 
     {:error, sorted_errors}
   end
+
+  def reverse_errors({:error, errors}), do: reverse_errors(errors)
+  def reverse_errors([] = errors), do: errors
+  def reverse_errors(_other_errors), do: raise(Argx.Error, "reverse errors error")
 
   defp restore(%{} = new_args, :keyword), do: Enum.into(new_args, [])
   defp restore(new_args, :map) when is_list(new_args), do: Enum.into(new_args, %{})

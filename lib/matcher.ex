@@ -10,38 +10,35 @@ defmodule Argx.Matcher do
     Checker.check_config_names!(config_names)
 
     configs = get_configs.(general_m, current_m, config_names) |> Enum.into([])
-    sorted_args = Util.sort_by_keys(args, Keyword.keys(configs))
     origin_type = Util.get_type(args)
 
     current_m
-    |> match(sorted_args, configs)
+    |> match(Enum.into(args, []), configs)
     |> Formatter.fmt_match_result(origin_type)
     |> Formatter.fmt_errors(current_m, general_m)
   end
 
   ###
-  def match(m, [{_arg_name, _arg_value} | _] = args, [_ | _] = configs) when is_atom(m) do
-    args
-    |> traverse(configs, m)
-    |> output_result()
-  end
+  def match(current_m, args, configs, path \\ [])
 
-  def match(_, _, _), do: :match_error
-
-  ###
-  def traverse(args, configs, m, path \\ []) do
+  def match(current_m, [{_arg_name, _arg_value} | _] = args, [_ | _] = configs, path)
+      when is_atom(current_m) do
     new_args =
       args
-      |> Defaulter.set_default(configs, m)
+      |> Util.sort_by_keys(Keyword.keys(configs))
+      |> Defaulter.set_default(configs, current_m)
       |> Converter.convert(configs)
 
-    errors = do_traverse(@init_errors, new_args, configs, path)
+    errors = traverse(@init_errors, new_args, configs, path)
     {errors, new_args}
   end
 
-  def do_traverse(errors, [], [], _path), do: errors
+  def match(_, _, _, _), do: :match_error
 
-  def do_traverse(
+  ###
+  def traverse(errors, [], [], _path), do: errors
+
+  def traverse(
         errors,
         [{arg_name, _arg_value} = arg | new_args_rest],
         [{_arg_name2, %Argx.Config{}} = config | configs_rest],
@@ -54,7 +51,7 @@ defmodule Argx.Matcher do
       |> out_of_range(path)
       |> drill_down(arg, config, path ++ [arg_name])
 
-    do_traverse(new_errors, new_args_rest, configs_rest, path)
+    traverse(new_errors, new_args_rest, configs_rest, path)
   end
 
   ###
@@ -180,10 +177,10 @@ defmodule Argx.Matcher do
     {_num, merged_errors} =
       Enum.reduce(map_list, {1, errors}, fn map, {num, merged_errors} ->
         {new_errors, _new_args} =
-          traverse(
+          match(
+            __MODULE__,
             Enum.into(map, []),
             Enum.into(nested_configs, []),
-            __MODULE__,
             path ++ ["#{num}"]
           )
 
@@ -236,7 +233,4 @@ defmodule Argx.Matcher do
 
   defp make_path([] = _path, field) when is_atom(field), do: field
   defp make_path([_ | _] = path, field), do: (path ++ [field]) |> Enum.join(":")
-
-  def output_result({[] = _errors, _new_args} = result), do: result
-  def output_result({errors, new_args}), do: {{:error, errors}, new_args}
 end

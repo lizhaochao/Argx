@@ -44,7 +44,7 @@ defmodule MatcherTest do
     ]
 
     expected_errors = [out_of_range: [:three], error_type: [:two], lacked: [:one]]
-    {errors, _} = M.traverse(args, configs, __MODULE__)
+    {errors, _} = M.match(__MODULE__, args, configs)
     assert expected_errors == errors
   end
 
