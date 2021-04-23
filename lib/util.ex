@@ -60,4 +60,20 @@ defmodule Argx.Util do
   def prune_names(":" <> name_rest), do: name_rest |> prune_names()
   def prune_names(name) when is_bitstring(name), do: String.to_atom(name)
   def prune_names(other_name), do: other_name
+
+  def get_type(%{} = _term), do: :map
+  def get_type(term) when is_bitstring(term), do: :string
+  def get_type(term) when is_integer(term), do: :integer
+  def get_type(term) when is_float(term), do: :float
+
+  def get_type(term) when is_list(term) do
+    term
+    |> Keyword.keyword?()
+    |> if(
+      do: :keyword,
+      else: :list
+    )
+  end
+
+  def get_type(_other_term), do: :unknown
 end

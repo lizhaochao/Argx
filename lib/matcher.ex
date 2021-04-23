@@ -1,8 +1,23 @@
 defmodule Argx.Matcher do
   @moduledoc false
 
-  alias Argx.{Checker, Converter, Defaulter, Parser}
+  alias Argx.{Checker, Converter, Defaulter, Formatter, Parser, Util}
 
+  def argx_match(args, config_names, current_m, general_m, get_configs) do
+    Checker.check_args!(args)
+    Checker.check_config_names!(config_names)
+
+    configs = get_configs.(general_m, current_m, config_names) |> Enum.into([])
+    new_args = Util.sort_by_keys(args, Keyword.keys(configs))
+    origin_type = Util.get_type(args)
+
+    current_m
+    |> match(new_args, configs)
+    |> Formatter.fmt_match_result(origin_type)
+    |> Formatter.fmt_errors(current_m, general_m)
+  end
+
+  ###
   def match(m, [{_arg_name, _arg_value} | _] = args, [_ | _] = configs) when is_atom(m) do
     new_args =
       args

@@ -6,7 +6,28 @@ defmodule Argx.Checker do
   @allowed_fun_types Const.allowed_fun_types()
   @configs_keyword Const.configs_keyword()
 
-  ###
+  ### Argx
+  def check_args!(%{} = _args), do: :ignore
+
+  def check_args!(args) when is_list(args) do
+    args
+    |> Keyword.keyword?()
+    |> if(
+      do: :ignore,
+      else: raise(Argx.Error, "args must be map or keyword")
+    )
+  end
+
+  def check_args!(_other_args), do: raise(Argx.Error, "args must be map or keyword")
+
+  def check_config_names!(config_names) do
+    case config_names do
+      [_ | _] -> :ignore
+      _ -> raise Argx.Error, "config names must be list & not empty"
+    end
+  end
+
+  ### with check macro
   def check!(configs, block) do
     with :ok <- check_configs(configs),
          :ok = ok <- check_block(block) do
@@ -27,7 +48,7 @@ defmodule Argx.Checker do
   defp check_block({:__block__, [], []}), do: :block_empty_error
   defp check_block(_), do: :block_error
 
-  ###
+  ### defconfig macro
   def check_defconfig!(_name, [_ | _] = configs), do: check_defconfig!(configs)
   def check_defconfig!(_name, {_, _, _} = config), do: check_defconfig!([config])
   def check_defconfig!(_name, []), do: raise(Argx.Error, "configs is empty")
