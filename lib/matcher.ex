@@ -2,6 +2,7 @@ defmodule Argx.Matcher do
   @moduledoc false
 
   alias Argx.{Checker, Converter, Defaulter, Formatter, Parser, Util}
+  alias Argx.Matcher.Helper, as: H
 
   @init_errors []
 
@@ -9,49 +10,57 @@ defmodule Argx.Matcher do
     Checker.check_args!(args)
     Checker.check_config_names!(config_names)
 
-    configs = get_configs.(general_m, current_m, config_names) |> Enum.into([])
+    configs = get_configs.(general_m, current_m, config_names)
+    processed_args = prepare_args(args, configs, current_m)
     origin_type = Util.get_type(args)
 
     current_m
-    |> match(Enum.into(args, []), configs)
+    |> match(processed_args, configs)
     |> Formatter.fmt_match_result(origin_type)
     |> Formatter.fmt_errors(current_m, general_m)
   end
 
+  def with_check_match(args, configs, current_m) do
+    processed_args = prepare_args(args, configs, current_m)
+    {errors, new_args} = match(current_m, processed_args, configs)
+    {errors, Enum.reverse(new_args)}
+  end
+
   ###
-  def match(current_m, args, configs, path \\ [])
+  def match(current_m, args, configs, new_args \\ [], path \\ [])
 
-  def match(current_m, [{_arg_name, _arg_value} | _] = args, [_ | _] = configs, path)
+  def match(current_m, [_ | _] = args, %{} = configs, new_args, path) when is_atom(current_m) do
+    match(current_m, args, Util.to_keyword(configs), new_args, path)
+  end
+
+  def match(current_m, [{_arg_name, _arg_value} | _] = args, [_ | _] = configs, new_args, path)
       when is_atom(current_m) do
-    new_args =
-      args
-      |> Util.sort_by_keys(Keyword.keys(configs))
-      |> Defaulter.set_default(configs, current_m)
-      |> Converter.convert(configs)
+    traverse(@init_errors, args, configs, current_m, new_args, path)
+  end
 
-    errors = traverse(@init_errors, new_args, configs, path)
+  def match(_, _, _, _, _), do: :match_error
+
+  ###
+  def traverse(errors, [] = _args, [] = _configs, _current_m, new_args, _path) do
     {errors, new_args}
   end
 
-  def match(_, _, _, _), do: :match_error
-
-  ###
-  def traverse(errors, [], [], _path), do: errors
-
   def traverse(
         errors,
-        [{arg_name, _arg_value} = arg | new_args_rest],
+        [{arg_name, _arg_value} = arg | args_rest],
         [{_arg_name2, %Argx.Config{}} = config | configs_rest],
+        current_m,
+        new_args,
         path
       ) do
-    new_errors =
+    {new_errors, new_args} =
       errors
       |> lacked(arg, config, path)
       |> error_type(path)
       |> out_of_range(path)
-      |> drill_down(arg, config, path ++ [arg_name])
+      |> drill_down(arg, config, current_m, new_args, path ++ [arg_name])
 
-    traverse(new_errors, new_args_rest, configs_rest, path)
+    traverse(new_errors, args_rest, configs_rest, current_m, new_args, path)
   end
 
   ###
@@ -62,7 +71,7 @@ defmodule Argx.Matcher do
         path
       )
       when arg_name == arg_name2 do
-    reduce_errors(errors, arg_name, :lacked, path)
+    H.reduce_errors(errors, arg_name, path, :lacked)
   end
 
   def lacked(
@@ -73,7 +82,7 @@ defmodule Argx.Matcher do
       )
       when arg_name == arg_name2 do
     if Checker.empty?(arg_value, type) do
-      reduce_errors(errors, arg_name, :lacked, path)
+      H.reduce_errors(errors, arg_name, path, :lacked)
     else
       {errors, arg, config}
     end
@@ -113,7 +122,7 @@ defmodule Argx.Matcher do
     if Checker.some_type?(arg_value, type) do
       {errors, arg, config}
     else
-      reduce_errors(errors, arg_name, :error_type, path)
+      H.reduce_errors(errors, arg_name, path, :error_type)
     end
   end
 
@@ -152,7 +161,7 @@ defmodule Argx.Matcher do
       errors
     else
       errors
-      |> reduce_errors(arg_name, :out_of_range, path)
+      |> H.reduce_errors(arg_name, path, :out_of_range)
       |> out_of_range(path)
     end
   end
@@ -160,59 +169,110 @@ defmodule Argx.Matcher do
   ###
   defp drill_down(
          errors,
-         {_arg_name, _arg_value},
+         {arg_name, arg_value},
          {_arg_name2, %Argx.Config{type: :list, nested: nil}},
+         _current_m,
+         new_args,
          _path
        ) do
-    errors
+    new_args = [{arg_name, arg_value} | new_args]
+    {errors, new_args}
   end
 
   defp drill_down(
          errors,
-         {_arg_name, [_ | _] = map_list},
+         {arg_name, [_ | _] = arg_value},
          {_arg_name2, %Argx.Config{type: :list, nested: nested_configs}},
+         current_m,
+         new_args,
          path
        )
        when map_size(nested_configs) > 1 do
-    {_num, merged_errors} =
-      Enum.reduce(map_list, {1, errors}, fn map, {num, merged_errors} ->
-        {new_errors, _new_args} =
+    {_num, new_errors, new_args} =
+      Enum.reduce(arg_value, {1, errors, new_args}, fn args, {num, acc_errors, new_args} ->
+        processed_args = prepare_args(args, nested_configs, current_m)
+
+        {new_errors, new_args} =
           match(
-            __MODULE__,
-            Enum.into(map, []),
-            Enum.into(nested_configs, []),
+            current_m,
+            processed_args,
+            nested_configs,
+            new_args,
             path ++ ["#{num}"]
           )
 
-        {num + 1, merge_errors(merged_errors, new_errors)}
+        new_args =
+          args
+          |> Util.get_type()
+          |> Util.restore(processed_args)
+          |> Util.append(new_args, arg_name)
+
+        merged_errors = H.merge_errors(acc_errors, new_errors)
+        {num + 1, merged_errors, new_args}
       end)
 
-    merged_errors
+    {new_errors, new_args}
   end
 
   defp drill_down(
          errors,
-         {_arg_name, _arg_value},
+         {arg_name, arg_value},
          {_arg_name2, %Argx.Config{}},
-         _path
+         _current_m,
+         new_args,
+         path
        ) do
-    errors
+    new_args =
+      path
+      |> H.is_nested?()
+      |> if(
+        do: new_args,
+        else: [{arg_name, arg_value} | new_args]
+      )
+
+    {errors, new_args}
   end
 
   ###
-  defp reduce_errors(errors, field, check_type, path) do
-    path = make_path(path, field)
+  def prepare_args(args, configs, current_m) when is_atom(current_m) do
+    configs = Util.to_keyword(configs)
 
-    {nil, new_errors} =
-      Keyword.get_and_update(errors, check_type, fn current ->
-        new_value = (current && [path | current]) || [path]
-        {nil, new_value}
-      end)
+    args
+    |> Util.sort_by_keys(Keyword.keys(configs))
+    |> Defaulter.set_default(configs, current_m)
+    |> Converter.convert(configs)
+  end
+end
 
+defmodule Argx.Matcher.Helper do
+  @moduledoc false
+
+  alias Argx.Util
+
+  ###
+  def is_nested?([_ | _] = path), do: do_is_nested?(path, false)
+  def is_nested?([] = _path), do: false
+  def is_nested?(_other_path), do: false
+
+  def do_is_nested?([], result?), do: result?
+
+  def do_is_nested?([term | rest_path], _result?) do
+    term
+    |> to_string()
+    |> Integer.parse()
+    |> case do
+      {_integer, ""} -> do_is_nested?([], true)
+      _ -> do_is_nested?(rest_path, false)
+    end
+  end
+
+  ###
+  def reduce_errors(errors, key, path, check_type) do
+    new_errors = key |> make_path(path) |> Util.append(errors, check_type)
     {new_errors, nil, nil}
   end
 
-  defp merge_errors(a_err, b_err) when is_list(a_err) and is_list(b_err) do
+  def merge_errors(a_err, b_err) when is_list(a_err) and is_list(b_err) do
     a_error_type = Keyword.get(a_err, :error_type, [])
     b_error_type = Keyword.get(b_err, :error_type, [])
     a_lacked = Keyword.get(a_err, :lacked, [])
@@ -229,8 +289,8 @@ defmodule Argx.Matcher do
     (out_of_range != [] && Keyword.put(errors, :out_of_range, out_of_range)) || errors
   end
 
-  defp merge_errors(_other_a_err, _other_b_err), do: []
+  def merge_errors(_other_a_err, _other_b_err), do: []
 
-  defp make_path([] = _path, field) when is_atom(field), do: field
-  defp make_path([_ | _] = path, field), do: (path ++ [field]) |> Enum.join(":")
+  def make_path(key, [] = _path) when is_atom(key), do: key
+  def make_path(key, [_ | _] = path), do: (path ++ [key]) |> Enum.join(":")
 end

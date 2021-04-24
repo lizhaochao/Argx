@@ -1,14 +1,16 @@
 defmodule Argx.Formatter do
   @moduledoc false
 
+  alias Argx.Util
+
   ###
   def fmt_match_result({errors, new_args}, origin_type \\ nil) do
-    errors = reverse_errors(errors)
-    new_args = (origin_type && restore(new_args, origin_type)) || new_args
+    errors = sort_errors(errors)
+    new_args = (origin_type && Util.restore(origin_type, new_args)) || new_args
     {errors, new_args}
   end
 
-  def reverse_errors([_ | _] = errors) do
+  def sort_errors([_ | _] = errors) do
     sorted_errors =
       errors
       |> Enum.sort()
@@ -19,13 +21,9 @@ defmodule Argx.Formatter do
     {:error, sorted_errors}
   end
 
-  def reverse_errors({:error, errors}), do: reverse_errors(errors)
-  def reverse_errors([] = errors), do: errors
-  def reverse_errors(_other_errors), do: raise(Argx.Error, "reverse errors error")
-
-  defp restore(%{} = new_args, :keyword), do: Enum.into(new_args, [])
-  defp restore(new_args, :map) when is_list(new_args), do: Enum.into(new_args, %{})
-  defp restore(new_args, _origin_type), do: new_args
+  def sort_errors({:error, errors}), do: sort_errors(errors)
+  def sort_errors([] = errors), do: errors
+  def sort_errors(_other_errors), do: raise(Argx.Error, "reverse errors error")
 
   ###
   def fmt_errors({errors, new_args}, current_m, general_m, use_m \\ nil) do

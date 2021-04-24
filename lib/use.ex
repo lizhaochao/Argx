@@ -83,8 +83,8 @@ defmodule Argx.Use.WithCheck do
               def unquote(f)(unquote_splicing(a)) when unquote(guard) do
                 args = unquote(Self.make_args(a))
 
-                __MODULE__
-                |> Matcher.match(args, unquote(configs))
+                args
+                |> Matcher.with_check_match(unquote(configs), __MODULE__)
                 |> Self.post_match(
                   __MODULE__,
                   unquote(general_m),

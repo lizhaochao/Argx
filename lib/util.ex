@@ -1,14 +1,20 @@
 defmodule Argx.Util do
   @moduledoc false
 
-  def list_to_map(nil) do
-    %{}
+  def list_to_map(list) when is_list(list) do
+    Enum.reduce(list, %{}, fn term, map ->
+      Map.merge(map, term)
+    end)
   end
 
-  def list_to_map(list) do
-    Enum.reduce(list, %{}, fn item, map ->
-      Map.merge(map, item)
-    end)
+  def append(value, keyword, key) when is_list(keyword) do
+    {_, new_keyword} =
+      Keyword.get_and_update(keyword, key, fn current ->
+        new_value = (current && Enum.reverse([value | Enum.reverse(current)])) || [value]
+        {nil, new_value}
+      end)
+
+    new_keyword
   end
 
   ###
@@ -36,15 +42,14 @@ defmodule Argx.Util do
 
   ###
   def sort_by_keys(keyword, keys) when is_list(keyword) do
-    map = Enum.into(keyword, %{})
-    sort_by_keys(map, keys)
+    sort_by_keys(to_map(keyword), keys)
   end
 
   def sort_by_keys(%{} = map, keys) do
     keys
-    |> Enum.reduce([], fn key, item ->
+    |> Enum.reduce([], fn key, keyword ->
       value = Map.get(map, key)
-      [{key, value} | item]
+      [{key, value} | keyword]
     end)
     |> Enum.reverse()
   end
@@ -70,4 +75,13 @@ defmodule Argx.Util do
   end
 
   def get_type(_other_term), do: :unknown
+
+  def restore(:keyword, %{} = new_args), do: Enum.into(new_args, [])
+  def restore(:map, new_args) when is_list(new_args), do: Enum.into(new_args, %{})
+  def restore(_origin_type, new_args), do: new_args
+
+  def to_map(%{} = term), do: term
+  def to_map(term) when is_list(term), do: Enum.into(term, %{})
+  def to_keyword(%{} = term), do: Enum.into(term, [])
+  def to_keyword(term) when is_list(term), do: term
 end

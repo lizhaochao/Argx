@@ -3,17 +3,25 @@ defmodule ProjectC do
 
   use Argx
 
-  defconfig(MapRule, [y(:string), z(:integer, 1..10)])
-  defconfig(MapRule2, [a(:string), b(:integer), c({:list, MapRule})])
-  defconfig(ListRule, _(:integer, :auto))
+  defconfig(MapRule, [
+    a(:string, 2..8) || get_default(),
+    b(:integer, :empty),
+    c(:float, :auto),
+    d(:boolean, :optional)
+  ])
 
-  defconfig(OneRule, one({:list, MapRule}))
-  defconfig(TwoRule, two({:list, MapRule2}))
-  defconfig(ThreeRule, three({:list, ListRule}))
+  defconfig(ListRule, [aa(:string), bb({:list, MapRule})])
+  defconfig(SimpleListRule, _(:integer, :auto))
 
-  def get1(params), do: match(params, [OneRule])
-  def get2(params), do: match(params, [TwoRule])
-  def get3(params), do: match(params, [ThreeRule])
+  defconfig(OneRule, [one({:list, MapRule}), another(:string)])
+  defconfig(TwoRule, [two({:list, ListRule}), another(:integer)])
+  defconfig(ThreeRule, three({:list, SimpleListRule}))
+
+  def get_one(params), do: match(params, [OneRule])
+  def get_two(params), do: match(params, [TwoRule])
+  def get_three(params), do: match(params, [ThreeRule])
+
+  def get_default, do: "default"
 
   def fmt_errors({:error, _} = errors), do: errors
   def fmt_errors(new_args), do: new_args
@@ -24,14 +32,15 @@ defmodule NestedTest do
 
   use ExUnit.Case
 
-  alias Argx.Formatter
-
-  describe "list" do
-    test "error - 1 level nested list" do
+  describe "list container" do
+    test "mixed - list -> map" do
       list_data = [
-        %{y: 21, z: nil},
-        %{y: 22, z: "bb"},
-        %{y: 22, z: 11}
+        # line 1: all are invalid
+        %{a: "a", b: 0, c: "a", d: "boolean"},
+        # line 2: all are invalid
+        %{a: "a", b: "b", c: "a", d: "true"},
+        # line 3: all are valid
+        %{a: "hello", b: 1, c: "1.2", d: true}
       ]
 
       args = %{one: list_data}
@@ -39,103 +48,115 @@ defmodule NestedTest do
       expected =
         {:error,
          [
-           error_type: ["one:1:y", "one:2:y", "one:2:z", "one:3:y"],
-           lacked: ["one:1:z"],
-           out_of_range: ["one:3:z"]
+           error_type: ["one:1:c", "one:1:d", "one:2:b", "one:2:c", "one:2:d"],
+           lacked: [:another, "one:1:b"],
+           out_of_range: ["one:1:a", "one:2:a"]
          ]}
 
-      assert expected == args |> ProjectC.get1() |> Formatter.reverse_errors()
+      assert expected == ProjectC.get_one(args)
     end
 
-    test "error - 2 level nested list" do
+    test "ok - list -> map" do
       list_data = [
-        %{
-          a: 22,
-          b: "str",
-          c: [
-            %{y: 1.1, z: 99},
-            %{y: nil, z: "str"}
-          ]
-        },
-        %{
-          a: nil,
-          b: nil,
-          c: [
-            %{y: %{}, z: "str"},
-            %{y: 2.2, z: 88}
-          ]
-        }
+        %{a: "hello", b: 1, c: "1.2", d: true}
       ]
 
-      args = %{two: list_data}
+      args = %{one: list_data, another: "another"}
 
-      expected =
-        {:error,
-         [
-           error_type: [
-             "two:1:a",
-             "two:1:b",
-             "two:1:c:1:y",
-             "two:1:c:2:z",
-             "two:2:c:1:y",
-             "two:2:c:1:z",
-             "two:2:c:2:y"
-           ],
-           lacked: ["two:1:c:2:y", "two:2:a", "two:2:b"],
-           out_of_range: ["two:1:c:1:z", "two:2:c:2:z"]
-         ]}
+      expected_list_data = [
+        %{a: "hello", b: 1, c: 1.2, d: true}
+      ]
 
-      assert expected == args |> ProjectC.get2() |> Formatter.reverse_errors()
+      expected_args = %{one: expected_list_data, another: "another"}
+
+      assert expected_args == ProjectC.get_one(args)
     end
 
-    test "ok - 1 level nested list" do
+    test "ok - ignore more fields" do
       list_data = [
-        %{y: "yy", z: 2},
-        %{y: "yy", z: 2},
-        %{y: "yy", z: 2}
+        %{a: "hello", b: 1, c: "1.2", d: true, e: 1, f: 2}
       ]
 
-      args = %{one: list_data}
-      assert args == ProjectC.get1(args)
-    end
+      args = %{one: list_data, another: "another", more: "more", more_more: "more more"}
 
-    test "ok - 2 level nested list" do
-      list_data = [
-        %{
-          a: "aa",
-          b: 1,
-          c: [
-            %{y: "yy", z: 2}
-          ]
-        },
-        %{
-          a: "aa",
-          b: 1,
-          c: [
-            %{y: "yy", z: 2}
-          ]
-        }
+      expected_list_data = [
+        %{a: "hello", b: 1, c: 1.2, d: true}
       ]
 
-      args = %{two: list_data}
-      assert args == ProjectC.get2(args)
-    end
+      expected_args = %{one: expected_list_data, another: "another"}
 
-    test "ok - more fields" do
-      list_data = [
-        %{y: "aa", z: 1},
-        %{y: "ab", z: 2}
-      ]
-
-      expected_args = %{one: list_data}
-      args = Map.put(expected_args, :two, 2.2)
-      assert expected_args == ProjectC.get1(args)
+      assert expected_args == ProjectC.get_one(args)
     end
   end
 
-  describe "error" do
-    test "empty map" do
-      assert {:error, [lacked: [:one]]} == ProjectC.get1(%{oen: nil})
-    end
-  end
+  #  describe "TODO - list container" do
+  #    test "ok - list -> map -> list" do
+  #      list_data = [
+  #        %{aa: "aa", bb: []},
+  #        %{
+  #          aa: "aaa",
+  #          bb: [
+  #            %{a: "hello", b: 1, c: "1.2", d: true}
+  #          ]
+  #        },
+  #        %{aa: "aaaa", bb: []}
+  #      ]
+  #
+  #      args = %{two: list_data, another: 1}
+  #
+  #      expected_list_data = [
+  #        %{aa: "aa", bb: []},
+  #        %{
+  #          aa: "aaa",
+  #          bb: [
+  #            %{a: "hello", b: 1, c: 1.2, d: true}
+  #          ]
+  #        },
+  #        %{aa: "aaaa", bb: []}
+  #      ]
+  #
+  #      expected_args = %{two: expected_list_data, another: 1}
+  #      assert expected_args == ProjectC.get_two(args)
+  #    end
+  #
+  #    test "mixed - list -> map -> list" do
+  #      list_data = [
+  #        %{aa: 1, bb: "bb"},
+  #        %{
+  #          aa: 1,
+  #          bb: [
+  #            # line 1: all are invalid
+  #            %{a: "a", b: 0, c: "a", d: "boolean"},
+  #            # line 2: all are invalid
+  #            %{a: "a", b: "b", c: "a", d: "true"},
+  #            # line 3: all are valid
+  #            %{a: "hello", b: 1, c: "1.2", d: true}
+  #          ]
+  #        },
+  #        %{aa: nil, bb: nil}
+  #      ]
+  #
+  #      args = %{two: list_data}
+  #
+  #      expected = {
+  #        :error,
+  #        [
+  #          error_type: [
+  #            "two:1:aa",
+  #            "two:1:bb",
+  #            "two:2:aa",
+  #            "two:2:bb:1:c",
+  #            "two:2:bb:1:d",
+  #            "two:2:bb:2:b",
+  #            "two:2:bb:2:c",
+  #            "two:2:bb:2:d"
+  #          ],
+  #          lacked: [:another, "two:2:bb:1:b", "two:3:aa", "two:3:bb"],
+  #          out_of_range: ["two:2:bb:1:a", "two:2:bb:2:a"]
+  #        ]
+  #      }
+  #
+  #      assert expected == ProjectC.get_two(args)
+  #    end
+  #  end
 end
