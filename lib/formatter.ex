@@ -26,7 +26,7 @@ defmodule Argx.Formatter do
   def sort_errors(_other_errors), do: raise(Argx.Error, "reverse errors error")
 
   ###
-  def fmt_errors({errors, new_args}, current_m, general_m, use_m \\ nil) do
+  def fmt_errors({errors, new_args}, curr_m, general_m, use_m \\ nil) do
     f = :fmt_errors
     arity = 1
 
@@ -37,8 +37,8 @@ defmodule Argx.Formatter do
       end
 
     cond do
-      module_name?(current_m) && function_exported?(current_m, f, arity) ->
-        apply(current_m, f, a)
+      module_name?(curr_m) && function_exported?(curr_m, f, arity) ->
+        apply(curr_m, f, a)
 
       module_name?(general_m) && function_exported?(general_m, f, arity) ->
         apply(general_m, f, a)

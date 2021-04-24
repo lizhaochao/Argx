@@ -84,7 +84,7 @@ defmodule Argx.Use.WithCheck do
                 args = unquote(Self.make_args(a))
 
                 args
-                |> Matcher.with_check_match(unquote(configs), __MODULE__)
+                |> Matcher.match(unquote(configs), __MODULE__)
                 |> Self.post_match(
                   __MODULE__,
                   unquote(general_m),
@@ -108,14 +108,14 @@ defmodule Argx.Use.WithCheck do
   end
 
   ###
-  def post_match({[] = _errors, [_ | _] = new_args}, current_m, _general_m, _use_m, real_f_name) do
-    apply(current_m, real_f_name, Keyword.values(new_args))
+  def post_match({[] = _errors, [_ | _] = new_args}, curr_m, _general_m, _use_m, real_f_name) do
+    apply(curr_m, real_f_name, Keyword.values(new_args))
   end
 
-  def post_match({_errors, _new_args} = result, current_m, general_m, use_m, _real_f_name) do
+  def post_match({_errors, _new_args} = result, curr_m, general_m, use_m, _real_f_name) do
     result
     |> Formatter.fmt_match_result()
-    |> Formatter.fmt_errors(current_m, general_m, use_m)
+    |> Formatter.fmt_errors(curr_m, general_m, use_m)
   end
 
   ###

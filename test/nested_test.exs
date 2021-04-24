@@ -85,7 +85,8 @@ defmodule NestedTest do
         %{a: "hello", b: 1, c: 1.2, d: true}
       ]
 
-      expected_args = [one: expected_list_data, another: "another"]
+      # TODO: tmp change
+      expected_args = [another: "another", one: expected_list_data]
 
       assert expected_args == ProjectC.get_one(args)
     end

@@ -1,7 +1,7 @@
 defmodule Argx do
   @moduledoc false
 
-  alias Argx.Matcher
+  alias Argx.{Checker, Formatter, Matcher, Util}
   alias Argx.Use.Helper
   alias Argx, as: Self
 
@@ -10,19 +10,34 @@ defmodule Argx do
       import Argx.Inner.Defconfig
 
       def match(args, config_names) do
-        Matcher.argx_match(
-          args,
-          config_names,
-          __MODULE__,
-          unquote(general_m),
-          &Self.get_configs/3
-        )
+        Self.match(args, config_names, __MODULE__, unquote(general_m))
       end
     end
   end
 
-  def get_configs(general_m, current_m, config_names) do
-    [general_m, current_m]
+  def match(args, config_names, curr_m, general_m) do
+    Checker.check_args!(args)
+    Checker.check_config_names!(config_names)
+
+    configs =
+      general_m
+      |> get_configs(curr_m, config_names)
+      |> Enum.into([])
+
+    origin_type = Util.get_type(args)
+    args = Util.sort_by_keys(args, Keyword.keys(configs))
+
+    Matcher.match(
+      args,
+      configs,
+      curr_m
+    )
+    |> Formatter.fmt_match_result(origin_type)
+    |> Formatter.fmt_errors(curr_m, general_m)
+  end
+
+  def get_configs(general_m, curr_m, config_names) do
+    [general_m, curr_m]
     |> Helper.get_configs_by_modules()
     |> Helper.get_configs_by_names(config_names)
   end

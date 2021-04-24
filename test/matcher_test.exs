@@ -6,7 +6,7 @@ defmodule MatcherTest do
   alias Argx.Matcher, as: M
 
   @default_path []
-  @current_m __MODULE__
+  @curr_m __MODULE__
 
   test "match error" do
     args = [one: "", two: [1, 2, 3], three: 9]
@@ -45,7 +45,7 @@ defmodule MatcherTest do
     ]
 
     expected_errors = [out_of_range: [:three], error_type: [:two], lacked: [:one]]
-    {errors, _} = M.match(@current_m, args, configs)
+    {errors, _} = M.match(args, configs, @curr_m)
     assert expected_errors == errors
   end
 

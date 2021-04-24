@@ -1,66 +1,52 @@
 defmodule Argx.Matcher do
   @moduledoc false
 
-  alias Argx.{Checker, Converter, Defaulter, Formatter, Parser, Util}
+  alias Argx.{Checker, Converter, Defaulter, Parser, Util}
   alias Argx.Matcher.Helper, as: H
 
   @init_errors []
 
-  def argx_match(args, config_names, current_m, general_m, get_configs) do
-    Checker.check_args!(args)
-    Checker.check_config_names!(config_names)
-
-    configs = get_configs.(general_m, current_m, config_names)
-    processed_args = prepare_args(args, configs, current_m)
-    origin_type = Util.get_type(args)
-
-    current_m
-    |> match(processed_args, configs)
-    |> Formatter.fmt_match_result(origin_type)
-    |> Formatter.fmt_errors(current_m, general_m)
-  end
-
-  def with_check_match(args, configs, current_m) do
-    processed_args = prepare_args(args, configs, current_m)
-    {errors, new_args} = match(current_m, processed_args, configs)
-    {errors, Enum.reverse(new_args)}
+  ###
+  def match(
+        [{_arg_name, _arg_value} | _] = args,
+        [{_arg_name2, %Argx.Config{}} | _] = configs,
+        curr_m,
+        ok_args \\ [],
+        path \\ []
+      )
+      when is_atom(curr_m) do
+    traverse(ok_args, path, args, configs, curr_m)
   end
 
   ###
-  def match(current_m, args, configs, new_args \\ [], path \\ [])
+  def traverse(ok_args, path, args, configs, curr_m, errors \\ @init_errors)
 
-  def match(current_m, [_ | _] = args, %{} = configs, new_args, path) when is_atom(current_m) do
-    match(current_m, args, Util.to_keyword(configs), new_args, path)
-  end
-
-  def match(current_m, [{_arg_name, _arg_value} | _] = args, [_ | _] = configs, new_args, path)
-      when is_atom(current_m) do
-    traverse(@init_errors, args, configs, current_m, new_args, path)
-  end
-
-  def match(_, _, _, _, _), do: :match_error
-
-  ###
-  def traverse(errors, [] = _args, [] = _configs, _current_m, new_args, _path) do
-    {errors, new_args}
+  def traverse(ok_args, _path, [] = _args, [] = _configs, _curr_m, errors) do
+    {errors, Enum.reverse(ok_args)}
   end
 
   def traverse(
-        errors,
-        [{arg_name, _arg_value} = arg | args_rest],
-        [{_arg_name2, %Argx.Config{}} = config | configs_rest],
-        current_m,
-        new_args,
-        path
-      ) do
-    {new_errors, new_args} =
+        ok_args,
+        path,
+        [arg | args_rest],
+        [config | configs_rest],
+        curr_m,
+        errors
+      )
+      when is_list(ok_args) and is_list(path) and is_list(errors) do
+    [{arg_name, _arg_value} = arg] =
+      [arg]
+      |> Defaulter.set_default([config], curr_m)
+      |> Converter.convert([config])
+
+    {errors, ok_args} =
       errors
       |> lacked(arg, config, path)
       |> error_type(path)
       |> out_of_range(path)
-      |> drill_down(arg, config, current_m, new_args, path ++ [arg_name])
+      |> drill_down(arg, config, curr_m, ok_args, path ++ [arg_name])
 
-    traverse(new_errors, args_rest, configs_rest, current_m, new_args, path)
+    traverse(ok_args, path, args_rest, configs_rest, curr_m, errors)
   end
 
   ###
@@ -171,75 +157,75 @@ defmodule Argx.Matcher do
          errors,
          {arg_name, arg_value},
          {_arg_name2, %Argx.Config{type: :list, nested: nil}},
-         _current_m,
-         new_args,
+         _curr_m,
+         ok_args,
          _path
        ) do
-    new_args = [{arg_name, arg_value} | new_args]
-    {errors, new_args}
+    ok_args = [{arg_name, arg_value} | ok_args]
+    {errors, ok_args}
   end
 
   defp drill_down(
          errors,
          {arg_name, [_ | _] = arg_value},
          {_arg_name2, %Argx.Config{type: :list, nested: nested_configs}},
-         current_m,
-         new_args,
+         curr_m,
+         ok_args,
          path
        )
        when map_size(nested_configs) > 1 do
-    {_num, new_errors, new_args} =
-      Enum.reduce(arg_value, {1, errors, new_args}, fn args, {num, acc_errors, new_args} ->
-        processed_args = prepare_args(args, nested_configs, current_m)
+    {_num, new_errors, ok_args} =
+      Enum.reduce(arg_value, {1, errors, ok_args}, fn args, {num, acc_errors, ok_args} ->
+        processed_args = prepare_args(args, nested_configs, curr_m)
 
-        {new_errors, new_args} =
-          match(
-            current_m,
+        {new_errors, ok_args} =
+          traverse(
+            ok_args,
+            path ++ ["#{num}"],
             processed_args,
-            nested_configs,
-            new_args,
-            path ++ ["#{num}"]
+            Enum.into(nested_configs, []),
+            curr_m
           )
 
-        new_args =
+        ok_args =
           args
           |> Util.get_type()
           |> Util.restore(processed_args)
-          |> Util.append(new_args, arg_name)
+          |> Util.append(ok_args, arg_name)
 
         merged_errors = H.merge_errors(acc_errors, new_errors)
-        {num + 1, merged_errors, new_args}
+        {num + 1, merged_errors, ok_args}
       end)
 
-    {new_errors, new_args}
+    {new_errors, ok_args}
   end
 
   defp drill_down(
          errors,
          {arg_name, arg_value},
          {_arg_name2, %Argx.Config{}},
-         _current_m,
-         new_args,
+         _curr_m,
+         ok_args,
          path
        ) do
-    new_args =
+    ok_args =
       path
       |> H.is_nested?()
       |> if(
-        do: new_args,
-        else: [{arg_name, arg_value} | new_args]
+        do: ok_args,
+        else: [{arg_name, arg_value} | ok_args]
       )
 
-    {errors, new_args}
+    {errors, ok_args}
   end
 
   ###
-  defp prepare_args(args, configs, current_m) when is_atom(current_m) do
+  defp prepare_args(args, configs, curr_m) when is_atom(curr_m) do
     configs = Util.to_keyword(configs)
 
     args
     |> Util.sort_by_keys(Keyword.keys(configs))
-    |> Defaulter.set_default(configs, current_m)
+    |> Defaulter.set_default(configs, curr_m)
     |> Converter.convert(configs)
   end
 end
