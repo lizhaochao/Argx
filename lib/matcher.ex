@@ -234,7 +234,7 @@ defmodule Argx.Matcher do
   end
 
   ###
-  def prepare_args(args, configs, current_m) when is_atom(current_m) do
+  defp prepare_args(args, configs, current_m) when is_atom(current_m) do
     configs = Util.to_keyword(configs)
 
     args
