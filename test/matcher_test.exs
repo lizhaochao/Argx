@@ -70,7 +70,7 @@ defmodule MatcherTest do
           }
         }
 
-        {errors, _arg, _config} = M.lacked(errors, arg, configs, @default_path)
+        {errors, _arg, _config} = M.lacked(arg, configs, @default_path, errors)
         assert [] == errors
       end)
     end
@@ -95,7 +95,7 @@ defmodule MatcherTest do
           }
         }
 
-        {errors, _arg, _config} = M.lacked(errors, arg, configs, @default_path)
+        {errors, _arg, _config} = M.lacked(arg, configs, @default_path, errors)
         assert [] == errors
       end)
     end
@@ -120,7 +120,7 @@ defmodule MatcherTest do
           }
         }
 
-        {errors, _arg, _config} = M.lacked(errors, arg, configs, @default_path)
+        {errors, _arg, _config} = M.lacked(arg, configs, @default_path, errors)
         assert [] == errors
       end)
     end
@@ -145,7 +145,7 @@ defmodule MatcherTest do
           }
         }
 
-        {errors, _arg, _config} = M.lacked(errors, arg, configs, @default_path)
+        {errors, _arg, _config} = M.lacked(arg, configs, @default_path, errors)
         assert [lacked: [:one]] == errors
       end)
     end
@@ -170,7 +170,7 @@ defmodule MatcherTest do
           }
         }
 
-        {errors, _arg, _config} = M.lacked(errors, arg, configs, @default_path)
+        {errors, _arg, _config} = M.lacked(arg, configs, @default_path, errors)
         assert [lacked: [:one]] == errors
       end)
     end

@@ -40,8 +40,8 @@ defmodule Argx.Matcher do
       |> Converter.convert([config])
 
     {errors, ok_args} =
-      errors
-      |> lacked(arg, config, path)
+      arg
+      |> lacked(config, path, errors)
       |> error_type(path)
       |> out_of_range(path)
       |> drill_down(arg, config, curr_m, ok_args, path ++ [arg_name])
@@ -51,20 +51,20 @@ defmodule Argx.Matcher do
 
   ###
   def lacked(
-        errors,
         {arg_name, nil},
         {arg_name2, %Argx.Config{optional: false}},
-        path
+        path,
+        errors
       )
       when arg_name == arg_name2 do
     H.reduce_errors(errors, arg_name, path, :lacked)
   end
 
   def lacked(
-        errors,
         {arg_name, arg_value} = arg,
         {arg_name2, %Argx.Config{optional: false, type: type, empty: true}} = config,
-        path
+        path,
+        errors
       )
       when arg_name == arg_name2 do
     if Checker.empty?(arg_value, type) do
@@ -75,10 +75,10 @@ defmodule Argx.Matcher do
   end
 
   def lacked(
-        errors,
         {arg_name, _} = arg,
         {arg_name2, _} = config,
-        _path
+        _path,
+        errors
       )
       when arg_name == arg_name2 do
     {errors, arg, config}
