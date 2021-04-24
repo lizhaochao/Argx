@@ -2,7 +2,7 @@ defmodule Argx.Matcher do
   @moduledoc false
 
   alias Argx.{Checker, Converter, Defaulter, Parser, Util}
-  alias Argx.Matcher.Helper, as: H
+  alias Argx.Matcher.Helper
 
   @init_errors []
 
@@ -68,7 +68,7 @@ defmodule Argx.Matcher do
         errors
       )
       when arg_name == arg_name2 do
-    H.reduce_errors(errors, arg_name, path, :lacked)
+    Helper.reduce_errors(errors, arg_name, path, :lacked)
   end
 
   def lacked(
@@ -79,7 +79,7 @@ defmodule Argx.Matcher do
       )
       when arg_name == arg_name2 do
     if Checker.empty?(arg_value, type) do
-      H.reduce_errors(errors, arg_name, path, :lacked)
+      Helper.reduce_errors(errors, arg_name, path, :lacked)
     else
       {errors, arg, config}
     end
@@ -119,7 +119,7 @@ defmodule Argx.Matcher do
     if Checker.some_type?(arg_value, type) do
       {errors, arg, config}
     else
-      H.reduce_errors(errors, arg_name, path, :error_type)
+      Helper.reduce_errors(errors, arg_name, path, :error_type)
     end
   end
 
@@ -158,20 +158,20 @@ defmodule Argx.Matcher do
       errors
     else
       errors
-      |> H.reduce_errors(arg_name, path, :out_of_range)
+      |> Helper.reduce_errors(arg_name, path, :out_of_range)
       |> out_of_range(path)
     end
   end
 
   ###
-  defp drill_down(
-         errors,
-         {arg_name, _arg_value} = arg,
-         config,
-         ok_args,
-         path,
-         curr_m
-       ) do
+  def drill_down(
+        errors,
+        {arg_name, _arg_value} = arg,
+        config,
+        ok_args,
+        path,
+        curr_m
+      ) do
     do_drill_down(errors, arg, config, ok_args, path ++ [arg_name], curr_m)
   end
 
@@ -196,30 +196,7 @@ defmodule Argx.Matcher do
          curr_m
        )
        when map_size(nested_configs) > 1 do
-    {_num, new_errors, ok_args} =
-      Enum.reduce(arg_value, {1, errors, ok_args}, fn args, {num, acc_errors, ok_args} ->
-        processed_args = prepare_args(args, nested_configs, curr_m)
-
-        {new_errors, ok_args} =
-          traverse(
-            ok_args,
-            path ++ ["#{num}"],
-            processed_args,
-            Enum.into(nested_configs, []),
-            curr_m
-          )
-
-        ok_args =
-          args
-          |> Util.get_type()
-          |> Util.restore(processed_args)
-          |> Util.append(ok_args, arg_name)
-
-        merged_errors = H.merge_errors(acc_errors, new_errors)
-        {num + 1, merged_errors, ok_args}
-      end)
-
-    {new_errors, ok_args}
+    traverse_by_list(arg_value, nested_configs, ok_args, arg_name, path, curr_m, errors)
   end
 
   defp do_drill_down(
@@ -232,7 +209,7 @@ defmodule Argx.Matcher do
        ) do
     ok_args =
       path
-      |> H.is_nested?()
+      |> Helper.is_nested?()
       |> if(
         do: ok_args,
         else: [{arg_name, arg_value} | ok_args]
@@ -241,14 +218,63 @@ defmodule Argx.Matcher do
     {errors, ok_args}
   end
 
-  ###
-  defp prepare_args(args, configs, curr_m) when is_atom(curr_m) do
+  def traverse_by_list(list, configs, ok_args, parent_arg_name, path, curr_m, errors) do
+    do_traverse_by_list(
+      list,
+      configs,
+      parent_arg_name,
+      path,
+      curr_m,
+      {1, errors, ok_args}
+    )
+  end
+
+  def do_traverse_by_list(
+        [] = _list,
+        _configs,
+        _parent_arg_name,
+        _path,
+        _curr_m,
+        {_num, errors, ok_args}
+      ) do
+    {errors, ok_args}
+  end
+
+  def do_traverse_by_list(
+        [args | list_rest],
+        configs,
+        parent_arg_name,
+        path,
+        curr_m,
+        {num, merged_errors, ok_args}
+      ) do
     configs = Util.to_keyword(configs)
 
+    new_args =
+      Util.sort_by_keys(args, Keyword.keys(configs))
+      |> Defaulter.set_default(configs, curr_m)
+      |> Converter.convert(configs)
+
+    num_path = path ++ ["#{num}"]
+
+    {errors, ok_args} = traverse(ok_args, num_path, new_args, configs, curr_m)
+    new_ok_args = build_ok_args(args, new_args, ok_args, parent_arg_name)
+
+    acc = {
+      num + 1,
+      Helper.merge_errors(merged_errors, errors),
+      new_ok_args
+    }
+
+    do_traverse_by_list(list_rest, configs, parent_arg_name, path, curr_m, acc)
+  end
+
+  ###
+  defp build_ok_args(args, new_args, ok_args, arg_name) do
     args
-    |> Util.sort_by_keys(Keyword.keys(configs))
-    |> Defaulter.set_default(configs, curr_m)
-    |> Converter.convert(configs)
+    |> Util.get_type()
+    |> Util.restore(new_args)
+    |> Util.append(ok_args, arg_name)
   end
 end
 
