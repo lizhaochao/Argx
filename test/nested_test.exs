@@ -16,10 +16,12 @@ defmodule ProjectC do
   defconfig(OneRule, [one({:list, MapRule}), another(:string)])
   defconfig(TwoRule, [two({:list, ListRule}), another(:integer)])
   defconfig(ThreeRule, three({:list, SimpleListRule}))
+  defconfig(MoreRule, [a(:string), b(:string), c(:string), yes(:string), no(:string), h(:string)])
 
   def get_one(params), do: match(params, [OneRule])
   def get_two(params), do: match(params, [TwoRule])
   def get_three(params), do: match(params, [ThreeRule])
+  def get_more(params), do: match(params, [MoreRule])
 
   def get_default, do: "default"
 
@@ -56,7 +58,7 @@ defmodule NestedTest do
       assert expected == ProjectC.get_one(args)
     end
 
-    test "ok - list -> map" do
+    test "ok - list -> map - case 1 - params is map" do
       list_data = [
         %{a: "hello", b: 1, c: "1.2", d: true}
       ]
@@ -71,6 +73,28 @@ defmodule NestedTest do
 
       assert expected_args == ProjectC.get_one(args)
     end
+
+    test "ok - list -> map - case 2 - params is keyword" do
+      list_data = [
+        %{a: "hello", b: 1, c: "1.2", d: true}
+      ]
+
+      args = [one: list_data, another: "another"]
+
+      expected_list_data = [
+        %{a: "hello", b: 1, c: 1.2, d: true}
+      ]
+
+      expected_args = [one: expected_list_data, another: "another"]
+
+      assert expected_args == ProjectC.get_one(args)
+    end
+
+    # TODO: return args should be sorted as origin args
+    #    test "ok - order - params is keyword" do
+    #      args = [a: "a", b: "a", c: "a", yes: "a", no: "a", h: "a"]
+    #      assert args == ProjectC.get_more(args)
+    #    end
 
     test "ok - ignore more fields" do
       list_data = [
@@ -89,7 +113,8 @@ defmodule NestedTest do
     end
   end
 
-  #  describe "TODO - list container" do
+  # TODO: 3 level return args should be satisfy configs
+  #  describe " - list container" do
   #    test "ok - list -> map -> list" do
   #      list_data = [
   #        %{aa: "aa", bb: []},
