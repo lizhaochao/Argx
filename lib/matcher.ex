@@ -34,19 +34,30 @@ defmodule Argx.Matcher do
         errors
       )
       when is_list(ok_args) and is_list(path) and is_list(errors) do
-    [{arg_name, _arg_value} = arg] =
+    arg = pre_process_args(arg, config, curr_m)
+
+    {errors, ok_args} =
+      arg
+      |> collect_errors(config, path, errors)
+      |> drill_down(arg, config, ok_args, path, curr_m)
+
+    traverse(ok_args, path, args_rest, configs_rest, curr_m, errors)
+  end
+
+  def pre_process_args(arg, config, curr_m) do
+    [arg] =
       [arg]
       |> Defaulter.set_default([config], curr_m)
       |> Converter.convert([config])
 
-    {errors, ok_args} =
-      arg
-      |> lacked(config, path, errors)
-      |> error_type(path)
-      |> out_of_range(path)
-      |> drill_down(arg, config, curr_m, ok_args, path ++ [arg_name])
+    arg
+  end
 
-    traverse(ok_args, path, args_rest, configs_rest, curr_m, errors)
+  def collect_errors(arg, config, path, errors) do
+    arg
+    |> lacked(config, path, errors)
+    |> error_type(path)
+    |> out_of_range(path)
   end
 
   ###
@@ -155,23 +166,34 @@ defmodule Argx.Matcher do
   ###
   defp drill_down(
          errors,
+         {arg_name, _arg_value} = arg,
+         config,
+         ok_args,
+         path,
+         curr_m
+       ) do
+    do_drill_down(errors, arg, config, ok_args, path ++ [arg_name], curr_m)
+  end
+
+  defp do_drill_down(
+         errors,
          {arg_name, arg_value},
          {_arg_name2, %Argx.Config{type: :list, nested: nil}},
-         _curr_m,
          ok_args,
-         _path
+         _path,
+         _curr_m
        ) do
     ok_args = [{arg_name, arg_value} | ok_args]
     {errors, ok_args}
   end
 
-  defp drill_down(
+  defp do_drill_down(
          errors,
          {arg_name, [_ | _] = arg_value},
          {_arg_name2, %Argx.Config{type: :list, nested: nested_configs}},
-         curr_m,
          ok_args,
-         path
+         path,
+         curr_m
        )
        when map_size(nested_configs) > 1 do
     {_num, new_errors, ok_args} =
@@ -200,13 +222,13 @@ defmodule Argx.Matcher do
     {new_errors, ok_args}
   end
 
-  defp drill_down(
+  defp do_drill_down(
          errors,
          {arg_name, arg_value},
          {_arg_name2, %Argx.Config{}},
-         _curr_m,
          ok_args,
-         path
+         path,
+         _curr_m
        ) do
     ok_args =
       path
