@@ -201,32 +201,28 @@ defmodule Argx.Matcher do
 
   defp do_drill_down(
          errors,
-         {arg_name, arg_value},
+         {_arg_name, _arg_value} = arg,
          {_arg_name2, %Argx.Config{}},
          ok_args,
-         path,
+         _path,
          _curr_m
        ) do
-    ok_args =
-      path
-      |> Helper.is_nested?()
-      |> if(
-        do: ok_args,
-        else: [{arg_name, arg_value} | ok_args]
-      )
-
-    {errors, ok_args}
+    {errors, [arg | ok_args]}
   end
 
   def traverse_by_list(list, configs, ok_args, parent_arg_name, path, curr_m, errors) do
-    do_traverse_by_list(
-      list,
-      configs,
-      parent_arg_name,
-      path,
-      curr_m,
-      {1, errors, ok_args}
-    )
+    {errors, new_list} =
+      do_traverse_by_list(
+        list,
+        configs,
+        parent_arg_name,
+        path,
+        curr_m,
+        {1, errors, []}
+      )
+
+    ok_args = Util.append(Enum.into(new_list, %{}), ok_args, parent_arg_name)
+    {errors, ok_args}
   end
 
   def do_traverse_by_list(
@@ -246,35 +242,21 @@ defmodule Argx.Matcher do
         parent_arg_name,
         path,
         curr_m,
-        {num, merged_errors, ok_args}
+        {num, merged_errors, new_map}
       ) do
     configs = Util.to_keyword(configs)
-
-    new_args =
-      Util.sort_by_keys(args, Keyword.keys(configs))
-      |> Defaulter.set_default(configs, curr_m)
-      |> Converter.convert(configs)
-
+    new_args = Util.sort_by_keys(args, Keyword.keys(configs))
     num_path = path ++ ["#{num}"]
-
-    {errors, ok_args} = traverse(ok_args, num_path, new_args, configs, curr_m)
-    new_ok_args = build_ok_args(args, new_args, ok_args, parent_arg_name)
+    {errors, item} = traverse(new_map, num_path, new_args, configs, curr_m)
+    new_map = Keyword.merge(new_map, item)
 
     acc = {
       num + 1,
       Helper.merge_errors(merged_errors, errors),
-      new_ok_args
+      new_map
     }
 
     do_traverse_by_list(list_rest, configs, parent_arg_name, path, curr_m, acc)
-  end
-
-  ###
-  defp build_ok_args(args, new_args, ok_args, arg_name) do
-    args
-    |> Util.get_type()
-    |> Util.restore(new_args)
-    |> Util.append(ok_args, arg_name)
   end
 end
 
@@ -282,23 +264,6 @@ defmodule Argx.Matcher.Helper do
   @moduledoc false
 
   alias Argx.Util
-
-  ###
-  def is_nested?([_ | _] = path), do: do_is_nested?(path, false)
-  def is_nested?([] = _path), do: false
-  def is_nested?(_other_path), do: false
-
-  def do_is_nested?([], result?), do: result?
-
-  def do_is_nested?([term | rest_path], _result?) do
-    term
-    |> to_string()
-    |> Integer.parse()
-    |> case do
-      {_integer, ""} -> do_is_nested?([], true)
-      _ -> do_is_nested?(rest_path, false)
-    end
-  end
 
   ###
   def reduce_errors(errors, key, path, check_type) do
