@@ -1,10 +1,10 @@
 defmodule Argx.Matcher do
   @moduledoc false
 
-  alias Argx.{Checker, Converter, Defaulter, Parser}
-  alias Argx.Matcher.Helper
-
   import Argx.Util
+
+  alias Argx.{Converter, Defaulter}
+  alias Argx.Matcher.Helper
 
   @init_errors []
 
@@ -57,112 +57,9 @@ defmodule Argx.Matcher do
 
   def collect_errors(arg, config, path, errors) do
     arg
-    |> lacked(config, path, errors)
-    |> error_type(path)
-    |> out_of_range(path)
-  end
-
-  ###
-  def lacked(
-        {arg_name, nil},
-        {arg_name2, %Argx.Config{optional: false}},
-        path,
-        errors
-      )
-      when arg_name == arg_name2 do
-    Helper.reduce_errors(errors, arg_name, path, :lacked)
-  end
-
-  def lacked(
-        {arg_name, arg_value} = arg,
-        {arg_name2, %Argx.Config{optional: false, type: type, empty: true}} = config,
-        path,
-        errors
-      )
-      when arg_name == arg_name2 do
-    if Checker.empty?(arg_value, type) do
-      Helper.reduce_errors(errors, arg_name, path, :lacked)
-    else
-      {errors, arg, config}
-    end
-  end
-
-  def lacked(
-        {arg_name, _} = arg,
-        {arg_name2, _} = config,
-        _path,
-        errors
-      )
-      when arg_name == arg_name2 do
-    {errors, arg, config}
-  end
-
-  ###
-  def error_type({errors, nil, nil}, _path), do: {errors, nil, nil}
-  def error_type({errors, args, configs}, path), do: error_type(errors, args, configs, path)
-
-  defp error_type(
-         errors,
-         {arg_name, nil},
-         {arg_name2, %Argx.Config{optional: true}},
-         _path
-       )
-       when arg_name == arg_name2 do
-    {errors, nil, nil}
-  end
-
-  defp error_type(
-         errors,
-         {arg_name, arg_value} = arg,
-         {arg_name2, %Argx.Config{type: type}} = config,
-         path
-       )
-       when arg_name == arg_name2 do
-    if Checker.some_type?(arg_value, type) do
-      {errors, arg, config}
-    else
-      Helper.reduce_errors(errors, arg_name, path, :error_type)
-    end
-  end
-
-  ###
-  def out_of_range({errors, nil, nil}, _path), do: errors
-  def out_of_range({errors, args, configs}, path), do: out_of_range(errors, args, configs, path)
-
-  defp out_of_range(
-         errors,
-         {arg_name, nil},
-         {arg_name2, %Argx.Config{optional: true}},
-         _path
-       )
-       when arg_name == arg_name2 do
-    errors
-  end
-
-  defp out_of_range(
-         errors,
-         {arg_name, _},
-         {arg_name2, %Argx.Config{range: nil}},
-         _path
-       )
-       when arg_name == arg_name2 do
-    errors
-  end
-
-  defp out_of_range(
-         errors,
-         {arg_name, arg_value},
-         {arg_name2, %Argx.Config{type: type, range: range}},
-         path
-       )
-       when arg_name == arg_name2 do
-    if Checker.in_range?(arg_value, Parser.parse_range(range), type) do
-      errors
-    else
-      errors
-      |> Helper.reduce_errors(arg_name, path, :out_of_range)
-      |> out_of_range(path)
-    end
+    |> Helper.lacked(config, path, errors)
+    |> Helper.error_type(path)
+    |> Helper.out_of_range(path)
   end
 
   ###
@@ -211,7 +108,7 @@ defmodule Argx.Matcher do
     {errors, [arg | root]}
   end
 
-  ###
+  ### Reenter Traverse Procedure
   def traverse_by_list(list, configs, parent, path, curr_m, all, errors) do
     result = do_traverse_by_list(list, configs, parent, path, curr_m, 1, [], errors)
     {errors, list} = result
@@ -258,9 +155,113 @@ defmodule Argx.Matcher.Helper do
   @moduledoc false
 
   import Argx.Util
-  alias Argx.Const
+
+  alias Argx.{Checker, Const, Parser}
 
   ###
+  def lacked(
+        {arg_name, nil},
+        {arg_name2, %Argx.Config{optional: false}},
+        path,
+        errors
+      )
+      when arg_name == arg_name2 do
+    reduce_errors(errors, arg_name, path, :lacked)
+  end
+
+  def lacked(
+        {arg_name, arg_value} = arg,
+        {arg_name2, %Argx.Config{optional: false, type: type, empty: true}} = config,
+        path,
+        errors
+      )
+      when arg_name == arg_name2 do
+    if Checker.empty?(arg_value, type) do
+      reduce_errors(errors, arg_name, path, :lacked)
+    else
+      {errors, arg, config}
+    end
+  end
+
+  def lacked(
+        {arg_name, _} = arg,
+        {arg_name2, _} = config,
+        _path,
+        errors
+      )
+      when arg_name == arg_name2 do
+    {errors, arg, config}
+  end
+
+  ###
+  def error_type({errors, nil, nil}, _path), do: {errors, nil, nil}
+  def error_type({errors, args, configs}, path), do: error_type(errors, args, configs, path)
+
+  defp error_type(
+         errors,
+         {arg_name, nil},
+         {arg_name2, %Argx.Config{optional: true}},
+         _path
+       )
+       when arg_name == arg_name2 do
+    {errors, nil, nil}
+  end
+
+  defp error_type(
+         errors,
+         {arg_name, arg_value} = arg,
+         {arg_name2, %Argx.Config{type: type}} = config,
+         path
+       )
+       when arg_name == arg_name2 do
+    if Checker.some_type?(arg_value, type) do
+      {errors, arg, config}
+    else
+      reduce_errors(errors, arg_name, path, :error_type)
+    end
+  end
+
+  ###
+  def out_of_range({errors, nil, nil}, _path), do: errors
+  def out_of_range({errors, args, configs}, path), do: out_of_range(errors, args, configs, path)
+
+  defp out_of_range(
+         errors,
+         {arg_name, nil},
+         {arg_name2, %Argx.Config{optional: true}},
+         _path
+       )
+       when arg_name == arg_name2 do
+    errors
+  end
+
+  defp out_of_range(
+         errors,
+         {arg_name, _},
+         {arg_name2, %Argx.Config{range: nil}},
+         _path
+       )
+       when arg_name == arg_name2 do
+    errors
+  end
+
+  defp out_of_range(
+         errors,
+         {arg_name, arg_value},
+         {arg_name2, %Argx.Config{type: type, range: range}},
+         path
+       )
+       when arg_name == arg_name2 do
+    if Checker.in_range?(arg_value, Parser.parse_range(range), type) do
+      errors
+    else
+      errors
+      |> reduce_errors(arg_name, path, :out_of_range)
+      |> out_of_range(path)
+    end
+  end
+
+  ### Process Errors
   def reduce_errors(errors, key, path, check_type) do
     new_errors = key |> join_path(path) |> append(errors, check_type)
     {new_errors, nil, nil}
@@ -307,7 +308,7 @@ defmodule Argx.Matcher.Helper do
     |> do_merger_errors(l_rest, r_rest)
   end
 
-  ###
+  ### Path
   def join_path(key, [] = _path) when is_atom(key), do: key
   def join_path(key, [_ | _] = path), do: (path ++ [key]) |> Enum.join(":")
 

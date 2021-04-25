@@ -3,7 +3,8 @@ defmodule MatcherTest do
 
   use ExUnit.Case
 
-  alias Argx.Matcher, as: M
+  alias Argx.Matcher
+  alias Argx.Matcher.Helper, as: M
 
   @default_path []
   @curr_m __MODULE__
@@ -45,7 +46,7 @@ defmodule MatcherTest do
     ]
 
     expected_errors = [out_of_range: [:three], error_type: [:two], lacked: [:one]]
-    {errors, _} = M.match(args, configs, @curr_m)
+    {errors, _} = Matcher.match(args, configs, @curr_m)
     assert expected_errors == errors
   end
 
