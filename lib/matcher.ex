@@ -47,12 +47,9 @@ defmodule Argx.Matcher do
   end
 
   def pre_process_args(arg, config, curr_m) do
-    [arg] =
-      [arg]
-      |> Defaulter.set_default([config], curr_m)
-      |> Converter.convert([config])
-
     arg
+    |> Defaulter.set_default(config, curr_m)
+    |> Converter.convert(config)
   end
 
   def collect_errors(arg, config, path, errors) do

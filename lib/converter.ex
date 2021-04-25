@@ -2,36 +2,29 @@ defmodule Argx.Converter do
   @moduledoc false
 
   def convert(
-        [{arg_name, _arg_value} | _] = args,
-        [{arg_name2, %Argx.Config{}} | _] = configs
+        {arg_name, _arg_value} = args,
+        {arg_name2, %Argx.Config{}} = configs
       )
       when arg_name == arg_name2 do
-    do_convert(args, configs, [])
+    do_convert(args, configs)
   end
 
-  def convert([_ | _], [_ | _]), do: raise(Argx.Error, "not in the same order.")
-  def convert([], [_ | _]), do: raise(Argx.Error, "args is empty")
-  def convert([{_, _} | _], []), do: raise(Argx.Error, "configs is empty")
-  def convert([], []), do: raise(Argx.Error, "both args and configs are empty")
-
-  defp do_convert([] = _args, [] = _configs, new_args), do: Enum.reverse(new_args)
+  def convert(_other_arg, _other_config), do: raise(Argx.Error, "not in the same order.")
 
   defp do_convert(
-         [{arg_name, arg_value} | arg_rest],
-         [{_, %Argx.Config{auto: true, type: type}} | config_rest],
-         new_args
+         {arg_name, arg_value},
+         {_, %Argx.Config{auto: true, type: type}}
        )
        when not is_nil(arg_value) do
     new_arg_value = to_type(arg_value, type)
-    do_convert(arg_rest, config_rest, [{arg_name, new_arg_value} | new_args])
+    {arg_name, new_arg_value}
   end
 
   defp do_convert(
-         [{_arg_name, _arg_value} = arg | arg_rest],
-         [{_, _} | config_rest],
-         new_args
+         {_arg_name, _arg_value} = arg,
+         {_, _}
        ) do
-    do_convert(arg_rest, config_rest, [arg | new_args])
+    arg
   end
 
   def to_type(value, :integer) when is_bitstring(value) do

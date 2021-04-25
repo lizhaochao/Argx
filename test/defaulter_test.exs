@@ -18,10 +18,11 @@ defmodule DefaulterTest do
   ###
   describe "set_default - ok" do
     test "value" do
-      args = [total: nil]
+      arg = {:total, nil}
 
-      configs = [
-        total: %Argx.Config{
+      config = {
+        :total,
+        %Argx.Config{
           type: :integer,
           auto: true,
           range: nil,
@@ -30,18 +31,19 @@ defmodule DefaulterTest do
           empty: false,
           nested: nil
         }
-      ]
+      }
 
-      [total: total] = D.set_default(args, configs, __MODULE__)
+      {:total, total} = D.set_default(arg, config, __MODULE__)
       assert 3 == total
     end
 
     test "function in the current module" do
-      args = [total: nil]
+      arg = {:total, nil}
       fun_expr = quote do: get_curr_ts()
 
-      configs = [
-        total: %Argx.Config{
+      config = {
+        :total,
+        %Argx.Config{
           type: :integer,
           auto: true,
           range: nil,
@@ -50,18 +52,19 @@ defmodule DefaulterTest do
           empty: false,
           nested: nil
         }
-      ]
+      }
 
-      [total: total] = D.set_default(args, configs, __MODULE__)
+      {:total, total} = D.set_default(arg, config, __MODULE__)
       assert @fixed_curr_ts == total
     end
 
     test "function in the another module" do
-      args = [total: nil]
+      arg = {:total, nil}
       fun_expr = quote do: Test.DefaulterYesterday.get_yesterday_ts()
 
-      configs = [
-        total: %Argx.Config{
+      config = {
+        :total,
+        %Argx.Config{
           type: :integer,
           auto: true,
           range: nil,
@@ -70,18 +73,18 @@ defmodule DefaulterTest do
           empty: false,
           nested: nil
         }
-      ]
+      }
 
-      [total: total] = D.set_default(args, configs, __MODULE__)
+      {:total, total} = D.set_default(arg, config, __MODULE__)
       assert Test.DefaulterYesterday.yesterday_ts() == total
     end
   end
 
   describe "set_default - error" do
     test "should be in the same order" do
-      args = [weight: "3.21", total: "3"]
+      arg = [weight: "3.21", total: "3"]
 
-      configs = [
+      config = [
         total: %Argx.Config{
           type: :integer,
           auto: true,
@@ -103,14 +106,14 @@ defmodule DefaulterTest do
       ]
 
       assert_raise Argx.Error, fn ->
-        D.set_default(args, configs, __MODULE__)
+        D.set_default(arg, config, __MODULE__)
       end
     end
 
-    test "args is empty" do
-      args = []
+    test "arg is empty" do
+      arg = []
 
-      configs = [
+      config = [
         total: %Argx.Config{
           type: :integer,
           auto: true,
@@ -123,16 +126,16 @@ defmodule DefaulterTest do
       ]
 
       assert_raise Argx.Error, fn ->
-        D.set_default(args, configs, __MODULE__)
+        D.set_default(arg, config, __MODULE__)
       end
     end
 
-    test "configs is empty" do
-      args = [total: "3"]
-      configs = []
+    test "config is empty" do
+      arg = [total: "3"]
+      config = []
 
       assert_raise Argx.Error, fn ->
-        D.set_default(args, configs, __MODULE__)
+        D.set_default(arg, config, __MODULE__)
       end
     end
   end

@@ -8,10 +8,11 @@ defmodule ConverterTest do
   ###
   describe "convert - ok" do
     test "integer" do
-      args = [total: "3"]
+      arg = {:total, "3"}
 
-      configs = [
-        total: %Argx.Config{
+      config = {
+        :total,
+        %Argx.Config{
           type: :integer,
           auto: true,
           range: nil,
@@ -20,16 +21,17 @@ defmodule ConverterTest do
           empty: false,
           nested: nil
         }
-      ]
+      }
 
-      assert [total: 3] == C.convert(args, configs)
+      assert {:total, 3} == C.convert(arg, config)
     end
 
     test "float" do
-      args = [weight: "3.21"]
+      arg = {:weight, "3.21"}
 
-      configs = [
-        weight: %Argx.Config{
+      config = {
+        :weight,
+        %Argx.Config{
           type: :float,
           auto: true,
           range: nil,
@@ -38,74 +40,19 @@ defmodule ConverterTest do
           empty: false,
           nested: nil
         }
-      ]
+      }
 
-      assert [weight: 3.21] == C.convert(args, configs)
-    end
-
-    test "integer & float" do
-      args = [total: "3", weight: "3.21"]
-
-      configs = [
-        total: %Argx.Config{
-          type: :integer,
-          auto: true,
-          range: nil,
-          default: nil,
-          optional: false,
-          empty: false,
-          nested: nil
-        },
-        weight: %Argx.Config{
-          type: :float,
-          auto: true,
-          range: nil,
-          default: nil,
-          optional: false,
-          empty: false,
-          nested: nil
-        }
-      ]
-
-      assert [total: 3, weight: 3.21] == C.convert(args, configs)
+      assert {:weight, 3.21} == C.convert(arg, config)
     end
   end
 
   describe "convert - error" do
-    test "should be in the same order" do
-      args = [weight: "3.21", total: "3"]
+    test "arg is empty" do
+      arg = {}
 
-      configs = [
-        total: %Argx.Config{
-          type: :integer,
-          auto: true,
-          range: nil,
-          default: nil,
-          optional: false,
-          empty: false,
-          nested: nil
-        },
-        weight: %Argx.Config{
-          type: :float,
-          auto: true,
-          range: nil,
-          default: nil,
-          optional: false,
-          empty: false,
-          nested: nil
-        }
-      ]
-
-      assert_raise Argx.Error, fn ->
-        C.convert(args, configs)
-      end
-    end
-
-    test "args is empty" do
-      args = []
-
-      configs = [
-        total: %Argx.Config{
+      config = {
+        :total,
+        %Argx.Config{
           type: :integer,
           auto: true,
           range: nil,
@@ -114,19 +61,19 @@ defmodule ConverterTest do
           empty: false,
           nested: nil
         }
-      ]
+      }
 
       assert_raise Argx.Error, fn ->
-        C.convert(args, configs)
+        C.convert(arg, config)
       end
     end
 
-    test "configs is empty" do
-      args = [total: "3"]
-      configs = []
+    test "config is empty" do
+      arg = {:total, "3"}
+      config = {:total, %{}}
 
       assert_raise Argx.Error, fn ->
-        C.convert(args, configs)
+        C.convert(arg, config)
       end
     end
   end

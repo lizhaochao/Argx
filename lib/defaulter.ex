@@ -4,39 +4,34 @@ defmodule Argx.Defaulter do
   alias Argx.Util
 
   def set_default(
-        [{arg_name, _arg_value} | _] = args,
-        [{arg_name2, %Argx.Config{}} | _] = configs,
+        {arg_name, _arg_value} = arg,
+        {arg_name2, %Argx.Config{}} = config,
         module
       )
       when arg_name == arg_name2 do
-    do_set_default(args, configs, module, [])
+    do_set_default(arg, config, module)
   end
 
-  def set_default([_ | _], [_ | _], _module), do: raise(Argx.Error, "not in the same order.")
-  def set_default([], [_ | _], _module), do: raise(Argx.Error, "args is empty")
-  def set_default([_ | _], [], _module), do: raise(Argx.Error, "configs is empty")
-  def set_default([], [], _module), do: raise(Argx.Error, "both args and configs are empty")
-
-  defp do_set_default([] = _args, [] = _configs, _module, new_args), do: Enum.reverse(new_args)
+  def set_default(_other_arg, _other_config, _module) do
+    raise(Argx.Error, "not in the same order.")
+  end
 
   defp do_set_default(
-         [{arg_name, nil} | arg_rest],
-         [{_, %Argx.Config{default: default}} | config_rest],
-         module,
-         new_args
+         {arg_name, nil},
+         {_, %Argx.Config{default: default}},
+         module
        )
        when not is_nil(default) do
     new_arg_value = get_default(default, module)
-    do_set_default(arg_rest, config_rest, module, [{arg_name, new_arg_value} | new_args])
+    {arg_name, new_arg_value}
   end
 
   defp do_set_default(
-         [{_arg_name, _arg_value} = arg | arg_rest],
-         [{_, _} | config_rest],
-         module,
-         new_args
+         {_arg_name, _arg_value} = arg,
+         {_, _},
+         _module
        ) do
-    do_set_default(arg_rest, config_rest, module, [arg | new_args])
+    arg
   end
 
   def get_default(v, _m)
