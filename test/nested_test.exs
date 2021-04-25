@@ -112,6 +112,26 @@ defmodule NestedTest do
 
       assert expected_args == ProjectC.get_one(args)
     end
+
+    test "ok - order - 2 records" do
+      args = %{
+        one: [
+          %{a: "hello1", b: 1, c: "1.1", d: true},
+          %{a: "hello2", b: 2, c: "2.2", d: true}
+        ],
+        another: "another"
+      }
+
+      expected_args = %{
+        one: [
+          %{a: "hello1", b: 1, c: 1.1, d: true},
+          %{a: "hello2", b: 2, c: 2.2, d: true}
+        ],
+        another: "another"
+      }
+
+      assert expected_args == ProjectC.get_one(args)
+    end
   end
 
   # TODO: 3 level return args should be satisfy configs

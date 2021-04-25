@@ -11,37 +11,37 @@ defmodule Argx.Matcher do
         [{_arg_name, _arg_value} | _] = args,
         [{_arg_name2, %Argx.Config{}} | _] = configs,
         curr_m,
-        ok_args \\ [],
+        root \\ [],
         path \\ []
       )
       when is_atom(curr_m) do
-    traverse(ok_args, path, args, configs, curr_m)
+    traverse(root, path, args, configs, curr_m)
   end
 
   ###
-  def traverse(ok_args, path, args, configs, curr_m, errors \\ @init_errors)
+  def traverse(root, path, args, configs, curr_m, errors \\ @init_errors)
 
-  def traverse(ok_args, _path, [] = _args, [] = _configs, _curr_m, errors) do
-    {errors, Enum.reverse(ok_args)}
+  def traverse(root, _path, [] = _args, [] = _configs, _curr_m, errors) do
+    {errors, Enum.reverse(root)}
   end
 
   def traverse(
-        ok_args,
+        root,
         path,
         [arg | args_rest],
         [config | configs_rest],
         curr_m,
         errors
       )
-      when is_list(ok_args) and is_list(path) and is_list(errors) do
+      when is_list(root) and is_list(path) and is_list(errors) do
     arg = pre_process_args(arg, config, curr_m)
 
-    {errors, ok_args} =
+    {errors, root} =
       arg
       |> collect_errors(config, path, errors)
-      |> drill_down(arg, config, ok_args, path, curr_m)
+      |> drill_down(arg, config, root, path, curr_m)
 
-    traverse(ok_args, path, args_rest, configs_rest, curr_m, errors)
+    traverse(root, path, args_rest, configs_rest, curr_m, errors)
   end
 
   def pre_process_args(arg, config, curr_m) do
@@ -168,95 +168,94 @@ defmodule Argx.Matcher do
         errors,
         {arg_name, _arg_value} = arg,
         config,
-        ok_args,
+        root,
         path,
         curr_m
       ) do
-    do_drill_down(errors, arg, config, ok_args, path ++ [arg_name], curr_m)
+    do_drill_down(errors, arg, config, root, path ++ [arg_name], curr_m)
   end
 
   defp do_drill_down(
          errors,
-         {arg_name, arg_value},
+         arg,
          {_arg_name2, %Argx.Config{type: :list, nested: nil}},
-         ok_args,
+         root,
          _path,
          _curr_m
        ) do
-    ok_args = [{arg_name, arg_value} | ok_args]
-    {errors, ok_args}
+    {errors, [arg | root]}
   end
 
   defp do_drill_down(
          errors,
          {arg_name, [_ | _] = arg_value},
          {_arg_name2, %Argx.Config{type: :list, nested: nested_configs}},
-         ok_args,
+         root,
          path,
          curr_m
        )
        when map_size(nested_configs) > 1 do
-    traverse_by_list(arg_value, nested_configs, ok_args, arg_name, path, curr_m, errors)
+    traverse_by_list(arg_value, nested_configs, root, arg_name, path, curr_m, errors)
   end
 
   defp do_drill_down(
          errors,
          {_arg_name, _arg_value} = arg,
          {_arg_name2, %Argx.Config{}},
-         ok_args,
+         root,
          _path,
          _curr_m
        ) do
-    {errors, [arg | ok_args]}
+    {errors, [arg | root]}
   end
 
-  def traverse_by_list(list, configs, ok_args, parent_arg_name, path, curr_m, errors) do
+  def traverse_by_list(list, configs, root, parent, path, curr_m, errors) do
     {errors, new_list} =
       do_traverse_by_list(
         list,
         configs,
-        parent_arg_name,
+        parent,
         path,
         curr_m,
         {1, errors, []}
       )
 
-    ok_args = Util.append(Enum.into(new_list, %{}), ok_args, parent_arg_name)
-    {errors, ok_args}
+    root = Keyword.put(root, parent, Enum.reverse(new_list))
+    {errors, root}
   end
 
   def do_traverse_by_list(
         [] = _list,
         _configs,
-        _parent_arg_name,
+        _parent,
         _path,
         _curr_m,
-        {_num, errors, ok_args}
+        {_num, errors, new_list}
       ) do
-    {errors, ok_args}
+    {errors, new_list}
   end
 
   def do_traverse_by_list(
-        [args | list_rest],
+        [%{} = args | list_rest],
         configs,
-        parent_arg_name,
+        parent,
         path,
         curr_m,
-        {num, merged_errors, new_map}
+        {num, merged_errors, new_list}
       ) do
     configs = Util.to_keyword(configs)
     new_args = Util.sort_by_keys(args, Keyword.keys(configs))
     num_path = path ++ ["#{num}"]
-    {errors, item} = traverse(new_map, num_path, new_args, configs, curr_m)
-    new_map = Keyword.merge(new_map, item)
+
+    {errors, new_args} = traverse([], num_path, new_args, configs, curr_m)
 
     acc = {
       num + 1,
       Helper.merge_errors(merged_errors, errors),
-      new_map
+      [Enum.into(new_args, %{}) | new_list]
     }
 
-    do_traverse_by_list(list_rest, configs, parent_arg_name, path, curr_m, acc)
+    do_traverse_by_list(list_rest, configs, parent, path, curr_m, acc)
   end
 end
 
