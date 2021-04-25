@@ -35,7 +35,7 @@ defmodule NestedTest do
   use ExUnit.Case
 
   describe "list container" do
-    test "mixed - list -> map" do
+    test "list -> map - mixed ok & errors" do
       list_data = [
         # line 1: all are invalid
         %{a: "a", b: 0, c: "a", d: "boolean"},
@@ -58,7 +58,7 @@ defmodule NestedTest do
       assert expected == ProjectC.get_one(args)
     end
 
-    test "ok - list -> map - case 1 - params is map" do
+    test "list -> map - case 1 - params is map - ok" do
       list_data = [
         %{a: "hello", b: 1, c: "1.2", d: true}
       ]
@@ -74,38 +74,90 @@ defmodule NestedTest do
       assert expected_args == ProjectC.get_one(args)
     end
 
-    test "ok - list -> map - case 2 - params is keyword" do
+    ###
+    test "list -> map -> list - mixed ok & errors" do
       list_data = [
-        %{a: "hello", b: 1, c: "1.2", d: true}
+        %{aa: 1, bb: "bb"},
+        %{
+          aa: 1,
+          bb: [
+            # line 1: all are invalid
+            %{a: "a", b: 0, c: "a", d: "boolean"},
+            # line 2: all are invalid
+            %{a: "a", b: "b", c: "a", d: "true"},
+            # line 3: all are valid
+            %{a: "hello", b: 1, c: "1.2", d: true}
+          ]
+        },
+        %{aa: nil, bb: nil}
       ]
 
-      args = [one: list_data, another: "another"]
+      args = %{two: list_data}
 
-      expected_list_data = [
-        %{a: "hello", b: 1, c: 1.2, d: true}
-      ]
+      expected = {
+        :error,
+        [
+          error_type: [
+            "two:1:aa",
+            "two:1:bb",
+            "two:2:aa",
+            "two:2:bb:1:c",
+            "two:2:bb:1:d",
+            "two:2:bb:2:b",
+            "two:2:bb:2:c",
+            "two:2:bb:2:d"
+          ],
+          lacked: [:another, "two:2:bb:1:b", "two:3:aa", "two:3:bb"],
+          out_of_range: ["two:2:bb:1:a", "two:2:bb:2:a"]
+        ]
+      }
 
-      # TODO: tmp change
-      expected_args = [another: "another", one: expected_list_data]
-
-      assert expected_args == ProjectC.get_one(args)
+      assert expected == ProjectC.get_two(args)
     end
 
-    # TODO: return args should be sorted as origin args
-    #    test "ok - order - params is keyword" do
-    #      args = [a: "a", b: "a", c: "a", yes: "a", no: "a", h: "a"]
-    #      assert args == ProjectC.get_more(args)
-    #    end
+    test "list -> map -> list - ok" do
+      list_data = [
+        %{aa: "aa", bb: []},
+        %{
+          aa: "aaa",
+          bb: [
+            %{a: "hello1", b: 1, c: "1.1", d: true},
+            %{a: "hello2", b: 2, c: "1.2", d: false}
+          ]
+        },
+        %{aa: "aaaa", bb: []}
+      ]
 
+      args = %{two: list_data, another: 1}
+
+      expected_list_data = [
+        %{aa: "aa", bb: []},
+        %{
+          aa: "aaa",
+          bb: [
+            %{a: "hello1", b: 1, c: 1.1, d: true},
+            %{a: "hello2", b: 2, c: 1.2, d: false}
+          ]
+        },
+        %{aa: "aaaa", bb: []}
+      ]
+
+      expected_args = %{two: expected_list_data, another: 1}
+      assert expected_args == ProjectC.get_two(args)
+    end
+
+    ###
     test "ok - ignore more fields" do
       list_data = [
-        %{a: "hello", b: 1, c: "1.2", d: true, e: 1, f: 2}
+        %{a: "hello1", b: 1, c: "1.1", d: true, e: 1, f: 2},
+        %{a: "hello2", b: 2, c: "1.2", d: true, e: 1, f: 2}
       ]
 
       args = %{one: list_data, another: "another", more: "more", more_more: "more more"}
 
       expected_list_data = [
-        %{a: "hello", b: 1, c: 1.2, d: true}
+        %{a: "hello1", b: 1, c: 1.1, d: true},
+        %{a: "hello2", b: 2, c: 1.2, d: true}
       ]
 
       expected_args = %{one: expected_list_data, another: "another"}
@@ -113,7 +165,39 @@ defmodule NestedTest do
       assert expected_args == ProjectC.get_one(args)
     end
 
-    test "ok - order - 2 records" do
+    test "ok - nested list - empty" do
+      args = %{
+        one: [],
+        another: "another"
+      }
+
+      expected_args = %{
+        one: [],
+        another: "another"
+      }
+
+      assert expected_args == ProjectC.get_one(args)
+    end
+
+    test "ok - nested list - 1 records" do
+      args = %{
+        one: [
+          %{a: "hello1", b: 1, c: "1.1", d: true}
+        ],
+        another: "another"
+      }
+
+      expected_args = %{
+        one: [
+          %{a: "hello1", b: 1, c: 1.1, d: true}
+        ],
+        another: "another"
+      }
+
+      assert expected_args == ProjectC.get_one(args)
+    end
+
+    test "ok - nested list - 2 records" do
       args = %{
         one: [
           %{a: "hello1", b: 1, c: "1.1", d: true},
@@ -134,75 +218,25 @@ defmodule NestedTest do
     end
   end
 
-  # TODO: 3 level return args should be satisfy configs
-  #  describe " - list container" do
-  #    test "ok - list -> map -> list" do
+  # TODO: return args should be sorted as origin args
+  #  test "list -> map - case 2 - params is keyword - ok" do
   #      list_data = [
-  #        %{aa: "aa", bb: []},
-  #        %{
-  #          aa: "aaa",
-  #          bb: [
-  #            %{a: "hello", b: 1, c: "1.2", d: true}
-  #          ]
-  #        },
-  #        %{aa: "aaaa", bb: []}
+  #        %{a: "hello", b: 1, c: "1.2", d: true}
   #      ]
   #
-  #      args = %{two: list_data, another: 1}
+  #      args = [one: list_data, another: "another"]
   #
   #      expected_list_data = [
-  #        %{aa: "aa", bb: []},
-  #        %{
-  #          aa: "aaa",
-  #          bb: [
-  #            %{a: "hello", b: 1, c: 1.2, d: true}
-  #          ]
-  #        },
-  #        %{aa: "aaaa", bb: []}
+  #        %{a: "hello", b: 1, c: 1.2, d: true}
   #      ]
   #
-  #      expected_args = %{two: expected_list_data, another: 1}
-  #      assert expected_args == ProjectC.get_two(args)
+  #      expected_args = [one: expected_list_data, another: "another"]
+  #
+  #      assert expected_args == ProjectC.get_one(args)
   #    end
   #
-  #    test "mixed - list -> map -> list" do
-  #      list_data = [
-  #        %{aa: 1, bb: "bb"},
-  #        %{
-  #          aa: 1,
-  #          bb: [
-  #            # line 1: all are invalid
-  #            %{a: "a", b: 0, c: "a", d: "boolean"},
-  #            # line 2: all are invalid
-  #            %{a: "a", b: "b", c: "a", d: "true"},
-  #            # line 3: all are valid
-  #            %{a: "hello", b: 1, c: "1.2", d: true}
-  #          ]
-  #        },
-  #        %{aa: nil, bb: nil}
-  #      ]
-  #
-  #      args = %{two: list_data}
-  #
-  #      expected = {
-  #        :error,
-  #        [
-  #          error_type: [
-  #            "two:1:aa",
-  #            "two:1:bb",
-  #            "two:2:aa",
-  #            "two:2:bb:1:c",
-  #            "two:2:bb:1:d",
-  #            "two:2:bb:2:b",
-  #            "two:2:bb:2:c",
-  #            "two:2:bb:2:d"
-  #          ],
-  #          lacked: [:another, "two:2:bb:1:b", "two:3:aa", "two:3:bb"],
-  #          out_of_range: ["two:2:bb:1:a", "two:2:bb:2:a"]
-  #        ]
-  #      }
-  #
-  #      assert expected == ProjectC.get_two(args)
-  #    end
+  #  test "ok - order - params is keyword" do
+  #    args = [a: "a", b: "a", c: "a", yes: "a", no: "a", h: "a"]
+  #    assert args == ProjectC.get_more(args)
   #  end
 end
