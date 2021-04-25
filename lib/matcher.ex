@@ -36,7 +36,7 @@ defmodule Argx.Matcher do
         errors
       )
       when is_list(root) and is_list(path) and is_list(errors) do
-    arg = pre_process_args(arg, config, curr_m)
+    arg = pre_args(arg, config, curr_m)
 
     {errors, root} =
       arg
@@ -46,7 +46,7 @@ defmodule Argx.Matcher do
     traverse(root, path, args_rest, configs_rest, curr_m, errors)
   end
 
-  def pre_process_args(arg, config, curr_m) do
+  def pre_args(arg, config, curr_m) do
     arg
     |> Defaulter.set_default(config, curr_m)
     |> Converter.convert(config)
@@ -106,11 +106,11 @@ defmodule Argx.Matcher do
   end
 
   ### Reenter Traverse Procedure
-  def traverse_by_list(list, configs, parent, path, curr_m, all, errors) do
+  def traverse_by_list(list, configs, parent, path, curr_m, root, errors) do
     result = do_traverse_by_list(list, configs, parent, path, curr_m, 1, [], errors)
     {errors, list} = result
 
-    root = Keyword.put(all, parent, Enum.reverse(list))
+    root = Keyword.put(root, parent, Enum.reverse(list))
     {errors, root}
   end
 
@@ -267,12 +267,12 @@ defmodule Argx.Matcher.Helper do
   def merge_errors(left, right) when is_list(left) and is_list(right) do
     do_merger_errors(
       [],
-      left |> pre_process_errors() |> Enum.sort(),
-      right |> pre_process_errors() |> Enum.sort()
+      left |> pre_errors() |> Enum.sort(),
+      right |> pre_errors() |> Enum.sort()
     )
   end
 
-  defp pre_process_errors(errors) when is_list(errors) do
+  defp pre_errors(errors) when is_list(errors) do
     Enum.reduce(Const.check_types(), errors, fn type, err ->
       {_, new} =
         Keyword.get_and_update(err, type, fn current ->
