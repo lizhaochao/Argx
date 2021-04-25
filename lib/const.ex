@@ -11,4 +11,6 @@ defmodule Argx.Const do
   def not_support_types, do: [:@, :defmodule, :use, :require, :import, :alias]
 
   def configs_keyword, do: :configs
+
+  def check_types, do: [:error_type, :lacked, :out_of_range]
 end

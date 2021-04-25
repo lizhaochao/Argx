@@ -1,8 +1,10 @@
 defmodule Argx.Matcher do
   @moduledoc false
 
-  alias Argx.{Checker, Converter, Defaulter, Parser, Util}
+  alias Argx.{Checker, Converter, Defaulter, Parser}
   alias Argx.Matcher.Helper
+
+  import Argx.Util
 
   @init_errors []
 
@@ -195,7 +197,7 @@ defmodule Argx.Matcher do
          curr_m
        )
        when map_size(nested_configs) > 1 do
-    traverse_by_list(arg_value, nested_configs, root, arg_name, path, curr_m, errors)
+    traverse_by_list(arg_value, nested_configs, arg_name, path, curr_m, root, errors)
   end
 
   defp do_drill_down(
@@ -209,86 +211,105 @@ defmodule Argx.Matcher do
     {errors, [arg | root]}
   end
 
-  def traverse_by_list(list, configs, root, parent, path, curr_m, errors) do
-    {errors, new_list} =
-      do_traverse_by_list(
-        list,
-        configs,
-        parent,
-        path,
-        curr_m,
-        {1, errors, []}
-      )
+  ###
+  def traverse_by_list(list, configs, parent, path, curr_m, all, errors) do
+    result = do_traverse_by_list(list, configs, parent, path, curr_m, 1, [], errors)
+    {errors, list} = result
 
-    root = Keyword.put(root, parent, Enum.reverse(new_list))
+    root = Keyword.put(all, parent, Enum.reverse(list))
     {errors, root}
   end
 
-  def do_traverse_by_list(
-        [] = _list,
-        _configs,
-        _parent,
-        _path,
-        _curr_m,
-        {_num, errors, new_list}
-      ) do
+  def do_traverse_by_list([] = _list, _configs, _parent, _path, _curr_m, _num, new_list, errors) do
     {errors, new_list}
   end
 
   def do_traverse_by_list(
-        [%{} = args | list_rest],
+        [%{} = args | rest] = _list,
         configs,
         parent,
         path,
         curr_m,
-        {num, merged_errors, new_list}
+        num,
+        new_list,
+        errors
       ) do
-    configs = Util.to_keyword(configs)
-    new_args = Util.sort_by_keys(args, Keyword.keys(configs))
-    num_path = path ++ ["#{num}"]
+    args
+    |> reenter(configs, path, num, curr_m)
+    |> continue(errors, num, rest, configs, parent, path, curr_m, new_list)
+  end
 
-    {errors, new_args} = traverse([], num_path, new_args, configs, curr_m)
+  defp reenter(args, configs, path, num, curr_m) do
+    configs = to_keyword(configs)
+    args = sort_by_keys(args, Keyword.keys(configs))
+    path = Helper.append_path(path, num)
+    traverse([], path, args, configs, curr_m)
+  end
 
-    acc = {
-      num + 1,
-      Helper.merge_errors(merged_errors, errors),
-      [Enum.into(new_args, %{}) | new_list]
-    }
-
-    do_traverse_by_list(list_rest, configs, parent, path, curr_m, acc)
+  defp continue({new_error, args}, errors, num, rest, configs, parent, path, curr_m, list) do
+    num = num + 1
+    list = [to_map(args) | list]
+    errors = Helper.merge_errors(errors, new_error)
+    do_traverse_by_list(rest, configs, parent, path, curr_m, num, list, errors)
   end
 end
 
 defmodule Argx.Matcher.Helper do
   @moduledoc false
 
-  alias Argx.Util
+  import Argx.Util
+  alias Argx.Const
 
   ###
   def reduce_errors(errors, key, path, check_type) do
-    new_errors = key |> make_path(path) |> Util.append(errors, check_type)
+    new_errors = key |> join_path(path) |> append(errors, check_type)
     {new_errors, nil, nil}
   end
 
-  def merge_errors(a_err, b_err) when is_list(a_err) and is_list(b_err) do
-    a_error_type = Keyword.get(a_err, :error_type, [])
-    b_error_type = Keyword.get(b_err, :error_type, [])
-    a_lacked = Keyword.get(a_err, :lacked, [])
-    b_lacked = Keyword.get(b_err, :lacked, [])
-    a_out_of_range = Keyword.get(a_err, :out_of_range, [])
-    b_out_of_range = Keyword.get(b_err, :out_of_range, [])
-
-    errors = []
-    error_type = a_error_type ++ b_error_type
-    lacked = a_lacked ++ b_lacked
-    out_of_range = a_out_of_range ++ b_out_of_range
-    errors = (error_type != [] && Keyword.put(errors, :error_type, error_type)) || errors
-    errors = (lacked != [] && Keyword.put(errors, :lacked, lacked)) || errors
-    (out_of_range != [] && Keyword.put(errors, :out_of_range, out_of_range)) || errors
+  def merge_errors(left, right) when is_list(left) and is_list(right) do
+    do_merger_errors(
+      [],
+      left |> pre_process_errors() |> Enum.sort(),
+      right |> pre_process_errors() |> Enum.sort()
+    )
   end
 
-  def merge_errors(_other_a_err, _other_b_err), do: []
+  defp pre_process_errors(errors) when is_list(errors) do
+    Enum.reduce(Const.check_types(), errors, fn type, err ->
+      {_, new} =
+        Keyword.get_and_update(err, type, fn current ->
+          {nil, current || []}
+        end)
 
-  def make_path(key, [] = _path) when is_atom(key), do: key
-  def make_path(key, [_ | _] = path), do: (path ++ [key]) |> Enum.join(":")
+      new
+    end)
+  end
+
+  defp do_merger_errors(new_errors, [] = _left, [] = _right), do: Enum.reverse(new_errors)
+
+  defp do_merger_errors(
+         new_errors,
+         [{l_type, l_value} | l_rest],
+         [{r_type, r_value} | r_rest]
+       )
+       when l_type == r_type do
+    value =
+      case {l_value, r_value} do
+        {[], []} -> nil
+        {[], [_ | _]} -> r_value
+        {[_ | _], []} -> l_value
+        {[_ | _], [_ | _]} -> l_value ++ r_value
+      end
+
+    value
+    |> Kernel.&&([{l_type, Enum.sort(value)} | new_errors])
+    |> Kernel.||(new_errors)
+    |> do_merger_errors(l_rest, r_rest)
+  end
+
+  ###
+  def join_path(key, [] = _path) when is_atom(key), do: key
+  def join_path(key, [_ | _] = path), do: (path ++ [key]) |> Enum.join(":")
+
+  def append_path(path, num) when is_list(path) and is_integer(num), do: path ++ ["#{num}"]
 end
