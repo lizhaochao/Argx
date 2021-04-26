@@ -168,11 +168,15 @@ defmodule Argx.Use.Helper do
 
   ### make function name
   def make_get_general_configs_f_name(name) do
-    make_fun_name("get#{@defconfigs_key}#{name}")
+    make_fun_name("get#{@defconfigs_key}#{name}", &fun_name_rule/1)
   end
 
-  def make_get_fun_configs_f_name(f), do: make_fun_name("get_#{f}_configs")
-  def make_real_f_name(f), do: make_fun_name("real_#{f}")
+  def make_get_fun_configs_f_name(f), do: make_fun_name("get_#{f}_configs", &fun_name_rule/1)
+  def make_real_f_name(f), do: make_fun_name("real_#{f}", &fun_name_rule/1)
+
+  defp fun_name_rule(name) when is_bitstring(name), do: ["__", name, "__"]
+  defp fun_name_rule(name) when is_atom(name), do: name |> to_string() |> fun_name_rule()
+  defp fun_name_rule(_), do: []
 
   ### operate attr
   def reg_attr(name) do
