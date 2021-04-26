@@ -1,7 +1,9 @@
 defmodule Argx do
   @moduledoc false
 
-  alias Argx.{Checker, Formatter, Matcher, Util}
+  import Argx.Util
+
+  alias Argx.{Checker, Formatter, Matcher}
   alias Argx.Use.Helper
   alias Argx, as: Self
 
@@ -24,8 +26,8 @@ defmodule Argx do
       |> get_configs(curr_m, config_names)
       |> Enum.into([])
 
-    origin_type = Util.get_type(args)
-    args = Util.sort_by_keys(args, Keyword.keys(configs))
+    origin_type = get_type(args)
+    args = sort_by_keys(args, Keyword.keys(configs))
 
     Matcher.match(
       args,

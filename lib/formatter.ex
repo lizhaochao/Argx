@@ -1,12 +1,12 @@
 defmodule Argx.Formatter do
   @moduledoc false
 
-  alias Argx.Util
+  import Argx.Util
 
   ###
   def fmt_match_result({errors, new_args}, origin_type \\ nil) do
     errors = sort_errors(errors)
-    new_args = (origin_type && Util.restore(origin_type, new_args)) || new_args
+    new_args = (origin_type && restore(origin_type, new_args)) || new_args
     {errors, new_args}
   end
 

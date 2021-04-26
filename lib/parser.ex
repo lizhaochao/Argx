@@ -1,7 +1,9 @@
 defmodule Argx.Parser do
   @moduledoc false
 
-  alias Argx.{Const, Util}
+  import Argx.Util
+
+  alias Argx.Const
 
   @allowed_fun_types Const.allowed_fun_types()
   @not_support_types Const.not_support_types()
@@ -106,7 +108,7 @@ defmodule Argx.Parser do
   end
 
   defp reduce_defconfig_names(%{} = configs, names_key, name) do
-    name = Util.prune_names(name)
+    name = prune_names(name)
 
     {_, new_configs} =
       Map.get_and_update(configs, names_key, fn curr ->
@@ -200,7 +202,7 @@ defmodule Argx.Parser do
   defp put_nested_name(items, type, nested_name) do
     items
     |> Map.put(:type, type)
-    |> Map.put(:nested, Util.prune_names(nested_name))
+    |> Map.put(:nested, prune_names(nested_name))
   end
 
   ###

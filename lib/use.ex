@@ -1,7 +1,7 @@
 defmodule Argx.Use.Defconfig do
   @moduledoc false
 
-  alias Argx.{Checker, Const, Parser, Util}
+  alias Argx.{Checker, Const, Parser}
   alias Argx.Use.Defconfig, as: Self
   alias Argx.Use.Helper
 
@@ -37,7 +37,9 @@ end
 defmodule Argx.Use.WithCheck do
   @moduledoc false
 
-  alias Argx.{Checker, Const, Formatter, Matcher, Parser, Util}
+  import Argx.Util
+
+  alias Argx.{Checker, Const, Formatter, Matcher, Parser}
   alias Argx.Use.WithCheck, as: Self
   alias Argx.Use.Helper
 
@@ -132,7 +134,7 @@ defmodule Argx.Use.WithCheck do
         |> Helper.get_configs_by_names(names)
         |> Map.merge(configs)
 
-      Util.sort_by_keys(
+      sort_by_keys(
         merged_configs,
         unquote(arg_names)
       )
@@ -141,14 +143,14 @@ defmodule Argx.Use.WithCheck do
 
   def get_all_defconfigs([] = _general_m, defconfigs_attr) do
     quote do
-      Util.list_to_map(unquote(defconfigs_attr))
+      list_to_map(unquote(defconfigs_attr))
     end
   end
 
   def get_all_defconfigs(general_m, defconfigs_attr) when is_atom(general_m) do
     quote do
       general_configs = Helper.get_defconfigs(unquote(general_m))
-      defconfigs = Util.list_to_map(unquote(defconfigs_attr))
+      defconfigs = list_to_map(unquote(defconfigs_attr))
       Map.merge(general_configs, defconfigs)
     end
   end
@@ -157,18 +159,20 @@ end
 defmodule Argx.Use.Helper do
   @moduledoc false
 
-  alias Argx.{Const, Util}
+  import Argx.Util
+
+  alias Argx.Const
   alias Argx.Use.Helper, as: Self
 
   @defconfigs_key Const.defconfigs_key()
 
   ### make function name
   def make_get_general_configs_f_name(name) do
-    Util.make_fun_name("get#{@defconfigs_key}#{name}")
+    make_fun_name("get#{@defconfigs_key}#{name}")
   end
 
-  def make_get_fun_configs_f_name(f), do: Util.make_fun_name("get_#{f}_configs")
-  def make_real_f_name(f), do: Util.make_fun_name("real_#{f}")
+  def make_get_fun_configs_f_name(f), do: make_fun_name("get_#{f}_configs")
+  def make_real_f_name(f), do: make_fun_name("real_#{f}")
 
   ### operate attr
   def reg_attr(name) do
@@ -242,7 +246,7 @@ defmodule Argx.Use.Helper do
 
   def get_configs_by_names(%{} = all_configs, [_ | _] = names) do
     names
-    |> Util.prune_names()
+    |> prune_names()
     |> Enum.reduce(%{}, fn name, name_configs ->
       new_configs = drill_down(all_configs, name)
       Map.merge(name_configs, new_configs)
