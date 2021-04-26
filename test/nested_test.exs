@@ -1,40 +1,29 @@
-defmodule ProjectC do
-  @moduledoc false
-
-  use Argx
-
-  defconfig(MapRule, [
-    a(:string, 2..8) || get_default(),
-    b(:integer, :empty),
-    c(:float, :auto),
-    d(:boolean, :optional)
-  ])
-
-  defconfig(ListRule, [aa(:string), bb({:list, MapRule})])
-  defconfig(SimpleListRule, _(:integer, :auto))
-
-  defconfig(OneRule, [one({:list, MapRule}), another(:string)])
-  defconfig(TwoRule, [two({:list, ListRule}), another(:integer)])
-  defconfig(ThreeRule, three({:list, SimpleListRule}))
-  defconfig(MoreRule, [a(:string), b(:string), c(:string), yes(:string), no(:string), h(:string)])
-
-  def get_one(params), do: match(params, [OneRule])
-  def get_two(params), do: match(params, [TwoRule])
-  def get_three(params), do: match(params, [ThreeRule])
-  def get_more(params), do: match(params, [MoreRule])
-
-  def get_default, do: "default"
-
-  def fmt_errors({:error, _} = errors), do: errors
-  def fmt_errors(new_args), do: new_args
-end
-
 defmodule NestedTest do
   @moduledoc false
 
   use ExUnit.Case
 
-  describe "list container" do
+  ###
+  describe "list container - nested map" do
+    defmodule NestedA do
+      use Argx
+
+      defconfig(MapRule, [
+        a(:string, 2..8) || get_default(),
+        b(:integer, :empty),
+        c(:float, :auto),
+        d(:boolean, :optional)
+      ])
+
+      defconfig(OneRule, [one({:list, MapRule}), another(:string)])
+
+      def get(params), do: match(params, [OneRule])
+
+      def get_default, do: "default"
+      def fmt_errors({:error, _} = errors), do: errors
+      def fmt_errors(new_args), do: new_args
+    end
+
     test "list -> map - mixed ok & errors" do
       list_data = [
         # line 1: all are invalid
@@ -55,7 +44,7 @@ defmodule NestedTest do
            out_of_range: ["one:1:a", "one:2:a"]
          ]}
 
-      assert expected == ProjectC.get_one(args)
+      assert expected == NestedA.get(args)
     end
 
     test "list -> map - case 1 - params is map - ok" do
@@ -71,10 +60,121 @@ defmodule NestedTest do
 
       expected_args = %{one: expected_list_data, another: "another"}
 
-      assert expected_args == ProjectC.get_one(args)
+      assert expected_args == NestedA.get(args)
     end
 
     ###
+    test "ok - ignore more fields" do
+      list_data = [
+        %{a: "hello1", b: 1, c: "1.1", d: true, e: 1, f: 2},
+        %{a: "hello2", b: 2, c: "1.2", d: true, e: 1, f: 2}
+      ]
+
+      args = %{one: list_data, another: "another", more: "more", more_more: "more more"}
+
+      expected_list_data = [
+        %{a: "hello1", b: 1, c: 1.1, d: true},
+        %{a: "hello2", b: 2, c: 1.2, d: true}
+      ]
+
+      expected_args = %{one: expected_list_data, another: "another"}
+
+      assert expected_args == NestedA.get(args)
+    end
+
+    test "ok - nested list - empty" do
+      args = %{
+        one: [],
+        another: "another"
+      }
+
+      expected_args = %{
+        one: [],
+        another: "another"
+      }
+
+      assert expected_args == NestedA.get(args)
+    end
+
+    test "ok - nested list - 1 records" do
+      args = %{
+        one: [
+          %{a: "hello1", b: 1, c: "1.1", d: true}
+        ],
+        another: "another"
+      }
+
+      expected_args = %{
+        one: [
+          %{a: "hello1", b: 1, c: 1.1, d: true}
+        ],
+        another: "another"
+      }
+
+      assert expected_args == NestedA.get(args)
+    end
+
+    test "ok - nested list - 2 records" do
+      args = %{
+        one: [
+          %{a: "hello1", b: 1, c: "1.1", d: true},
+          %{a: "hello2", b: 2, c: "2.2", d: true}
+        ],
+        another: "another"
+      }
+
+      expected_args = %{
+        one: [
+          %{a: "hello1", b: 1, c: 1.1, d: true},
+          %{a: "hello2", b: 2, c: 2.2, d: true}
+        ],
+        another: "another"
+      }
+
+      assert expected_args == NestedA.get(args)
+    end
+  end
+
+  describe "list container - nested list" do
+  end
+
+  describe "list container - nested value" do
+  end
+
+  ###
+  describe "map container - nested map" do
+  end
+
+  describe "map container - nested list" do
+  end
+
+  describe "map container - nested value" do
+  end
+
+  ###
+  describe "N level nested" do
+    defmodule NestedN do
+      @moduledoc false
+
+      use Argx
+
+      defconfig(MapRule, [
+        a(:string, 2..8) || get_default(),
+        b(:integer, :empty),
+        c(:float, :auto),
+        d(:boolean, :optional)
+      ])
+
+      defconfig(ListRule, [aa(:string), bb({:list, MapRule})])
+      defconfig(OneRule, [two({:list, ListRule}), another(:integer)])
+
+      def get(params), do: match(params, [OneRule])
+
+      def get_default, do: "default"
+      def fmt_errors({:error, _} = errors), do: errors
+      def fmt_errors(new_args), do: new_args
+    end
+
     test "list -> map -> list - mixed ok & errors" do
       list_data = [
         %{aa: 1, bb: "bb"},
@@ -112,7 +212,7 @@ defmodule NestedTest do
         ]
       }
 
-      assert expected == ProjectC.get_two(args)
+      assert expected == NestedN.get(args)
     end
 
     test "list -> map -> list - ok" do
@@ -143,78 +243,7 @@ defmodule NestedTest do
       ]
 
       expected_args = %{two: expected_list_data, another: 1}
-      assert expected_args == ProjectC.get_two(args)
-    end
-
-    ###
-    test "ok - ignore more fields" do
-      list_data = [
-        %{a: "hello1", b: 1, c: "1.1", d: true, e: 1, f: 2},
-        %{a: "hello2", b: 2, c: "1.2", d: true, e: 1, f: 2}
-      ]
-
-      args = %{one: list_data, another: "another", more: "more", more_more: "more more"}
-
-      expected_list_data = [
-        %{a: "hello1", b: 1, c: 1.1, d: true},
-        %{a: "hello2", b: 2, c: 1.2, d: true}
-      ]
-
-      expected_args = %{one: expected_list_data, another: "another"}
-
-      assert expected_args == ProjectC.get_one(args)
-    end
-
-    test "ok - nested list - empty" do
-      args = %{
-        one: [],
-        another: "another"
-      }
-
-      expected_args = %{
-        one: [],
-        another: "another"
-      }
-
-      assert expected_args == ProjectC.get_one(args)
-    end
-
-    test "ok - nested list - 1 records" do
-      args = %{
-        one: [
-          %{a: "hello1", b: 1, c: "1.1", d: true}
-        ],
-        another: "another"
-      }
-
-      expected_args = %{
-        one: [
-          %{a: "hello1", b: 1, c: 1.1, d: true}
-        ],
-        another: "another"
-      }
-
-      assert expected_args == ProjectC.get_one(args)
-    end
-
-    test "ok - nested list - 2 records" do
-      args = %{
-        one: [
-          %{a: "hello1", b: 1, c: "1.1", d: true},
-          %{a: "hello2", b: 2, c: "2.2", d: true}
-        ],
-        another: "another"
-      }
-
-      expected_args = %{
-        one: [
-          %{a: "hello1", b: 1, c: 1.1, d: true},
-          %{a: "hello2", b: 2, c: 2.2, d: true}
-        ],
-        another: "another"
-      }
-
-      assert expected_args == ProjectC.get_one(args)
+      assert expected_args == NestedN.get(args)
     end
   end
 
@@ -232,11 +261,11 @@ defmodule NestedTest do
   #
   #      expected_args = [one: expected_list_data, another: "another"]
   #
-  #      assert expected_args == ProjectC.get_one(args)
+  #      assert expected_args == NestedN.get(args)
   #    end
   #
   #  test "ok - order - params is keyword" do
   #    args = [a: "a", b: "a", c: "a", yes: "a", no: "a", h: "a"]
-  #    assert args == ProjectC.get_more(args)
+  #    assert args == NestedN.get_more(args)
   #  end
 end
