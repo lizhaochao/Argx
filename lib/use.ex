@@ -55,7 +55,7 @@ defmodule Argx.Use.WithCheck do
 
         use_m = __MODULE__
         general_m = unquote(general_m)
-        arg_names = Self.get_arg_names(a)
+        arg_names = Helper.get_arg_names(a)
         configs_f_name = Helper.make_get_fun_configs_f_name(f)
 
         configs =
@@ -81,7 +81,7 @@ defmodule Argx.Use.WithCheck do
               end
 
               def unquote(f)(unquote_splicing(a)) when unquote(guard) do
-                args = unquote(Self.make_args(a))
+                args = unquote(Helper.make_args(a))
 
                 args
                 |> Matcher.match(unquote(configs), __MODULE__)
@@ -117,29 +117,6 @@ defmodule Argx.Use.WithCheck do
     |> Formatter.fmt_match_result()
     |> Formatter.fmt_errors(curr_m, general_m, use_m)
   end
-
-  ###
-  def make_args(a) do
-    quote do
-      keys = unquote(get_arg_names(a))
-      values = [unquote_splicing(a)]
-      Self.do_make_args(keys, values, [])
-    end
-  end
-
-  def do_make_args([] = _keys, [] = _values, args), do: Enum.reverse(args)
-  def do_make_args([_ | _] = _keys, [] = _values, args), do: args
-  def do_make_args([] = _keys, [_ | _] = _values, args), do: args
-
-  def do_make_args([key | key_rest], [value | value_rest], args) do
-    new_args = Keyword.put(args, key, value)
-    do_make_args(key_rest, value_rest, new_args)
-  end
-
-  def get_arg_names(args), do: do_get_arg_names(args, [])
-  defp do_get_arg_names([], names), do: Enum.reverse(names)
-  defp do_get_arg_names([{arg, _, _} | rest], names), do: do_get_arg_names(rest, [arg | names])
-  defp do_get_arg_names([_other_expr | rest], names), do: do_get_arg_names(rest, names)
 
   ###
   def merge_configs(defconfigs, configs, arg_names) do
@@ -181,6 +158,7 @@ defmodule Argx.Use.Helper do
   @moduledoc false
 
   alias Argx.{Const, Util}
+  alias Argx.Use.Helper, as: Self
 
   @defconfigs_key Const.defconfigs_key()
 
@@ -213,6 +191,29 @@ defmodule Argx.Use.Helper do
       )
     end
   end
+
+  ###
+  def make_args(a) do
+    quote do
+      keys = unquote(get_arg_names(a))
+      values = [unquote_splicing(a)]
+      Self.do_make_args(keys, values, [])
+    end
+  end
+
+  def do_make_args([] = _keys, [] = _values, args), do: Enum.reverse(args)
+  def do_make_args([_ | _] = _keys, [] = _values, args), do: args
+  def do_make_args([] = _keys, [_ | _] = _values, args), do: args
+
+  def do_make_args([key | key_rest], [value | value_rest], args) do
+    new_args = Keyword.put(args, key, value)
+    do_make_args(key_rest, value_rest, new_args)
+  end
+
+  def get_arg_names(args), do: do_get_arg_names(args, [])
+  defp do_get_arg_names([], names), do: Enum.reverse(names)
+  defp do_get_arg_names([{arg, _, _} | rest], names), do: do_get_arg_names(rest, [arg | names])
+  defp do_get_arg_names([_other_expr | rest], names), do: do_get_arg_names(rest, names)
 
   ### get configs
   def get_defconfigs(m) when is_atom(m) do
