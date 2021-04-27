@@ -4,7 +4,8 @@ defmodule Argx do
   import Argx.Util
 
   alias Argx.{Checker, Formatter, Matcher}
-  alias Argx.Use.Helper
+  alias Argx.Use.Helper, as: UseHelper
+  alias Argx.Matcher.Helper, as: MatcherHelper
   alias Argx, as: Self
 
   defmacro __using__(general_m) do
@@ -21,13 +22,9 @@ defmodule Argx do
     Checker.check_args!(args)
     Checker.check_config_names!(config_names)
 
-    configs =
-      general_m
-      |> get_configs(curr_m, config_names)
-      |> Enum.into([])
-
     origin_type = get_type(args)
-    args = sort_by_keys(args, Keyword.keys(configs))
+    configs = get_configs(general_m, curr_m, config_names)
+    {args, configs} = MatcherHelper.pre_args_configs(args, configs)
 
     Matcher.match(
       args,
@@ -40,8 +37,9 @@ defmodule Argx do
 
   def get_configs(general_m, curr_m, config_names) do
     [general_m, curr_m]
-    |> Helper.get_configs_by_modules()
-    |> Helper.get_configs_by_names(config_names)
+    |> UseHelper.get_configs_by_modules()
+    |> UseHelper.get_configs_by_names(config_names)
+    |> Enum.into([])
   end
 end
 

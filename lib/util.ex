@@ -36,14 +36,14 @@ defmodule Argx.Util do
 
   ###
   def sort_by_keys(keyword, keys) when is_list(keyword) do
-    sort_by_keys(to_map(keyword), keys)
+    keyword |> to_map() |> sort_by_keys(keys)
   end
 
   def sort_by_keys(%{} = map, keys) do
     keys
     |> Enum.reduce([], fn key, keyword ->
-      value = Map.get(map, key)
-      [{key, value} | keyword]
+      value = Map.get(map, key, nil)
+      (value && [{key, value} | keyword]) || keyword
     end)
     |> Enum.reverse()
   end

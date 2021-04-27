@@ -216,33 +216,36 @@ defmodule NestedTest do
     end
 
     test "list -> map -> list - ok" do
-      list_data = [
-        %{aa: "aa", bb: []},
-        %{
-          aa: "aaa",
-          bb: [
-            %{a: "hello1", b: 1, c: "1.1", d: true},
-            %{a: "hello2", b: 2, c: "1.2", d: false}
-          ]
-        },
-        %{aa: "aaaa", bb: []}
-      ]
+      args = %{
+        two: [
+          %{aa: "aa", bb: []},
+          %{
+            aa: "aaa",
+            bb: [
+              %{a: "hello1", b: 1, c: "1.1", d: true},
+              %{a: "hello2", b: 2, c: "1.2", d: false}
+            ]
+          },
+          %{aa: "aaaa", bb: []}
+        ],
+        another: 1
+      }
 
-      args = %{two: list_data, another: 1}
+      expected_args = %{
+        two: [
+          %{aa: "aa", bb: []},
+          %{
+            aa: "aaa",
+            bb: [
+              %{a: "hello1", b: 1, c: 1.1, d: true},
+              %{a: "hello2", b: 2, c: 1.2, d: false}
+            ]
+          },
+          %{aa: "aaaa", bb: []}
+        ],
+        another: 1
+      }
 
-      expected_list_data = [
-        %{aa: "aa", bb: []},
-        %{
-          aa: "aaa",
-          bb: [
-            %{a: "hello1", b: 1, c: 1.1, d: true},
-            %{a: "hello2", b: 2, c: 1.2, d: false}
-          ]
-        },
-        %{aa: "aaaa", bb: []}
-      ]
-
-      expected_args = %{two: expected_list_data, another: 1}
       assert expected_args == NestedN.get(args)
     end
   end

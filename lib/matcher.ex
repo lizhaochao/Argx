@@ -134,8 +134,7 @@ defmodule Argx.Matcher do
   end
 
   defp reenter(args, configs, path, num, curr_m) do
-    configs = to_keyword(configs)
-    args = sort_by_keys(args, Keyword.keys(configs))
+    {args, configs} = Helper.pre_args_configs(args, configs)
     path = Helper.append_path(path, num)
     traverse([], path, args, configs, curr_m)
   end
@@ -310,4 +309,57 @@ defmodule Argx.Matcher.Helper do
   def join_path(key, [_ | _] = path), do: (path ++ [key]) |> Enum.join(":")
 
   def append_path(path, num) when is_list(path) and is_integer(num), do: path ++ ["#{num}"]
+
+  ###
+  def pre_args_configs(args, configs) when is_map(args) or is_map(configs) do
+    args
+    |> to_keyword()
+    |> pre_args_configs(to_keyword(configs))
+  end
+
+  def pre_args_configs(args, configs) when is_list(args) and is_list(configs) do
+    with {arg_names, config_names} <- {Keyword.keys(args), Keyword.keys(configs)},
+         redundant_keys <- get_redundant_keys(arg_names, config_names),
+         {args, arg_names} <- drop_by_redundant_keys(args, redundant_keys),
+         lacked_keys <- get_lacked_keys(arg_names, config_names) do
+      sort_by_lacked_key(lacked_keys, args, configs)
+    end
+  end
+
+  defp sort_by_lacked_key([] = _lacked_keys, args, configs) do
+    with arg_names <- Keyword.keys(args),
+         configs <- sort_by_keys(configs, arg_names) do
+      {args, configs}
+    end
+  end
+
+  defp sort_by_lacked_key([_ | _] = lacked_keys, args, configs) do
+    with {args, arg_names} <- fill_by_lacked_keys(args, lacked_keys),
+         configs <- sort_by_keys(configs, arg_names) do
+      {args, configs}
+    end
+  end
+
+  defp drop_by_redundant_keys(args, redundant_keys) do
+    with args <- Keyword.drop(args, redundant_keys),
+         arg_names <- Keyword.keys(args) do
+      {args, arg_names}
+    end
+  end
+
+  defp fill_by_lacked_keys(args, lacked_keys) do
+    args =
+      lacked_keys
+      |> Enum.reduce(Enum.reverse(args), fn key, args ->
+        Keyword.put(args, key, nil)
+      end)
+      |> Enum.reverse()
+
+    arg_names = Keyword.keys(args)
+
+    {args, arg_names}
+  end
+
+  defp get_lacked_keys(arg_names, config_names), do: config_names -- arg_names
+  defp get_redundant_keys(arg_names, config_names), do: arg_names -- config_names
 end
