@@ -74,7 +74,7 @@ defmodule Argx.Matcher do
 
   defp do_drill_down(
          errors,
-         arg,
+         {_arg_name, arg_value} = arg,
          {_arg_name2, %Argx.Config{type: :list, nested: nil}},
          root,
          _path,
@@ -85,24 +85,17 @@ defmodule Argx.Matcher do
 
   defp do_drill_down(
          errors,
-         {arg_name, [_ | _] = arg_value},
+         {arg_name, arg_value},
          {_arg_name2, %Argx.Config{type: :list, nested: nested_configs}},
          root,
          path,
          curr_m
        )
-       when map_size(nested_configs) > 1 do
+       when is_list(arg_value) do
     traverse_by_list(arg_value, nested_configs, arg_name, path, curr_m, root, errors)
   end
 
-  defp do_drill_down(
-         errors,
-         {_arg_name, _arg_value} = arg,
-         {_arg_name2, %Argx.Config{}},
-         root,
-         _path,
-         _curr_m
-       ) do
+  defp do_drill_down(errors, {_arg_name, arg_value} = arg, _config, root, _path, _curr_m) do
     {errors, [arg | root]}
   end
 
@@ -115,6 +108,28 @@ defmodule Argx.Matcher do
          root <- Keyword.put(root, parent, list) do
       {errors, root}
     end
+  end
+
+  def do_traverse_by_list(
+        [] = _list,
+        %{} = configs,
+        _parent,
+        path,
+        _curr_m,
+        _line_num,
+        new_list,
+        errors
+      )
+      when map_size(configs) > 0 do
+    errors =
+      configs
+      |> Map.keys()
+      |> Enum.reduce(errors, fn arg_name, errors ->
+        {errors, _, _} = reduce_errors(errors, arg_name, path, &Helper.join_path/2, :lacked)
+        errors
+      end)
+
+    {errors, new_list}
   end
 
   def do_traverse_by_list(
@@ -152,8 +167,16 @@ defmodule Argx.Matcher do
     end
   end
 
-  defp continue({new_errors, args}, errors, line_num, rest, configs, parent, path, curr_m, list) do
-    with line_num <- line_num + 1,
+  defp continue(result, _errors, _line_num, [] = _rest, _configs, _parent, _path, _curr_m, list) do
+    with {new_errors, args} <- result,
+         list <- [to_map(args) | list] do
+      {new_errors, list}
+    end
+  end
+
+  defp continue(result, errors, line_num, rest, configs, parent, path, curr_m, list) do
+    with {new_errors, args} <- result,
+         line_num <- line_num + 1,
          list <- [to_map(args) | list],
          errors <- merge_errors(errors, new_errors) do
       do_traverse_by_list(rest, configs, parent, path, curr_m, line_num, list, errors)
@@ -274,7 +297,18 @@ defmodule Argx.Matcher.Helper do
 
   ### Path
   def join_path(key, [] = _path) when is_atom(key), do: key
-  def join_path(key, [_ | _] = path), do: (path ++ [key]) |> Enum.join(":")
+
+  def join_path(key, [_ | _] = path) do
+    path
+    |> Enum.reverse()
+    |> hd()
+    |> Kernel.==(key)
+    |> if(
+      do: path,
+      else: path ++ [key]
+    )
+    |> Enum.join(":")
+  end
 
   def append_path(path, num) when is_list(path) and is_integer(num), do: path ++ ["#{num}"]
 

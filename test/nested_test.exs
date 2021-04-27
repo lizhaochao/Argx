@@ -1,274 +1,163 @@
-defmodule NestedTest do
+defmodule NestedListTest do
   @moduledoc false
 
   use ExUnit.Case
 
-  ###
-  describe "list container - nested map" do
-    defmodule NestedA do
-      use Argx
-
-      defconfig(MapRule, [
-        a(:string, 2..8) || get_default(),
-        b(:integer, :empty),
-        c(:float, :auto),
-        d(:boolean, :optional)
-      ])
-
-      defconfig(OneRule, [one({:list, MapRule}), another(:string)])
-
+  describe "list -> map" do
+    defmodule NestedListA do
+      use Argx, Project.Argx.Nested.Shared
       def get(params), do: match(params, [OneRule])
-
-      def get_default, do: "default"
-      def fmt_errors({:error, _} = errors), do: errors
-      def fmt_errors(new_args), do: new_args
     end
 
-    test "list -> map - mixed ok & errors" do
-      list_data = [
-        # line 1: all are invalid
-        %{a: "a", b: 0, c: "a", d: "boolean"},
-        # line 2: all are invalid
-        %{a: "a", b: "b", c: "a", d: "true"},
-        # line 3: all are valid
-        %{a: "hello", b: 1, c: "1.2", d: true}
-      ]
+    test "ok" do
+      # one record in list
+      args_map = %{one: [%{a: "a"}]}
+      args_keyword = [one: [%{a: "a"}]]
+      assert args_map == NestedListA.get(args_map)
+      assert args_keyword == NestedListA.get(args_keyword)
 
-      args = %{one: list_data}
-
-      expected =
-        {:error,
-         [
-           error_type: ["one:1:c", "one:1:d", "one:2:b", "one:2:c", "one:2:d"],
-           lacked: [:another, "one:1:b"],
-           out_of_range: ["one:1:a", "one:2:a"]
-         ]}
-
-      assert expected == NestedA.get(args)
+      # two records in list
+      args_map = %{one: [%{a: "a"}, %{a: "aa"}]}
+      args_keyword = [one: [%{a: "a"}, %{a: "aa"}]]
+      assert args_map == NestedListA.get(args_map)
+      assert args_keyword == NestedListA.get(args_keyword)
     end
 
-    test "list -> map - case 1 - params is map - ok" do
-      list_data = [
-        %{a: "hello", b: 1, c: "1.2", d: true}
-      ]
+    test "error" do
+      args_map = %{one: [%{}]}
+      args_keyword = [one: [%{}]]
+      assert [lacked: ["one:1:a"]] == NestedListA.get(args_map)
+      assert [lacked: ["one:1:a"]] == NestedListA.get(args_keyword)
 
-      args = %{one: list_data, another: "another"}
+      args_map = %{one: nil}
+      args_keyword = [one: nil]
+      assert [lacked: [:one]] == NestedListA.get(args_map)
+      assert [lacked: [:one]] == NestedListA.get(args_keyword)
+    end
+  end
 
-      expected_list_data = [
-        %{a: "hello", b: 1, c: 1.2, d: true}
-      ]
-
-      expected_args = %{one: expected_list_data, another: "another"}
-
-      assert expected_args == NestedA.get(args)
+  describe "list -> map -> list - map" do
+    defmodule NestedListB do
+      use Argx, Project.Argx.Nested.Shared
+      def get(params), do: match(params, [TwoRule])
     end
 
-    ###
-    test "ok - ignore more fields" do
-      list_data = [
-        %{a: "hello1", b: 1, c: "1.1", d: true, e: 1, f: 2},
-        %{a: "hello2", b: 2, c: "1.2", d: true, e: 1, f: 2}
-      ]
+    test "ok" do
+      # one record in list
+      args_map = %{one: [%{z: [%{a: "a"}]}]}
+      args_keyword = [one: [%{z: [%{a: "a"}]}]]
+      assert args_map == NestedListB.get(args_map)
+      assert args_keyword == NestedListB.get(args_keyword)
 
-      args = %{one: list_data, another: "another", more: "more", more_more: "more more"}
-
-      expected_list_data = [
-        %{a: "hello1", b: 1, c: 1.1, d: true},
-        %{a: "hello2", b: 2, c: 1.2, d: true}
-      ]
-
-      expected_args = %{one: expected_list_data, another: "another"}
-
-      assert expected_args == NestedA.get(args)
+      # two records in list
+      args_map = %{one: [%{z: [%{a: "a"}, %{a: "aa"}]}, %{z: [%{a: "aaa"}, %{a: "aaaa"}]}]}
+      args_keyword = [one: [%{z: [%{a: "a"}, %{a: "aa"}]}, %{z: [%{a: "aaa"}, %{a: "aaaa"}]}]]
+      assert args_map == NestedListB.get(args_map)
+      assert args_keyword == NestedListB.get(args_keyword)
     end
 
-    test "ok - nested list - empty" do
-      args = %{
-        one: [],
-        another: "another"
-      }
+    test "error" do
+      args_map = %{one: [%{z: [%{}]}]}
+      args_keyword = [one: [%{z: [%{}]}]]
+      assert [lacked: ["one:1:z:1:a"]] == NestedListB.get(args_map)
+      assert [lacked: ["one:1:z:1:a"]] == NestedListB.get(args_keyword)
 
-      expected_args = %{
-        one: [],
-        another: "another"
-      }
+      args_map = %{one: [%{z: nil}]}
+      args_keyword = [one: [%{z: nil}]]
+      assert [lacked: ["one:1:z"]] == NestedListB.get(args_map)
+      assert [lacked: ["one:1:z"]] == NestedListB.get(args_keyword)
 
-      assert expected_args == NestedA.get(args)
+      args_map = %{one: []}
+      args_keyword = [one: []]
+      assert [lacked: ["one:z"]] == NestedListB.get(args_map)
+      assert [lacked: ["one:z"]] == NestedListB.get(args_keyword)
+
+      args_map = %{}
+      args_keyword = []
+      assert [lacked: [:one]] == NestedListB.get(args_map)
+      assert [lacked: [:one]] == NestedListB.get(args_keyword)
+    end
+  end
+
+  describe "list -> map -> list - map - list" do
+    defmodule NestedListC do
+      use Argx, Project.Argx.Nested.Shared
+      def get(params), do: match(params, [ThreeRule])
     end
 
-    test "ok - nested list - 1 records" do
-      args = %{
+    test "ok" do
+      # one record in list
+      args_map = %{one: [%{z: [%{a: [%{a: "a"}]}]}]}
+      args_keyword = [one: [%{z: [%{a: [%{a: "a"}]}]}]]
+      assert args_map == NestedListC.get(args_map)
+      assert args_keyword == NestedListC.get(args_keyword)
+
+      # two records in list
+      args_map = %{
         one: [
-          %{a: "hello1", b: 1, c: "1.1", d: true}
-        ],
-        another: "another"
-      }
-
-      expected_args = %{
-        one: [
-          %{a: "hello1", b: 1, c: 1.1, d: true}
-        ],
-        another: "another"
-      }
-
-      assert expected_args == NestedA.get(args)
-    end
-
-    test "ok - nested list - 2 records" do
-      args = %{
-        one: [
-          %{a: "hello1", b: 1, c: "1.1", d: true},
-          %{a: "hello2", b: 2, c: "2.2", d: true}
-        ],
-        another: "another"
-      }
-
-      expected_args = %{
-        one: [
-          %{a: "hello1", b: 1, c: 1.1, d: true},
-          %{a: "hello2", b: 2, c: 2.2, d: true}
-        ],
-        another: "another"
-      }
-
-      assert expected_args == NestedA.get(args)
-    end
-  end
-
-  describe "list container - nested list" do
-  end
-
-  describe "list container - nested value" do
-  end
-
-  ###
-  describe "map container - nested map" do
-  end
-
-  describe "map container - nested list" do
-  end
-
-  describe "map container - nested value" do
-  end
-
-  ###
-  describe "N level nested" do
-    defmodule NestedN do
-      @moduledoc false
-
-      use Argx
-
-      defconfig(MapRule, [
-        a(:string, 2..8) || get_default(),
-        b(:integer, :empty),
-        c(:float, :auto),
-        d(:boolean, :optional)
-      ])
-
-      defconfig(ListRule, [aa(:string), bb({:list, MapRule})])
-      defconfig(OneRule, [two({:list, ListRule}), another(:integer)])
-
-      def get(params), do: match(params, [OneRule])
-
-      def get_default, do: "default"
-      def fmt_errors({:error, _} = errors), do: errors
-      def fmt_errors(new_args), do: new_args
-    end
-
-    test "list -> map -> list - mixed ok & errors" do
-      list_data = [
-        %{aa: 1, bb: "bb"},
-        %{
-          aa: 1,
-          bb: [
-            # line 1: all are invalid
-            %{a: "a", b: 0, c: "a", d: "boolean"},
-            # line 2: all are invalid
-            %{a: "a", b: "b", c: "a", d: "true"},
-            # line 3: all are valid
-            %{a: "hello", b: 1, c: "1.2", d: true}
-          ]
-        },
-        %{aa: nil, bb: nil}
-      ]
-
-      args = %{two: list_data}
-
-      expected = {
-        :error,
-        [
-          error_type: [
-            "two:1:aa",
-            "two:1:bb",
-            "two:2:aa",
-            "two:2:bb:1:c",
-            "two:2:bb:1:d",
-            "two:2:bb:2:b",
-            "two:2:bb:2:c",
-            "two:2:bb:2:d"
-          ],
-          lacked: [:another, "two:2:bb:1:b", "two:3:aa", "two:3:bb"],
-          out_of_range: ["two:2:bb:1:a", "two:2:bb:2:a"]
+          %{z: [%{a: [%{a: "a"}, %{a: "aa"}]}, %{a: [%{a: "a"}, %{a: "aa"}]}]},
+          %{z: [%{a: [%{a: "a"}, %{a: "aa"}]}, %{a: [%{a: "a"}, %{a: "aa"}]}]}
         ]
       }
 
-      assert expected == NestedN.get(args)
+      args_keyword = [
+        one: [
+          %{z: [%{a: [%{a: "a"}, %{a: "aa"}]}, %{a: [%{a: "a"}, %{a: "aa"}]}]},
+          %{z: [%{a: [%{a: "a"}, %{a: "aa"}]}, %{a: [%{a: "a"}, %{a: "aa"}]}]}
+        ]
+      ]
+
+      assert args_map == NestedListC.get(args_map)
+      assert args_keyword == NestedListC.get(args_keyword)
     end
 
-    test "list -> map -> list - ok" do
-      args = %{
-        two: [
-          %{aa: "aa", bb: []},
-          %{
-            aa: "aaa",
-            bb: [
-              %{a: "hello1", b: 1, c: "1.1", d: true},
-              %{a: "hello2", b: 2, c: "1.2", d: false}
-            ]
-          },
-          %{aa: "aaaa", bb: []}
-        ],
-        another: 1
-      }
+    test "error" do
+      args_map = %{one: [%{z: [%{a: [%{}]}]}]}
+      args_keyword = [one: [%{z: [%{a: [%{}]}]}]]
+      assert [lacked: ["one:1:z:1:a:1:a"]] == NestedListC.get(args_map)
+      assert [lacked: ["one:1:z:1:a:1:a"]] == NestedListC.get(args_keyword)
 
-      expected_args = %{
-        two: [
-          %{aa: "aa", bb: []},
-          %{
-            aa: "aaa",
-            bb: [
-              %{a: "hello1", b: 1, c: 1.1, d: true},
-              %{a: "hello2", b: 2, c: 1.2, d: false}
-            ]
-          },
-          %{aa: "aaaa", bb: []}
-        ],
-        another: 1
-      }
+      args_map = %{one: [%{z: [%{}]}]}
+      args_keyword = [one: [%{z: [%{}]}]]
+      assert [lacked: ["one:1:z:1:a"]] == NestedListC.get(args_map)
+      assert [lacked: ["one:1:z:1:a"]] == NestedListC.get(args_keyword)
 
-      assert expected_args == NestedN.get(args)
+      args_map = %{one: [%{z: nil}]}
+      args_keyword = [one: [%{z: nil}]]
+      assert [lacked: ["one:1:z"]] == NestedListC.get(args_map)
+      assert [lacked: ["one:1:z"]] == NestedListC.get(args_keyword)
+
+      args_map = %{one: []}
+      args_keyword = [one: []]
+      assert [lacked: ["one:z"]] == NestedListC.get(args_map)
+      assert [lacked: ["one:z"]] == NestedListC.get(args_keyword)
+
+      args_map = %{}
+      args_keyword = []
+      assert [lacked: [:one]] == NestedListC.get(args_map)
+      assert [lacked: [:one]] == NestedListC.get(args_keyword)
     end
   end
+end
 
-  # TODO: return args should be sorted as origin args
-  #  test "list -> map - case 2 - params is keyword - ok" do
-  #      list_data = [
-  #        %{a: "hello", b: 1, c: "1.2", d: true}
-  #      ]
-  #
-  #      args = [one: list_data, another: "another"]
-  #
-  #      expected_list_data = [
-  #        %{a: "hello", b: 1, c: 1.2, d: true}
-  #      ]
-  #
-  #      expected_args = [one: expected_list_data, another: "another"]
-  #
-  #      assert expected_args == NestedN.get(args)
-  #    end
-  #
-  #  test "ok - order - params is keyword" do
-  #    args = [a: "a", b: "a", c: "a", yes: "a", no: "a", h: "a"]
-  #    assert args == NestedN.get_more(args)
-  #  end
+defmodule Project.Argx.Nested.Shared do
+  @moduledoc false
+
+  use Argx.Defconfig
+
+  ### Optional
+  defconfig(OptionalRuleA, [a(:string, :optional)])
+
+  ### Nested
+  defconfig(OneRule, [one({:list, SimpleMapRule})])
+  defconfig(TwoRule, [one({:list, SimpleListRule})])
+  defconfig(ThreeRule, [one({:list, ListRule})])
+
+  defconfig(SimpleMapRule, [a(:string)])
+  defconfig(SimpleListRule, [z({:list, SimpleMapRule})])
+  defconfig(MapRule, [a({:list, SimpleMapRule})])
+  defconfig(ListRule, [z({:list, MapRule})])
+
+  def fmt_errors({:error, errors}), do: errors
+  def fmt_errors(new_args), do: new_args
 end
