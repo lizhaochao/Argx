@@ -1,6 +1,7 @@
 defmodule Argx.Matcher do
   @moduledoc false
 
+  import Argx.Error
   import Argx.Util
 
   alias Argx.{Converter, Defaulter}
@@ -142,7 +143,7 @@ defmodule Argx.Matcher do
   defp continue({new_error, args}, errors, num, rest, configs, parent, path, curr_m, list) do
     num = num + 1
     list = [to_map(args) | list]
-    errors = Helper.merge_errors(errors, new_error)
+    errors = merge_errors(errors, new_error)
     do_traverse_by_list(rest, configs, parent, path, curr_m, num, list, errors)
   end
 end
@@ -150,9 +151,10 @@ end
 defmodule Argx.Matcher.Helper do
   @moduledoc false
 
+  import Argx.Error
   import Argx.Util
 
-  alias Argx.{Checker, Const, Parser}
+  alias Argx.{Checker, Parser}
 
   ###
   def lacked(
@@ -162,7 +164,7 @@ defmodule Argx.Matcher.Helper do
         errors
       )
       when arg_name == arg_name2 do
-    reduce_errors(errors, arg_name, path, :lacked)
+    reduce_errors(errors, arg_name, path, &join_path/2, :lacked)
   end
 
   def lacked(
@@ -173,7 +175,7 @@ defmodule Argx.Matcher.Helper do
       )
       when arg_name == arg_name2 do
     if Checker.empty?(arg_value, type) do
-      reduce_errors(errors, arg_name, path, :lacked)
+      reduce_errors(errors, arg_name, path, &join_path/2, :lacked)
     else
       {errors, arg, config}
     end
@@ -213,7 +215,7 @@ defmodule Argx.Matcher.Helper do
     if Checker.some_type?(arg_value, type) do
       {errors, arg, config}
     else
-      reduce_errors(errors, arg_name, path, :error_type)
+      reduce_errors(errors, arg_name, path, &join_path/2, :error_type)
     end
   end
 
@@ -252,56 +254,9 @@ defmodule Argx.Matcher.Helper do
       errors
     else
       errors
-      |> reduce_errors(arg_name, path, :out_of_range)
+      |> reduce_errors(arg_name, path, &join_path/2, :out_of_range)
       |> out_of_range(path)
     end
-  end
-
-  ### Process Errors
-  def reduce_errors(errors, key, path, check_type) do
-    new_errors = key |> join_path(path) |> append(errors, check_type)
-    {new_errors, nil, nil}
-  end
-
-  def merge_errors(left, right) when is_list(left) and is_list(right) do
-    do_merger_errors(
-      [],
-      left |> pre_errors() |> Enum.sort(),
-      right |> pre_errors() |> Enum.sort()
-    )
-  end
-
-  defp pre_errors(errors) when is_list(errors) do
-    Enum.reduce(Const.check_types(), errors, fn type, err ->
-      {_, new} =
-        Keyword.get_and_update(err, type, fn current ->
-          {nil, current || []}
-        end)
-
-      new
-    end)
-  end
-
-  defp do_merger_errors(new_errors, [] = _left, [] = _right), do: Enum.reverse(new_errors)
-
-  defp do_merger_errors(
-         new_errors,
-         [{l_type, l_value} | l_rest],
-         [{r_type, r_value} | r_rest]
-       )
-       when l_type == r_type do
-    value =
-      case {l_value, r_value} do
-        {[], []} -> nil
-        {[], [_ | _]} -> r_value
-        {[_ | _], []} -> l_value
-        {[_ | _], [_ | _]} -> l_value ++ r_value
-      end
-
-    value
-    |> Kernel.&&([{l_type, Enum.sort(value)} | new_errors])
-    |> Kernel.||(new_errors)
-    |> do_merger_errors(l_rest, r_rest)
   end
 
   ### Path
@@ -310,7 +265,7 @@ defmodule Argx.Matcher.Helper do
 
   def append_path(path, num) when is_list(path) and is_integer(num), do: path ++ ["#{num}"]
 
-  ###
+  ### Preprocess
   def pre_args_configs(args, configs) when is_map(args) or is_map(configs) do
     args
     |> to_keyword()
