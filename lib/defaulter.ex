@@ -22,8 +22,9 @@ defmodule Argx.Defaulter do
          module
        )
        when not is_nil(default) do
-    new_arg_value = get_default(default, module)
-    {arg_name, new_arg_value}
+    with new_arg_value <- get_default(default, module) do
+      {arg_name, new_arg_value}
+    end
   end
 
   defp do_set_default(

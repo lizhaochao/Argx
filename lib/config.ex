@@ -20,6 +20,7 @@ defmodule Argx.Error do
     end
   end
 
+  ###
   def merge_errors(left, right) when is_list(left) and is_list(right) do
     with left_errors <- left |> pre_errors() |> Enum.sort(),
          right_errors <- right |> pre_errors() |> Enum.sort() do
@@ -59,4 +60,19 @@ defmodule Argx.Error do
     |> Kernel.||(new_errors)
     |> do_merger_errors(l_rest, r_rest)
   end
+
+  ###
+  def sort_errors([_ | _] = errors) do
+    sorted_errors =
+      errors
+      |> Enum.sort()
+      |> Enum.map(fn {type, fields} ->
+        {type, Enum.sort(fields)}
+      end)
+
+    {:error, sorted_errors}
+  end
+
+  def sort_errors({:error, errors}), do: sort_errors(errors)
+  def sort_errors([] = errors), do: errors
 end
