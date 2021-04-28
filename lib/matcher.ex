@@ -175,7 +175,8 @@ defmodule Argx.Matcher do
         parent,
         line_num
       ) do
-    with result <- reenter(from, args, configs, path, line_num, curr_m) do
+    with reenter <- reenter(from, args, configs),
+         result <- reenter.(path, line_num, curr_m) do
       continue(
         from,
         rest,
@@ -191,18 +192,14 @@ defmodule Argx.Matcher do
     end
   end
 
-  defp reenter(
-         from,
-         args,
-         configs,
-         path,
-         line_num,
-         curr_m
-       ) do
-    with {args, configs} <- Helper.pre_args_configs(args, configs),
-         path <- Helper.append_path(path, line_num),
-         traverse <- traverse(from, args, configs) do
-      traverse.([], @init_errors, path, curr_m)
+  defp reenter(from, args, configs) do
+    fn path, line_num, curr_m ->
+      with {args, configs} <- Helper.pre_args_configs(args, configs),
+           path <- Helper.append_path(path, line_num),
+           traverse <- traverse(from, args, configs),
+           list <- [] do
+        traverse.(list, @init_errors, path, curr_m)
+      end
     end
   end
 
