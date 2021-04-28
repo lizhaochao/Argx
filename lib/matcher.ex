@@ -69,16 +69,9 @@ defmodule Argx.Matcher do
        )
        when is_list(arg_value) do
     fn root, errors, path, curr_m ->
-      traverse_by_list(
-        from,
-        arg_value,
-        nested_configs,
-        root,
-        errors,
-        path,
-        curr_m,
-        arg_name
-      )
+      with traverse_by_list <- traverse_by_list(from, arg_value, nested_configs) do
+        traverse_by_list.(root, errors, path, curr_m, arg_name)
+      end
     end
   end
 
@@ -97,88 +90,63 @@ defmodule Argx.Matcher do
   end
 
   ### Reenter Traverse Procedure
-  def traverse_by_list(
-        from,
-        list,
-        configs,
-        root,
-        errors,
-        path,
-        curr_m,
-        parent
-      ) do
-    with line_num <- 1,
-         result <-
-           do_traverse_by_list(
-             from,
-             list,
-             configs,
-             [],
-             errors,
-             path,
-             curr_m,
-             parent,
-             line_num
-           ),
-         {errors, list} <- result,
-         list <- Enum.reverse(list),
-         root <- Keyword.put(root, parent, list) do
-      {errors, root}
+  defp traverse_by_list(
+         from,
+         list,
+         configs
+       ) do
+    fn root, errors, path, curr_m, parent ->
+      with new_list <- [],
+           line_num <- 1,
+           worker <- do_traverse_by_list(from, list, configs),
+           {errors, list} <- worker.(new_list, errors, path, curr_m, parent, line_num),
+           list <- Enum.reverse(list),
+           root <- Keyword.put(root, parent, list) do
+        {errors, root}
+      end
     end
   end
 
-  def do_traverse_by_list(
-        _from,
-        [] = _list,
-        %{} = configs,
-        new_list,
-        errors,
-        path,
-        _curr_m,
-        _parent,
-        _line_num
-      )
-      when map_size(configs) > 0 do
-    errors =
-      configs
-      |> Helper.get_required_key()
-      |> Enum.reduce(errors, fn arg_name, errors ->
-        {errors, _, _} = reduce_errors(errors, arg_name, path, &Helper.join_path/2, :lacked)
-        errors
-      end)
+  defp do_traverse_by_list(
+         _from,
+         [] = _list,
+         %{} = configs
+       )
+       when map_size(configs) > 0 do
+    fn new_list, errors, path, _curr_m, _parent, _line_num ->
+      errors =
+        configs
+        |> Helper.get_required_key()
+        |> Enum.reduce(errors, fn arg_name, errors ->
+          {errors, _, _} = reduce_errors(errors, arg_name, path, &Helper.join_path/2, :lacked)
+          errors
+        end)
 
-    {errors, new_list}
+      {errors, new_list}
+    end
   end
 
-  def do_traverse_by_list(
-        _from,
-        [] = _list,
-        _configs,
-        new_list,
-        errors,
-        _path,
-        _curr_m,
-        _parent,
-        _line_num
-      ) do
-    {errors, new_list}
+  defp do_traverse_by_list(
+         _from,
+         [] = _list,
+         _configs
+       ) do
+    fn new_list, errors, _path, _curr_m, _parent, _line_num ->
+      {errors, new_list}
+    end
   end
 
-  def do_traverse_by_list(
-        from,
-        [%{} = args | rest_args] = _list,
-        configs,
-        new_list,
-        errors,
-        path,
-        curr_m,
-        parent,
-        line_num
-      ) do
-    with reenter <- reenter(from, args, configs),
-         result <- reenter.(path, line_num, curr_m),
-         continue <- continue(from, rest_args, configs) do
-      continue.(new_list, errors, path, curr_m, parent, line_num, result)
+  defp do_traverse_by_list(
+         from,
+         [%{} = args | rest_args] = _list,
+         configs
+       ) do
+    fn new_list, errors, path, curr_m, parent, line_num ->
+      with reenter <- reenter(from, args, configs),
+           result <- reenter.(path, line_num, curr_m),
+           continue <- continue(from, rest_args, configs) do
+        continue.(new_list, errors, path, curr_m, parent, line_num, result)
+      end
     end
   end
 
@@ -187,19 +155,20 @@ defmodule Argx.Matcher do
       with {args, configs} <- Helper.pre_args_configs(args, configs),
            path <- Helper.append_path(path, line_num),
            traverse <- traverse(from, args, configs),
-           list <- [] do
-        traverse.(list, @init_errors, path, curr_m)
+           new_list <- [] do
+        traverse.(new_list, @init_errors, path, curr_m)
       end
     end
   end
 
   defp continue(from, [_ | _] = rest, configs) do
-    fn list, errors, path, curr_m, parent, line_num, result ->
+    fn new_list, errors, path, curr_m, parent, line_num, result ->
       with {new_errors, args} <- result,
            line_num <- line_num + 1,
-           list <- [to_map(args) | list],
-           errors <- merge_errors(errors, new_errors) do
-        do_traverse_by_list(from, rest, configs, list, errors, path, curr_m, parent, line_num)
+           list <- [to_map(args) | new_list],
+           errors <- merge_errors(errors, new_errors),
+           worker <- do_traverse_by_list(from, rest, configs) do
+        worker.(list, errors, path, curr_m, parent, line_num)
       end
     end
   end
