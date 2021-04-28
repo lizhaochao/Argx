@@ -3,9 +3,8 @@ defmodule Argx do
 
   import Argx.Util
 
-  alias Argx.{Checker, Formatter, Matcher}
-  alias Argx.Use.Helper, as: UseHelper
-  alias Argx.Matcher.Helper, as: MatcherHelper
+  alias Argx.{Checker, Config, Formatter, Matcher}
+  alias Argx.Matcher.Helper
   alias Argx, as: Self
 
   defmacro __using__(general_m) do
@@ -24,7 +23,7 @@ defmodule Argx do
 
     with origin_type <- get_type(args),
          configs <- get_configs(general_m, curr_m, config_names),
-         {args, configs} <- MatcherHelper.pre_args_configs(args, configs) do
+         {args, configs} <- Helper.pre_args_configs(args, configs) do
       Matcher.match(
         args,
         configs,
@@ -37,8 +36,8 @@ defmodule Argx do
 
   def get_configs(general_m, curr_m, config_names) do
     [general_m, curr_m]
-    |> UseHelper.get_configs_by_modules()
-    |> UseHelper.get_configs_by_names(config_names)
+    |> Config.get_configs_by_modules()
+    |> Config.get_configs_by_names(config_names)
     |> Enum.into([])
   end
 end
@@ -185,14 +184,14 @@ end
 defmodule Argx.Defconfig do
   @moduledoc false
 
-  alias Argx.Use.Helper
+  alias Argx.Config
 
   defmacro __using__(_opts) do
     quote do
       import Argx.Inner.Defconfig
 
       def __get_defconfigs__() do
-        Helper.get_defconfigs(__MODULE__)
+        Config.get_defconfigs(__MODULE__)
       end
     end
   end
