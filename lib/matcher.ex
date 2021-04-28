@@ -30,7 +30,8 @@ defmodule Argx.Matcher do
       with arg <- pre_args(arg, config, curr_m),
            errors <- collect_errors(arg, config, path, errors),
            drill_down <- drill_down(from, arg, config),
-           {errors, root} <- drill_down.(root, errors, path ++ [arg_name], curr_m),
+           new_path <- Helper.append_path(path, arg_name),
+           {errors, root} <- drill_down.(root, errors, new_path, curr_m),
            traverse <- traverse(from, args_rest, configs_rest) do
         traverse.(root, errors, path, curr_m)
       end
@@ -189,12 +190,13 @@ defmodule Argx.Matcher.Helper do
     |> Kernel.==(key)
     |> if(
       do: path,
-      else: path ++ [key]
+      else: append_path(path, key)
     )
     |> Enum.join(":")
   end
 
   def append_path(path, num) when is_list(path) and is_integer(num), do: path ++ ["#{num}"]
+  def append_path(path, term) when is_list(path) and is_atom(term), do: path ++ [term]
 
   ### Preprocess
   def pre_args_configs(args, configs) when is_map(args) or is_map(configs) do
