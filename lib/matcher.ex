@@ -414,7 +414,7 @@ defmodule Argx.Matcher.Helper do
   def get_required_key(configs) do
     configs
     |> Enum.into([])
-    |> Enum.filter(fn {field, config} ->
+    |> Enum.filter(fn {_field, config} ->
       config.optional == false
     end)
     |> Keyword.keys()
