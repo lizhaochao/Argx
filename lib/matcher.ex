@@ -175,12 +175,30 @@ defmodule Argx.Matcher do
         parent,
         line_num
       ) do
-    from
-    |> reenter(args, configs, path, line_num, curr_m)
-    |> continue(errors, line_num, from, rest, configs, parent, path, curr_m, new_list)
+    with result <- reenter(from, args, configs, path, line_num, curr_m) do
+      continue(
+        from,
+        rest,
+        configs,
+        new_list,
+        errors,
+        path,
+        curr_m,
+        parent,
+        line_num,
+        result
+      )
+    end
   end
 
-  defp reenter(from, args, configs, path, line_num, curr_m) do
+  defp reenter(
+         from,
+         args,
+         configs,
+         path,
+         line_num,
+         curr_m
+       ) do
     with {args, configs} <- Helper.pre_args_configs(args, configs),
          path <- Helper.append_path(path, line_num),
          traverse <- traverse(from, args, configs) do
@@ -189,24 +207,17 @@ defmodule Argx.Matcher do
   end
 
   defp continue(
-         result,
-         _errors,
-         _line_num,
-         _from,
-         [] = _rest,
-         _configs,
-         _parent,
-         _path,
-         _curr_m,
-         list
+         from,
+         [_ | _] = rest,
+         configs,
+         list,
+         errors,
+         path,
+         curr_m,
+         parent,
+         line_num,
+         result
        ) do
-    with {new_errors, args} <- result,
-         list <- [to_map(args) | list] do
-      {new_errors, list}
-    end
-  end
-
-  defp continue(result, errors, line_num, from, rest, configs, parent, path, curr_m, list) do
     with {new_errors, args} <- result,
          line_num <- line_num + 1,
          list <- [to_map(args) | list],
@@ -222,6 +233,24 @@ defmodule Argx.Matcher do
         parent,
         line_num
       )
+    end
+  end
+
+  defp continue(
+         _from,
+         [] = _rest,
+         _configs,
+         list,
+         _errors,
+         _path,
+         _curr_m,
+         _parent,
+         _line_num,
+         result
+       ) do
+    with {new_errors, args} <- result,
+         list <- [to_map(args) | list] do
+      {new_errors, list}
     end
   end
 end
