@@ -26,11 +26,12 @@ defmodule Argx.Matcher do
     end
   end
 
-  def traverse(from, [arg | args_rest], [config | configs_rest]) do
+  def traverse(from, [{arg_name, _arg_value} = arg | args_rest], [config | configs_rest]) do
     fn root, errors, path, curr_m ->
       with arg <- pre_args(arg, config, curr_m),
            errors <- collect_errors(arg, config, path, errors),
-           {errors, root} <- drill_down(from, arg, config, root, errors, path, curr_m),
+           drill_down <- drill_down(from, arg, config),
+           {errors, root} <- drill_down.(root, errors, path ++ [arg_name], curr_m),
            traverse <- traverse(from, args_rest, configs_rest) do
         traverse.(root, errors, path, curr_m)
       end
@@ -51,64 +52,38 @@ defmodule Argx.Matcher do
   end
 
   ###
-  def drill_down(
-        from,
-        {arg_name, _arg_value} = arg,
-        config,
-        root,
-        errors,
-        path,
-        curr_m
-      ) do
-    do_drill_down(
-      from,
-      arg,
-      config,
-      root,
-      errors,
-      path ++ [arg_name],
-      curr_m
-    )
-  end
-
-  defp do_drill_down(
+  defp drill_down(
          _from,
          arg,
-         {_arg_name2, %Argx.Config{type: :list, nested: nil}},
-         root,
-         errors,
-         _path,
-         _curr_m
+         {_arg_name2, %Argx.Config{type: :list, nested: nil}}
        ) do
-    {errors, [arg | root]}
+    fn root, errors, _path, _curr_m ->
+      {errors, [arg | root]}
+    end
   end
 
-  defp do_drill_down(
+  defp drill_down(
          from,
          {arg_name, arg_value},
-         {_arg_name2, %Argx.Config{type: :list, nested: nested_configs}},
-         root,
-         errors,
-         path,
-         curr_m
+         {_arg_name2, %Argx.Config{type: :list, nested: nested_configs}}
        )
        when is_list(arg_value) do
-    traverse_by_list(from, arg_value, nested_configs, arg_name, path, curr_m, root, errors)
+    fn root, errors, path, curr_m ->
+      traverse_by_list(from, arg_value, nested_configs, arg_name, path, curr_m, root, errors)
+    end
   end
 
-  defp do_drill_down(
+  defp drill_down(
          from,
          {_arg_name, arg_value} = arg,
-         _config,
-         root,
-         errors,
-         _path,
-         _curr_m
+         _config
        ) do
-    if from == :argx and arg_value == @should_drop_flag do
-      {errors, root}
-    else
-      {errors, [arg | root]}
+    fn root, errors, _path, _curr_m ->
+      if from == :argx and arg_value == @should_drop_flag do
+        {errors, root}
+      else
+        {errors, [arg | root]}
+      end
     end
   end
 
