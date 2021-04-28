@@ -50,13 +50,13 @@ defmodule Argx.Matcher do
     end
   end
 
-  def pre_args(arg, config, curr_m) do
+  defp pre_args(arg, config, curr_m) do
     arg
     |> Defaulter.set_default(config, curr_m)
     |> Converter.convert(config)
   end
 
-  def collect_errors(arg, config, path, errors) do
+  defp collect_errors(arg, config, path, errors) do
     arg
     |> Helper.lacked(config, path, errors)
     |> Helper.error_type(path)
