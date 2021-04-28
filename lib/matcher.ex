@@ -74,11 +74,7 @@ defmodule Argx.Matcher do
     end
   end
 
-  defp drill_down(
-         from,
-         {_arg_name, arg_value} = arg,
-         _config
-       ) do
+  defp drill_down(from, {_arg_name, arg_value} = arg, _config) do
     fn root, errors, _path, _curr_m ->
       if from == :argx and arg_value == @should_drop_flag do
         {errors, root}
@@ -89,11 +85,7 @@ defmodule Argx.Matcher do
   end
 
   ### Reenter Traverse Procedure
-  defp traverse_by_list(
-         from,
-         list,
-         configs
-       ) do
+  defp traverse_by_list(from, list, configs) do
     fn root, errors, path, curr_m, parent ->
       with new_list <- [],
            line_num <- 1,
@@ -106,12 +98,7 @@ defmodule Argx.Matcher do
     end
   end
 
-  defp do_traverse_by_list(
-         _from,
-         [] = _list,
-         %{} = configs
-       )
-       when map_size(configs) > 0 do
+  defp do_traverse_by_list(_from, [] = _list, %{} = configs) when map_size(configs) > 0 do
     fn new_list, errors, path, _curr_m, _parent, _line_num ->
       errors =
         configs
@@ -125,21 +112,13 @@ defmodule Argx.Matcher do
     end
   end
 
-  defp do_traverse_by_list(
-         _from,
-         [] = _list,
-         _configs
-       ) do
+  defp do_traverse_by_list(_from, [] = _list, _configs) do
     fn new_list, errors, _path, _curr_m, _parent, _line_num ->
       {errors, new_list}
     end
   end
 
-  defp do_traverse_by_list(
-         from,
-         [%{} = args | rest_args] = _list,
-         configs
-       ) do
+  defp do_traverse_by_list(from, [%{} = args | rest_args] = _list, configs) do
     fn new_list, errors, path, curr_m, parent, line_num ->
       with reenter <- reenter(from, args, configs),
            result <- reenter.(path, line_num, curr_m),
