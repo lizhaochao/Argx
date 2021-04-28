@@ -12,22 +12,14 @@ defmodule Argx.Matcher do
 
   def match(from) do
     fn args, configs, curr_m ->
-      with prepare <- traverse(from),
-           traverse <- prepare.(args, configs),
-           root <- [],
-           path <- [] do
+      with traverse <- traverse(from, args, configs),
+           {root, path} <- {[], []} do
         traverse.(root, @init_errors, path, curr_m)
       end
     end
   end
 
   ###
-  def traverse(from) do
-    fn args, configs ->
-      traverse(from, args, configs)
-    end
-  end
-
   def traverse(_from, [] = _args, [] = _configs) do
     fn root, errors, _path, _curr_m ->
       {errors, Enum.reverse(root)}
@@ -36,15 +28,10 @@ defmodule Argx.Matcher do
 
   def traverse(from, [arg | args_rest], [config | configs_rest]) do
     fn root, errors, path, curr_m ->
-      arg = pre_args(arg, config, curr_m)
-
-      {errors, root} =
-        arg
-        |> collect_errors(config, path, errors)
-        |> drill_down(from, arg, config, root, path, curr_m)
-
-      with prepare <- traverse(from),
-           traverse <- prepare.(args_rest, configs_rest) do
+      with arg <- pre_args(arg, config, curr_m),
+           errors <- collect_errors(arg, config, path, errors),
+           {errors, root} <- drill_down(from, arg, config, root, errors, path, curr_m),
+           traverse <- traverse(from, args_rest, configs_rest) do
         traverse.(root, errors, path, curr_m)
       end
     end
@@ -65,23 +52,31 @@ defmodule Argx.Matcher do
 
   ###
   def drill_down(
-        errors,
         from,
         {arg_name, _arg_value} = arg,
         config,
         root,
+        errors,
         path,
         curr_m
       ) do
-    do_drill_down(errors, from, arg, config, root, path ++ [arg_name], curr_m)
+    do_drill_down(
+      from,
+      arg,
+      config,
+      root,
+      errors,
+      path ++ [arg_name],
+      curr_m
+    )
   end
 
   defp do_drill_down(
-         errors,
          _from,
          arg,
          {_arg_name2, %Argx.Config{type: :list, nested: nil}},
          root,
+         errors,
          _path,
          _curr_m
        ) do
@@ -89,11 +84,11 @@ defmodule Argx.Matcher do
   end
 
   defp do_drill_down(
-         errors,
          from,
          {arg_name, arg_value},
          {_arg_name2, %Argx.Config{type: :list, nested: nested_configs}},
          root,
+         errors,
          path,
          curr_m
        )
@@ -101,7 +96,15 @@ defmodule Argx.Matcher do
     traverse_by_list(from, arg_value, nested_configs, arg_name, path, curr_m, root, errors)
   end
 
-  defp do_drill_down(errors, from, {_arg_name, arg_value} = arg, _config, root, _path, _curr_m) do
+  defp do_drill_down(
+         from,
+         {_arg_name, arg_value} = arg,
+         _config,
+         root,
+         errors,
+         _path,
+         _curr_m
+       ) do
     if from == :argx and arg_value == @should_drop_flag do
       {errors, root}
     else
@@ -177,8 +180,7 @@ defmodule Argx.Matcher do
   defp reenter(from, args, configs, path, line_num, curr_m) do
     with {args, configs} <- Helper.pre_args_configs(args, configs),
          path <- Helper.append_path(path, line_num),
-         prepare <- traverse(from),
-         traverse <- prepare.(args, configs) do
+         traverse <- traverse(from, args, configs) do
       traverse.([], @init_errors, path, curr_m)
     end
   end
