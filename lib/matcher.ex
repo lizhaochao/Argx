@@ -26,20 +26,20 @@ defmodule Argx.Matcher do
         path \\ []
       )
       when is_atom(curr_m) do
-    traverse(root, path, from, args, configs, curr_m)
+    traverse(from, root, path, args, configs, curr_m)
   end
 
   ###
-  def traverse(root, path, from, args, configs, curr_m, errors \\ @init_errors)
+  def traverse(from, root, path, args, configs, curr_m, errors \\ @init_errors)
 
-  def traverse(root, _path, _from, [] = _args, [] = _configs, _curr_m, errors) do
+  def traverse(_from, root, _path, [] = _args, [] = _configs, _curr_m, errors) do
     {errors, Enum.reverse(root)}
   end
 
   def traverse(
+        from,
         root,
         path,
-        from,
         [arg | args_rest],
         [config | configs_rest],
         curr_m,
@@ -53,7 +53,7 @@ defmodule Argx.Matcher do
       |> collect_errors(config, path, errors)
       |> drill_down(from, arg, config, root, path, curr_m)
 
-    traverse(root, path, from, args_rest, configs_rest, curr_m, errors)
+    traverse(from, root, path, args_rest, configs_rest, curr_m, errors)
   end
 
   def pre_args(arg, config, curr_m) do
@@ -183,7 +183,7 @@ defmodule Argx.Matcher do
   defp reenter(from, args, configs, path, line_num, curr_m) do
     with {args, configs} <- Helper.pre_args_configs(args, configs),
          path <- Helper.append_path(path, line_num) do
-      traverse([], path, from, args, configs, curr_m)
+      traverse(from, [], path, args, configs, curr_m)
     end
   end
 
