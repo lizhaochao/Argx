@@ -69,7 +69,16 @@ defmodule Argx.Matcher do
        )
        when is_list(arg_value) do
     fn root, errors, path, curr_m ->
-      traverse_by_list(from, arg_value, nested_configs, arg_name, path, curr_m, root, errors)
+      traverse_by_list(
+        from,
+        arg_value,
+        nested_configs,
+        root,
+        errors,
+        path,
+        curr_m,
+        arg_name
+      )
     end
   end
 
@@ -88,10 +97,29 @@ defmodule Argx.Matcher do
   end
 
   ### Reenter Traverse Procedure
-  def traverse_by_list(from, list, configs, parent, path, curr_m, root, errors) do
+  def traverse_by_list(
+        from,
+        list,
+        configs,
+        root,
+        errors,
+        path,
+        curr_m,
+        parent
+      ) do
     with line_num <- 1,
          result <-
-           do_traverse_by_list(from, list, configs, parent, path, curr_m, line_num, [], errors),
+           do_traverse_by_list(
+             from,
+             list,
+             configs,
+             [],
+             errors,
+             path,
+             curr_m,
+             parent,
+             line_num
+           ),
          {errors, list} <- result,
          list <- Enum.reverse(list),
          root <- Keyword.put(root, parent, list) do
@@ -103,12 +131,12 @@ defmodule Argx.Matcher do
         _from,
         [] = _list,
         %{} = configs,
-        _parent,
+        new_list,
+        errors,
         path,
         _curr_m,
-        _line_num,
-        new_list,
-        errors
+        _parent,
+        _line_num
       )
       when map_size(configs) > 0 do
     errors =
@@ -126,12 +154,12 @@ defmodule Argx.Matcher do
         _from,
         [] = _list,
         _configs,
-        _parent,
+        new_list,
+        errors,
         _path,
         _curr_m,
-        _line_num,
-        new_list,
-        errors
+        _parent,
+        _line_num
       ) do
     {errors, new_list}
   end
@@ -140,12 +168,12 @@ defmodule Argx.Matcher do
         from,
         [%{} = args | rest] = _list,
         configs,
-        parent,
+        new_list,
+        errors,
         path,
         curr_m,
-        line_num,
-        new_list,
-        errors
+        parent,
+        line_num
       ) do
     from
     |> reenter(args, configs, path, line_num, curr_m)
@@ -183,7 +211,17 @@ defmodule Argx.Matcher do
          line_num <- line_num + 1,
          list <- [to_map(args) | list],
          errors <- merge_errors(errors, new_errors) do
-      do_traverse_by_list(from, rest, configs, parent, path, curr_m, line_num, list, errors)
+      do_traverse_by_list(
+        from,
+        rest,
+        configs,
+        list,
+        errors,
+        path,
+        curr_m,
+        parent,
+        line_num
+      )
     end
   end
 end
