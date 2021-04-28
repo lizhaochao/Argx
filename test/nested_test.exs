@@ -140,6 +140,109 @@ defmodule NestedListTest do
   end
 end
 
+defmodule NestedOptionalTest do
+  @moduledoc false
+
+  use ExUnit.Case
+
+  describe "one key" do
+    defmodule NestedOptionalA do
+      use Argx, Project.Argx.Nested.Shared
+      def get(params), do: match(params, [OptionalRuleA])
+    end
+
+    test "one key" do
+      args = %{a: nil}
+      assert args == NestedOptionalA.get(args)
+
+      args = %{}
+      assert args == NestedOptionalA.get(args)
+    end
+  end
+
+  describe "two key" do
+    defmodule NestedOptionalB do
+      use Argx, Project.Argx.Nested.Shared
+      def get(params), do: match(params, [OptionalRuleB])
+    end
+
+    test "two key" do
+      args = %{a: "a", b: nil}
+      assert args == NestedOptionalB.get(args)
+
+      args = %{a: "a"}
+      assert args == NestedOptionalB.get(args)
+    end
+  end
+
+  describe "list -> map" do
+    defmodule NestedOptionalC do
+      use Argx, Project.Argx.Nested.Shared
+      def get(params), do: match(params, [FourRule])
+    end
+
+    test "ok" do
+      args = %{one: [%{a: "a", b: nil}]}
+      assert args == NestedOptionalC.get(args)
+
+      args = %{one: [%{a: "a"}]}
+      assert args == NestedOptionalC.get(args)
+
+      args = %{one: [%{a: "a", b: nil}, %{a: "aa", b: nil}]}
+      assert args == NestedOptionalC.get(args)
+
+      args = %{one: [%{a: "a"}, %{a: "aa"}]}
+      assert args == NestedOptionalC.get(args)
+    end
+
+    test "error" do
+      args = %{one: [%{}]}
+      assert [lacked: ["one:1:a"]] == NestedOptionalC.get(args)
+
+      args = %{one: []}
+      assert [lacked: ["one:a"]] == NestedOptionalC.get(args)
+
+      args = %{one: nil}
+      assert [lacked: [:one]] == NestedOptionalC.get(args)
+    end
+  end
+
+  describe "list -> map -> list - map" do
+    defmodule NestedOptionalD do
+      use Argx, Project.Argx.Nested.Shared
+      def get(params), do: match(params, [FiveRule])
+    end
+
+    test "ok" do
+      args = %{one: [%{z: [%{a: "a", b: nil}]}]}
+      assert args == NestedOptionalD.get(args)
+
+      args = %{one: [%{z: [%{a: "a"}]}]}
+      assert args == NestedOptionalD.get(args)
+
+      args = %{one: [%{z: [%{a: "a", b: nil}, %{a: "a", b: nil}]}]}
+      assert args == NestedOptionalD.get(args)
+
+      args = %{one: [%{z: [%{a: "a"}, %{a: "a"}]}]}
+      assert args == NestedOptionalD.get(args)
+    end
+
+    test "error" do
+      args = %{one: [%{z: [%{}]}]}
+      assert [lacked: ["one:1:z:1:a"]] == NestedOptionalD.get(args)
+
+      args = %{one: [%{}]}
+      assert [lacked: ["one:1:z"]] == NestedOptionalD.get(args)
+
+      args = %{one: []}
+      assert [lacked: ["one:z"]] == NestedOptionalD.get(args)
+
+      args = %{one: nil}
+      assert [lacked: [:one]] == NestedOptionalD.get(args)
+    end
+  end
+end
+
 defmodule Project.Argx.Nested.Shared do
   @moduledoc false
 
@@ -147,16 +250,20 @@ defmodule Project.Argx.Nested.Shared do
 
   ### Optional
   defconfig(OptionalRuleA, [a(:string, :optional)])
+  defconfig(OptionalRuleB, [a(:string), b(:string, :optional)])
 
   ### Nested
   defconfig(OneRule, [one({:list, SimpleMapRule})])
   defconfig(TwoRule, [one({:list, SimpleListRule})])
   defconfig(ThreeRule, [one({:list, ListRule})])
+  defconfig(FourRule, [one({:list, OptionalRuleB})])
+  defconfig(FiveRule, [one({:list, ListOptionalRule})])
 
   defconfig(SimpleMapRule, [a(:string)])
   defconfig(SimpleListRule, [z({:list, SimpleMapRule})])
   defconfig(MapRule, [a({:list, SimpleMapRule})])
   defconfig(ListRule, [z({:list, MapRule})])
+  defconfig(ListOptionalRule, [z({:list, OptionalRuleB})])
 
   def fmt_errors({:error, errors}), do: errors
   def fmt_errors(new_args), do: new_args

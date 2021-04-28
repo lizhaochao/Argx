@@ -6,6 +6,7 @@ defmodule Argx.Use.WithCheck do
   alias Argx.{Checker, Config, Const, Formatter, Matcher, Parser}
   alias Argx.Use.WithCheck, as: Self
   alias Argx.Use.Helper
+  alias Argx.Matcher.Helper, as: MatcherHelper
 
   defmacro __using__(general_m) do
     quote do
@@ -49,8 +50,9 @@ defmodule Argx.Use.WithCheck do
               def unquote(f)(unquote_splicing(a)) when unquote(guard) do
                 args = unquote(Helper.make_args(a))
 
-                args
-                |> Matcher.match(unquote(configs), __MODULE__)
+                match = Matcher.from(:with_check)
+
+                match.(args, unquote(configs), __MODULE__)
                 |> Self.post_match(
                   __MODULE__,
                   unquote(general_m),
@@ -98,7 +100,7 @@ defmodule Argx.Use.WithCheck do
         |> Config.get_configs_by_names(names)
         |> Map.merge(configs)
 
-      sort_by_keys(
+      MatcherHelper.sort_by_keys(
         merged_configs,
         unquote(arg_names)
       )

@@ -35,19 +35,6 @@ defmodule Argx.Util do
   end
 
   ###
-  def sort_by_keys(keyword, keys) when is_list(keyword) do
-    keyword |> to_map() |> sort_by_keys(keys)
-  end
-
-  def sort_by_keys(%{} = map, keys) do
-    keys
-    |> Enum.reduce([], fn key, keyword ->
-      value = Map.get(map, key, nil)
-      (value && [{key, value} | keyword]) || keyword
-    end)
-    |> Enum.reverse()
-  end
-
   def prune_names([_ | _] = names), do: Enum.map(names, fn name -> prune_names(name) end)
   def prune_names(name) when is_atom(name), do: name |> inspect() |> prune_names()
   def prune_names(":" <> name_rest), do: name_rest |> prune_names()

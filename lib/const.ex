@@ -1,6 +1,7 @@
 defmodule Argx.Const do
   @moduledoc false
 
+  def should_drop_flag, do: :should_drop
   def names_key, do: :__names__
   def defconfigs_key, do: :__defconfigs__
 
