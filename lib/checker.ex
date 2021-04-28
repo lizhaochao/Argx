@@ -1,10 +1,134 @@
 defmodule Argx.Checker do
   @moduledoc false
 
-  alias Argx.Const
+  import Argx.Error
+
+  alias Argx.{Const, Parser}
 
   @allowed_fun_types Const.allowed_fun_types()
   @configs_keyword Const.configs_keyword()
+  @should_drop_flag Const.should_drop_flag()
+
+  ###
+  def lacked(
+        {arg_name, arg_value},
+        {arg_name2, %Argx.Config{optional: false}},
+        path,
+        errors,
+        path_handler
+      )
+      when arg_name == arg_name2 and (is_nil(arg_value) or arg_value == @should_drop_flag) do
+    reduce_errors(errors, arg_name, path, path_handler, :lacked)
+  end
+
+  def lacked(
+        {arg_name, arg_value} = arg,
+        {arg_name2, %Argx.Config{optional: false, type: type, empty: true}} = config,
+        path,
+        errors,
+        path_handler
+      )
+      when arg_name == arg_name2 do
+    if empty?(arg_value, type) do
+      reduce_errors(errors, arg_name, path, path_handler, :lacked)
+    else
+      {errors, arg, config}
+    end
+  end
+
+  def lacked(
+        {arg_name, _} = arg,
+        {arg_name2, _} = config,
+        _path,
+        errors,
+        _path_handler
+      )
+      when arg_name == arg_name2 do
+    {errors, arg, config}
+  end
+
+  ###
+  def error_type({errors, nil, nil}, _path, _path_handler) do
+    {errors, nil, nil}
+  end
+
+  def error_type({errors, args, configs}, path, path_handler) do
+    error_type(errors, args, configs, path, path_handler)
+  end
+
+  defp error_type(
+         errors,
+         {arg_name, arg_value},
+         {arg_name2, %Argx.Config{optional: true}},
+         _path,
+         _path_handler
+       )
+       when arg_name == arg_name2 and (is_nil(arg_value) or arg_value == @should_drop_flag) do
+    {errors, nil, nil}
+  end
+
+  defp error_type(
+         errors,
+         {arg_name, arg_value} = arg,
+         {arg_name2, %Argx.Config{type: type}} = config,
+         path,
+         path_handler
+       )
+       when arg_name == arg_name2 do
+    if some_type?(arg_value, type) do
+      {errors, arg, config}
+    else
+      reduce_errors(errors, arg_name, path, path_handler, :error_type)
+    end
+  end
+
+  ###
+  def out_of_range({errors, nil, nil}, _path, _path_handler) do
+    errors
+  end
+
+  def out_of_range({errors, args, configs}, path, path_handler) do
+    out_of_range(errors, args, configs, path, path_handler)
+  end
+
+  defp out_of_range(
+         errors,
+         {arg_name, arg_value},
+         {arg_name2, %Argx.Config{optional: true}},
+         _path,
+         _path_handler
+       )
+       when arg_name == arg_name2 and (is_nil(arg_value) or arg_value == @should_drop_flag) do
+    errors
+  end
+
+  defp out_of_range(
+         errors,
+         {arg_name, _},
+         {arg_name2, %Argx.Config{range: nil}},
+         _path,
+         _path_handler
+       )
+       when arg_name == arg_name2 do
+    errors
+  end
+
+  defp out_of_range(
+         errors,
+         {arg_name, arg_value},
+         {arg_name2, %Argx.Config{type: type, range: range}},
+         path,
+         path_handler
+       )
+       when arg_name == arg_name2 do
+    if in_range?(arg_value, Parser.parse_range(range), type) do
+      errors
+    else
+      errors
+      |> reduce_errors(arg_name, path, path_handler, :out_of_range)
+      |> out_of_range(path, path_handler)
+    end
+  end
 
   ### Argx
   def check_args!(%{} = _args), do: :ignore

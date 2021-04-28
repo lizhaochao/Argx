@@ -1,10 +1,9 @@
 defmodule Argx.Matcher do
   @moduledoc false
 
-  import Argx.Error
-  import Argx.Util
+  import Argx.{Error, Util}
 
-  alias Argx.{Converter, Const, Defaulter}
+  alias Argx.{Checker, Converter, Const, Defaulter}
   alias Argx.Matcher.Helper
 
   @init_errors []
@@ -46,9 +45,9 @@ defmodule Argx.Matcher do
 
   defp collect_errors(arg, config, path, errors) do
     arg
-    |> Helper.lacked(config, path, errors)
-    |> Helper.error_type(path)
-    |> Helper.out_of_range(path)
+    |> Checker.lacked(config, path, errors, &Helper.join_path/2)
+    |> Checker.error_type(path, &Helper.join_path/2)
+    |> Checker.out_of_range(path, &Helper.join_path/2)
   end
 
   ###
@@ -186,114 +185,19 @@ end
 defmodule Argx.Matcher.Helper do
   @moduledoc false
 
-  import Argx.Error
   import Argx.Util
 
-  alias Argx.{Checker, Const, Parser}
+  alias Argx.Const
 
   @should_drop_flag Const.should_drop_flag()
 
-  ###
-  def lacked(
-        {arg_name, arg_value},
-        {arg_name2, %Argx.Config{optional: false}},
-        path,
-        errors
-      )
-      when arg_name == arg_name2 and (is_nil(arg_value) or arg_value == @should_drop_flag) do
-    reduce_errors(errors, arg_name, path, &join_path/2, :lacked)
-  end
-
-  def lacked(
-        {arg_name, arg_value} = arg,
-        {arg_name2, %Argx.Config{optional: false, type: type, empty: true}} = config,
-        path,
-        errors
-      )
-      when arg_name == arg_name2 do
-    if Checker.empty?(arg_value, type) do
-      reduce_errors(errors, arg_name, path, &join_path/2, :lacked)
-    else
-      {errors, arg, config}
-    end
-  end
-
-  def lacked(
-        {arg_name, _} = arg,
-        {arg_name2, _} = config,
-        _path,
-        errors
-      )
-      when arg_name == arg_name2 do
-    {errors, arg, config}
-  end
-
-  ###
-  def error_type({errors, nil, nil}, _path), do: {errors, nil, nil}
-  def error_type({errors, args, configs}, path), do: error_type(errors, args, configs, path)
-
-  defp error_type(
-         errors,
-         {arg_name, arg_value},
-         {arg_name2, %Argx.Config{optional: true}},
-         _path
-       )
-       when arg_name == arg_name2 and (is_nil(arg_value) or arg_value == @should_drop_flag) do
-    {errors, nil, nil}
-  end
-
-  defp error_type(
-         errors,
-         {arg_name, arg_value} = arg,
-         {arg_name2, %Argx.Config{type: type}} = config,
-         path
-       )
-       when arg_name == arg_name2 do
-    if Checker.some_type?(arg_value, type) do
-      {errors, arg, config}
-    else
-      reduce_errors(errors, arg_name, path, &join_path/2, :error_type)
-    end
-  end
-
-  ###
-  def out_of_range({errors, nil, nil}, _path), do: errors
-  def out_of_range({errors, args, configs}, path), do: out_of_range(errors, args, configs, path)
-
-  defp out_of_range(
-         errors,
-         {arg_name, arg_value},
-         {arg_name2, %Argx.Config{optional: true}},
-         _path
-       )
-       when arg_name == arg_name2 and (is_nil(arg_value) or arg_value == @should_drop_flag) do
-    errors
-  end
-
-  defp out_of_range(
-         errors,
-         {arg_name, _},
-         {arg_name2, %Argx.Config{range: nil}},
-         _path
-       )
-       when arg_name == arg_name2 do
-    errors
-  end
-
-  defp out_of_range(
-         errors,
-         {arg_name, arg_value},
-         {arg_name2, %Argx.Config{type: type, range: range}},
-         path
-       )
-       when arg_name == arg_name2 do
-    if Checker.in_range?(arg_value, Parser.parse_range(range), type) do
-      errors
-    else
-      errors
-      |> reduce_errors(arg_name, path, &join_path/2, :out_of_range)
-      |> out_of_range(path)
-    end
+  def get_required_key(configs) do
+    configs
+    |> Enum.into([])
+    |> Enum.filter(fn {_field, config} ->
+      config.optional == false
+    end)
+    |> Keyword.keys()
   end
 
   ### Path
@@ -377,14 +281,5 @@ defmodule Argx.Matcher.Helper do
       (value && [{key, value} | keyword]) || keyword
     end)
     |> Enum.reverse()
-  end
-
-  def get_required_key(configs) do
-    configs
-    |> Enum.into([])
-    |> Enum.filter(fn {_field, config} ->
-      config.optional == false
-    end)
-    |> Keyword.keys()
   end
 end

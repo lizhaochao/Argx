@@ -97,6 +97,7 @@ defmodule Argx.Error do
   @moduledoc false
 
   import Argx.Util
+
   alias Argx.Const
 
   defexception message: nil
