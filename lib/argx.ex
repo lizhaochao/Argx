@@ -24,7 +24,7 @@ defmodule Argx do
     with origin_type <- get_type(args),
          configs <- get_configs(general_m, curr_m, config_names),
          {args, configs} <- Helper.pre_args_configs(args, configs) do
-      match = Matcher.from(:argx)
+      match = Matcher.match(:argx)
 
       match.(args, configs, curr_m)
       |> Formatter.fmt_match_result(origin_type)

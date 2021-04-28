@@ -50,7 +50,7 @@ defmodule Argx.Use.WithCheck do
               def unquote(f)(unquote_splicing(a)) when unquote(guard) do
                 args = unquote(Helper.make_args(a))
 
-                match = Matcher.from(:with_check)
+                match = Matcher.match(:with_check)
 
                 match.(args, unquote(configs), __MODULE__)
                 |> Self.post_match(

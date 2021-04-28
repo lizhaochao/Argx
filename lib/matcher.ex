@@ -10,50 +10,44 @@ defmodule Argx.Matcher do
   @init_errors []
   @should_drop_flag Const.should_drop_flag()
 
-  def from(from) do
+  def match(from) do
     fn args, configs, curr_m ->
-      match(from, args, configs, curr_m)
+      with prepare <- traverse(from),
+           traverse <- prepare.(args, configs),
+           root <- [],
+           path <- [] do
+        traverse.(root, @init_errors, path, curr_m)
+      end
     end
   end
 
   ###
-  def match(
-        from,
-        [{_arg_name, _arg_value} | _] = args,
-        [{_arg_name2, %Argx.Config{}} | _] = configs,
-        curr_m,
-        root \\ [],
-        path \\ []
-      )
-      when is_atom(curr_m) do
-    traverse(from, root, path, args, configs, curr_m)
+  def traverse(from) do
+    fn args, configs ->
+      traverse(from, args, configs)
+    end
   end
 
-  ###
-  def traverse(from, root, path, args, configs, curr_m, errors \\ @init_errors)
-
-  def traverse(_from, root, _path, [] = _args, [] = _configs, _curr_m, errors) do
-    {errors, Enum.reverse(root)}
+  def traverse(_from, [] = _args, [] = _configs) do
+    fn root, errors, _path, _curr_m ->
+      {errors, Enum.reverse(root)}
+    end
   end
 
-  def traverse(
-        from,
-        root,
-        path,
-        [arg | args_rest],
-        [config | configs_rest],
-        curr_m,
-        errors
-      )
-      when is_list(root) and is_list(path) and is_list(errors) do
-    arg = pre_args(arg, config, curr_m)
+  def traverse(from, [arg | args_rest], [config | configs_rest]) do
+    fn root, errors, path, curr_m ->
+      arg = pre_args(arg, config, curr_m)
 
-    {errors, root} =
-      arg
-      |> collect_errors(config, path, errors)
-      |> drill_down(from, arg, config, root, path, curr_m)
+      {errors, root} =
+        arg
+        |> collect_errors(config, path, errors)
+        |> drill_down(from, arg, config, root, path, curr_m)
 
-    traverse(from, root, path, args_rest, configs_rest, curr_m, errors)
+      with prepare <- traverse(from),
+           traverse <- prepare.(args_rest, configs_rest) do
+        traverse.(root, errors, path, curr_m)
+      end
+    end
   end
 
   def pre_args(arg, config, curr_m) do
@@ -182,8 +176,10 @@ defmodule Argx.Matcher do
 
   defp reenter(from, args, configs, path, line_num, curr_m) do
     with {args, configs} <- Helper.pre_args_configs(args, configs),
-         path <- Helper.append_path(path, line_num) do
-      traverse(from, [], path, args, configs, curr_m)
+         path <- Helper.append_path(path, line_num),
+         prepare <- traverse(from),
+         traverse <- prepare.(args, configs) do
+      traverse.([], @init_errors, path, curr_m)
     end
   end
 
