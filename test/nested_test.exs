@@ -151,12 +151,16 @@ defmodule NestedOptionalTest do
       def get(params), do: match(params, [OptionalRuleA])
     end
 
-    test "one key" do
-      args = %{a: nil}
-      assert args == NestedOptionalA.get(args)
+    test "ok" do
+      args_map = %{a: nil}
+      args_keyword = [a: nil]
+      assert args_map == NestedOptionalA.get(args_map)
+      assert args_keyword == NestedOptionalA.get(args_keyword)
 
-      args = %{}
-      assert args == NestedOptionalA.get(args)
+      args_map = %{}
+      args_keyword = []
+      assert args_map == NestedOptionalA.get(args_map)
+      assert args_keyword == NestedOptionalA.get(args_keyword)
     end
   end
 
@@ -166,12 +170,23 @@ defmodule NestedOptionalTest do
       def get(params), do: match(params, [OptionalRuleB])
     end
 
-    test "two key" do
-      args = %{a: "a", b: nil}
-      assert args == NestedOptionalB.get(args)
+    test "ok" do
+      args_map = %{a: "a", b: nil}
+      args_keyword = [a: "a", b: nil]
+      assert args_map == NestedOptionalB.get(args_map)
+      assert args_keyword == NestedOptionalB.get(args_keyword)
 
-      args = %{a: "a"}
-      assert args == NestedOptionalB.get(args)
+      args_map = %{a: "a"}
+      args_keyword = [a: "a"]
+      assert args_map == NestedOptionalB.get(args_map)
+      assert args_keyword == NestedOptionalB.get(args_keyword)
+    end
+
+    test "error" do
+      args_map = %{}
+      args_keyword = []
+      assert [lacked: [:a]] == NestedOptionalB.get(args_map)
+      assert [lacked: [:a]] == NestedOptionalB.get(args_keyword)
     end
   end
 
@@ -182,28 +197,42 @@ defmodule NestedOptionalTest do
     end
 
     test "ok" do
-      args = %{one: [%{a: "a", b: nil}]}
-      assert args == NestedOptionalC.get(args)
+      args_map = %{one: [%{a: "a", b: nil}]}
+      args_keyword = [one: [%{a: "a", b: nil}]]
+      assert args_map == NestedOptionalC.get(args_map)
+      assert args_keyword == NestedOptionalC.get(args_keyword)
 
-      args = %{one: [%{a: "a"}]}
-      assert args == NestedOptionalC.get(args)
+      args_map = %{one: [%{a: "a"}]}
+      args_keyword = [one: [%{a: "a"}]]
+      assert args_map == NestedOptionalC.get(args_map)
+      assert args_keyword == NestedOptionalC.get(args_keyword)
 
-      args = %{one: [%{a: "a", b: nil}, %{a: "aa", b: nil}]}
-      assert args == NestedOptionalC.get(args)
+      args_map = %{one: [%{a: "a", b: nil}, %{a: "aa", b: nil}]}
+      args_keyword = [one: [%{a: "a", b: nil}, %{a: "aa", b: nil}]]
+      assert args_map == NestedOptionalC.get(args_map)
+      assert args_keyword == NestedOptionalC.get(args_keyword)
 
-      args = %{one: [%{a: "a"}, %{a: "aa"}]}
-      assert args == NestedOptionalC.get(args)
+      args_map = %{one: [%{a: "a"}, %{a: "aa"}]}
+      args_keyword = [one: [%{a: "a"}, %{a: "aa"}]]
+      assert args_map == NestedOptionalC.get(args_map)
+      assert args_keyword == NestedOptionalC.get(args_keyword)
     end
 
     test "error" do
-      args = %{one: [%{}]}
-      assert [lacked: ["one:1:a"]] == NestedOptionalC.get(args)
+      args_map = %{one: [%{}]}
+      args_keyword = [one: [%{}]]
+      assert [lacked: ["one:1:a"]] == NestedOptionalC.get(args_map)
+      assert [lacked: ["one:1:a"]] == NestedOptionalC.get(args_keyword)
 
-      args = %{one: []}
-      assert [lacked: ["one:a"]] == NestedOptionalC.get(args)
+      args_map = %{one: []}
+      args_keyword = [one: []]
+      assert [lacked: ["one:a"]] == NestedOptionalC.get(args_map)
+      assert [lacked: ["one:a"]] == NestedOptionalC.get(args_keyword)
 
-      args = %{one: nil}
-      assert [lacked: [:one]] == NestedOptionalC.get(args)
+      args_map = %{one: nil}
+      args_keyword = [one: nil]
+      assert [lacked: [:one]] == NestedOptionalC.get(args_map)
+      assert [lacked: [:one]] == NestedOptionalC.get(args_keyword)
     end
   end
 
@@ -247,6 +276,11 @@ defmodule Project.Argx.Nested.Shared do
   @moduledoc false
 
   use Argx.Defconfig
+
+  defconfig(IntegerRuleA, [_(:integer)])
+
+  ### List -> Integer
+  defconfig(ListIntegerRule, [one({:list, IntegerRuleA})])
 
   ### Optional
   defconfig(OptionalRuleA, [a(:string, :optional)])
