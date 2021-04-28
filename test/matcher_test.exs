@@ -46,8 +46,8 @@ defmodule MatcherTest do
     ]
 
     expected_errors = [out_of_range: [:three], error_type: [:two], lacked: [:one]]
-    match = Matcher.match(:argx)
-    {errors, _} = match.(args, configs, @curr_m)
+    match_from = Matcher.match(:argx)
+    {errors, _} = match_from.(args, configs, @curr_m)
     assert expected_errors == errors
   end
 
