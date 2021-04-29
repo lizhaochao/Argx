@@ -8,7 +8,10 @@ defmodule Argx.Use.WithCheck do
   alias Argx.Use.Helper
   alias Argx.Matcher.Helper, as: MatcherHelper
 
-  defmacro __using__(general_m) do
+  defmacro __using__(opts) do
+    share_m = Keyword.get(opts, :share, [])
+    warn = Keyword.get(opts, :warn, Const.default_warn())
+
     quote do
       @defconfigs {:@, [], [{Const.defconfigs_key(), [], nil}]}
 
@@ -21,14 +24,14 @@ defmodule Argx.Use.WithCheck do
         a = Map.get(fun, :a)
 
         use_m = __MODULE__
-        general_m = unquote(general_m)
+        share_m = unquote(share_m)
         arg_names = Helper.get_arg_names(a)
         configs_f_name = Helper.make_get_fun_configs_f_name(f)
 
         configs =
-          general_m
+          share_m
           |> Self.get_all_defconfigs(@defconfigs)
-          |> Self.merge_configs(configs, arg_names)
+          |> Self.merge_configs(configs, arg_names, unquote(warn))
 
         # expr
         ignore_attr_warning_expr = quote do: unquote(Helper.reg_attr(Const.defconfigs_key()))
@@ -54,7 +57,7 @@ defmodule Argx.Use.WithCheck do
                 match.(args, unquote(configs), __MODULE__)
                 |> Self.post_match(
                   __MODULE__,
-                  unquote(general_m),
+                  unquote(share_m),
                   unquote(use_m),
                   unquote(real_f_name)
                 )
@@ -75,18 +78,18 @@ defmodule Argx.Use.WithCheck do
   end
 
   ###
-  def post_match({[] = _errors, [_ | _] = new_args}, curr_m, _general_m, _use_m, real_f_name) do
+  def post_match({[] = _errors, [_ | _] = new_args}, curr_m, _share_m, _use_m, real_f_name) do
     apply(curr_m, real_f_name, Keyword.values(new_args))
   end
 
-  def post_match({_errors, _new_args} = result, curr_m, general_m, use_m, _real_f_name) do
+  def post_match({_errors, _new_args} = result, curr_m, share_m, use_m, _real_f_name) do
     result
     |> Formatter.fmt_match_result()
-    |> Formatter.fmt_errors(curr_m, general_m, use_m)
+    |> Formatter.fmt_errors(curr_m, share_m, use_m)
   end
 
   ###
-  def merge_configs(defconfigs, configs, arg_names) do
+  def merge_configs(defconfigs, configs, arg_names, warn) do
     quote do
       {names, configs} =
         Map.pop(
@@ -96,7 +99,7 @@ defmodule Argx.Use.WithCheck do
 
       merged_configs =
         unquote(defconfigs)
-        |> Config.get_configs_by_names(names)
+        |> Config.get_configs_by_names(names, unquote(warn))
         |> Map.merge(configs)
 
       MatcherHelper.sort_by_keys(
@@ -106,15 +109,15 @@ defmodule Argx.Use.WithCheck do
     end
   end
 
-  def get_all_defconfigs([] = _general_m, defconfigs_attr) do
+  def get_all_defconfigs([] = _share_m, defconfigs_attr) do
     quote do
       list_to_map(unquote(defconfigs_attr))
     end
   end
 
-  def get_all_defconfigs(general_m, defconfigs_attr) when is_atom(general_m) do
+  def get_all_defconfigs(share_m, defconfigs_attr) when is_atom(share_m) do
     quote do
-      general_configs = Config.get_defconfigs(unquote(general_m))
+      general_configs = Config.get_defconfigs(unquote(share_m))
       defconfigs = list_to_map(unquote(defconfigs_attr))
       Map.merge(general_configs, defconfigs)
     end

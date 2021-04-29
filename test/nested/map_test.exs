@@ -5,7 +5,7 @@ defmodule NestedMapTest do
 
   describe "map" do
     defmodule NestedMapA do
-      use Argx, Project.Argx.Nested.Map.Shared
+      use Argx, share: Project.Argx.Nested.Map.Shared
       def get(params), do: match(params, [OneRule])
     end
 
@@ -31,7 +31,7 @@ defmodule NestedMapTest do
 
   describe "map -> map" do
     defmodule NestedMapB do
-      use Argx, Project.Argx.Nested.Map.Shared
+      use Argx, share: Project.Argx.Nested.Map.Shared
       def get(params), do: match(params, [TwoRule])
     end
 
@@ -57,7 +57,7 @@ defmodule NestedMapTest do
 
   describe "map -> map -> map" do
     defmodule NestedMapC do
-      use Argx, Project.Argx.Nested.Map.Shared
+      use Argx, share: Project.Argx.Nested.Map.Shared
       def get(params), do: match(params, [ThreeRule])
     end
 
@@ -83,7 +83,7 @@ defmodule NestedMapTest do
 
   describe "map -> list -> map" do
     defmodule NestedMapD do
-      use Argx, Project.Argx.Nested.Map.Shared
+      use Argx, share: Project.Argx.Nested.Map.Shared
       def get(params), do: match(params, [ListRuleA])
     end
 
@@ -112,7 +112,7 @@ defmodule NestedMapTest do
 
   describe "map -> list -> integer" do
     defmodule NestedMapE do
-      use Argx, Project.Argx.Nested.Map.Shared
+      use Argx, share: Project.Argx.Nested.Map.Shared
       def get(params), do: match(params, [ListRuleB])
     end
 
@@ -138,7 +138,7 @@ defmodule NestedMapTest do
 
   describe "string key: map -> map -> map" do
     defmodule NestedMapF do
-      use Argx, Project.Argx.Nested.Map.Shared
+      use Argx, share: Project.Argx.Nested.Map.Shared
       def get(params), do: match(params, [ThreeRule])
     end
 

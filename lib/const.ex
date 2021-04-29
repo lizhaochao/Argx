@@ -15,4 +15,6 @@ defmodule Argx.Const do
   def configs_keyword, do: :configs
 
   def check_types, do: [:error_type, :lacked, :out_of_range]
+
+  def default_warn, do: true
 end

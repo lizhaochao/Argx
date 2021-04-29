@@ -1,7 +1,7 @@
 defmodule ProjectB.Argx do
   @moduledoc false
 
-  use Argx.WithCheck, ProjectB.Argx.General
+  use Argx.WithCheck, share: ProjectB.Argx.General
 
   def fmt_errors(errors), do: errors
 end

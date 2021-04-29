@@ -14,7 +14,7 @@ end
 defmodule Project do
   @moduledoc false
 
-  use Argx, Project.Argx.General
+  use Argx, share: Project.Argx.General
 
   defconfig(OneRule, [one(:string)])
   defconfig(TwoRule, [two(:integer)])

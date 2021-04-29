@@ -3,40 +3,43 @@ defmodule Argx do
 
   import Argx.Util
 
-  alias Argx.{Checker, Config, Formatter, Matcher}
+  alias Argx.{Checker, Config, Const, Formatter, Matcher}
   alias Argx.Matcher.Helper
   alias Argx, as: Self
 
-  defmacro __using__(general_m) do
+  defmacro __using__(opts) do
+    share_m = Keyword.get(opts, :share, [])
+    warn = Keyword.get(opts, :warn, Const.default_warn())
+
     quote do
       import Argx.Inner.Defconfig
 
       def match(args, config_names) do
-        Self.match(args, config_names, __MODULE__, unquote(general_m))
+        Self.match(args, config_names, __MODULE__, unquote(share_m), unquote(warn))
       end
     end
   end
 
-  def match(args, config_names, curr_m, general_m) do
+  def match(args, config_names, curr_m, share_m, warn) do
     Checker.check_args!(args)
     Checker.check_config_names!(config_names)
 
     with origin_type <- get_type(args),
-         configs <- get_configs(general_m, curr_m, config_names),
+         configs <- get_configs(share_m, curr_m, config_names, warn),
          {args, configs} <- Helper.pre_args_configs(args, configs),
          from <- :argx do
       match = Matcher.match(from)
 
       match.(args, configs, curr_m)
       |> Formatter.fmt_match_result(origin_type)
-      |> Formatter.fmt_errors(curr_m, general_m)
+      |> Formatter.fmt_errors(curr_m, share_m)
     end
   end
 
-  def get_configs(general_m, curr_m, config_names) do
-    [general_m, curr_m]
+  def get_configs(share_m, curr_m, config_names, warn) do
+    [share_m, curr_m]
     |> Config.get_configs_by_modules()
-    |> Config.get_configs_by_names(config_names)
+    |> Config.get_configs_by_names(config_names, warn)
     |> Enum.into([])
   end
 end
@@ -172,10 +175,10 @@ defmodule Argx.WithCheck do
   (3). integer to float
   """
 
-  defmacro __using__(general_m) do
+  defmacro __using__(share_m) do
     quote do
       use Argx.Use.Defconfig
-      use Argx.Use.WithCheck, unquote(general_m)
+      use Argx.Use.WithCheck, unquote(share_m)
     end
   end
 end

@@ -5,7 +5,7 @@ defmodule NestedListTest do
 
   describe "list -> map" do
     defmodule NestedListA do
-      use Argx, Project.Argx.Nested.List.Shared
+      use Argx, share: Project.Argx.Nested.List.Shared
       def get(params), do: match(params, [OneRule])
     end
 
@@ -42,7 +42,7 @@ defmodule NestedListTest do
 
   describe "list -> map -> list - map" do
     defmodule NestedListB do
-      use Argx, Project.Argx.Nested.List.Shared
+      use Argx, share: Project.Argx.Nested.List.Shared
       def get(params), do: match(params, [TwoRule])
     end
 
@@ -89,7 +89,7 @@ defmodule NestedListTest do
 
   describe "list -> map -> list - map - list" do
     defmodule NestedListC do
-      use Argx, Project.Argx.Nested.List.Shared
+      use Argx, share: Project.Argx.Nested.List.Shared
       def get(params), do: match(params, [ThreeRule])
     end
 
@@ -155,7 +155,7 @@ defmodule NestedListTest do
 
   describe "list -> integer" do
     defmodule NestedListAA do
-      use Argx, Project.Argx.Nested.List.Shared
+      use Argx, share: Project.Argx.Nested.List.Shared
       def get(params), do: match(params, [ListIntegerRule])
     end
 
@@ -193,7 +193,7 @@ defmodule NestedListTest do
 
   describe "list -> float" do
     defmodule NestedListAB do
-      use Argx, Project.Argx.Nested.List.Shared
+      use Argx, share: Project.Argx.Nested.List.Shared
       def get(params), do: match(params, [ListFloatRule])
     end
 
