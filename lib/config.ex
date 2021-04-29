@@ -96,9 +96,9 @@ defmodule Argx.Config do
   end
 
   defp warn_by_depth(name, depth, max, warn) do
-    with ":" <> name <- inspect(name),
+    with true <- warn,
          true <- depth >= max,
-         true <- warn do
+         ":" <> name <- inspect(name) do
       IO.warn("#{name} config's depth is #{depth}.", [])
       :ok
     else
