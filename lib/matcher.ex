@@ -42,8 +42,9 @@ defmodule Argx.Matcher do
   defp drill_down(
          _from,
          arg,
-         {_arg_name2, %Argx.Config{type: :list, nested: nil}}
-       ) do
+         {_arg_name2, %Argx.Config{type: type, nested: nil}}
+       )
+       when type == :list or type == :map do
     fn root, errors, _path, _curr_m ->
       {errors, [arg | root]}
     end
@@ -107,7 +108,7 @@ defmodule Argx.Matcher do
   defp do_traverse_by_list(from, [%{} = args | rest_args] = _list, configs) do
     fn new_list, errors, path, curr_m, parent, line_num ->
       with reenter <- reenter(from, args, configs),
-           result <- reenter.(path, line_num, curr_m),
+           result <- reenter.(path, curr_m, line_num),
            continue <- continue(from, rest_args, configs) do
         continue.(new_list, errors, path, curr_m, parent, line_num, result)
       end
@@ -115,7 +116,7 @@ defmodule Argx.Matcher do
   end
 
   defp reenter(from, args, configs) do
-    fn path, line_num, curr_m ->
+    fn path, curr_m, line_num ->
       with {args, configs} <- Helper.pre_args_configs(args, configs),
            path <- Helper.append_path(path, line_num),
            traverse <- traverse(from, args, configs),
