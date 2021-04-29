@@ -245,6 +245,7 @@ defmodule Argx.Matcher.Helper do
   ### Preprocess
   def pre_args_configs(args, configs) when is_map(args) or is_map(configs) do
     args
+    |> to_atom_key()
     |> to_keyword()
     |> pre_args_configs(to_keyword(configs))
   end

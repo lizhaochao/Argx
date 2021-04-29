@@ -135,6 +135,32 @@ defmodule NestedMapTest do
       assert [lacked: ["one:b:1", "one:b:2"]] == NestedMapE.get(args_keyword)
     end
   end
+
+  describe "string key: map -> map -> map" do
+    defmodule NestedMapF do
+      use Argx, Project.Argx.Nested.Map.Shared
+      def get(params), do: match(params, [ThreeRule])
+    end
+
+    test "ok" do
+      args_map = %{"one" => %{"y" => %{"z" => %{"a" => "a", "b" => "b"}}}}
+      args_keyword = [one: %{"y" => %{"z" => %{"a" => "a", "b" => "b"}}}]
+      assert %{one: %{y: %{z: %{a: "a", b: "b"}}}} == NestedMapF.get(args_map)
+      assert [one: %{y: %{z: %{a: "a", b: "b"}}}] == NestedMapF.get(args_keyword)
+    end
+
+    test "error" do
+      args_map = %{one: %{}}
+      args_keyword = [one: %{}]
+      assert [lacked: ["one:y"]] == NestedMapF.get(args_map)
+      assert [lacked: ["one:y"]] == NestedMapF.get(args_keyword)
+
+      args_map = %{"one" => %{"y" => %{"z" => %{"a" => 1, "b" => nil}}}}
+      args_keyword = [one: %{y: %{"z" => %{"a" => 1, "b" => []}}}]
+      assert [{:error_type, ["one:y:z:a"]}, {:lacked, ["one:y:z:b"]}] == NestedMapF.get(args_map)
+      assert [error_type: ["one:y:z:a", "one:y:z:b"]] == NestedMapF.get(args_keyword)
+    end
+  end
 end
 
 defmodule Project.Argx.Nested.Map.Shared do
