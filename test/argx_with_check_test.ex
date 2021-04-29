@@ -7,7 +7,7 @@ end
 defmodule ProjectA.Argx do
   @moduledoc false
 
-  use Argx.WithCheck
+  use Argx.WithCheck, warn: false
 
   def fmt_errors(errors), do: errors
 end
