@@ -3,7 +3,7 @@ defmodule Argx.Matcher do
 
   import Argx.{Error, Util}
 
-  alias Argx.{Checker, Converter, Const, Defaulter}
+  alias Argx.Const
   alias Argx.Matcher.Helper
 
   @init_errors []
@@ -27,8 +27,8 @@ defmodule Argx.Matcher do
 
   def traverse(from, [{arg_name, _arg_value} = arg | args_rest], [config | configs_rest]) do
     fn root, errors, path, curr_m ->
-      with arg <- pre_args(arg, config, curr_m),
-           errors <- collect_errors(arg, config, path, errors),
+      with arg <- Helper.pre_args(arg, config, curr_m),
+           errors <- Helper.collect_errors(arg, config, path, errors),
            drill_down <- drill_down(from, arg, config),
            new_path <- Helper.append_path(path, arg_name),
            {errors, root} <- drill_down.(root, errors, new_path, curr_m),
@@ -36,19 +36,6 @@ defmodule Argx.Matcher do
         traverse.(root, errors, path, curr_m)
       end
     end
-  end
-
-  defp pre_args(arg, config, curr_m) do
-    arg
-    |> Defaulter.set_default(config, curr_m)
-    |> Converter.convert(config)
-  end
-
-  defp collect_errors(arg, config, path, errors) do
-    arg
-    |> Checker.lacked(config, path, errors, &Helper.join_path/2)
-    |> Checker.error_type(path, &Helper.join_path/2)
-    |> Checker.out_of_range(path, &Helper.join_path/2)
   end
 
   ###
@@ -101,15 +88,10 @@ defmodule Argx.Matcher do
 
   defp do_traverse_by_list(_from, [] = _list, %{} = configs) when map_size(configs) > 0 do
     fn new_list, errors, path, _curr_m, _parent, _line_num ->
-      errors =
-        configs
-        |> Helper.get_required_key()
-        |> Enum.reduce(errors, fn arg_name, errors ->
-          {errors, _, _} = reduce_errors(errors, arg_name, path, &Helper.join_path/2, :lacked)
-          errors
-        end)
-
-      {errors, new_list}
+      with lacked_keys <- Helper.get_required_key(configs),
+           new_errors <- reduce_errors(errors, lacked_keys, path, &Helper.join_path/2, :lacked) do
+        {new_errors, new_list}
+      end
     end
   end
 
@@ -167,9 +149,22 @@ defmodule Argx.Matcher.Helper do
 
   import Argx.Util
 
-  alias Argx.Const
+  alias Argx.{Checker, Converter, Const, Defaulter}
 
   @should_drop_flag Const.should_drop_flag()
+
+  def pre_args(arg, config, curr_m) do
+    arg
+    |> Defaulter.set_default(config, curr_m)
+    |> Converter.convert(config)
+  end
+
+  def collect_errors(arg, config, path, errors) do
+    arg
+    |> Checker.lacked(config, path, errors, &join_path/2)
+    |> Checker.error_type(path, &join_path/2)
+    |> Checker.out_of_range(path, &join_path/2)
+  end
 
   def get_required_key(configs) do
     configs
@@ -182,18 +177,7 @@ defmodule Argx.Matcher.Helper do
 
   ### Path
   def join_path(key, [] = _path) when is_atom(key), do: key
-
-  def join_path(key, [_ | _] = path) do
-    path
-    |> Enum.reverse()
-    |> hd()
-    |> Kernel.==(key)
-    |> if(
-      do: path,
-      else: append_path(path, key)
-    )
-    |> Enum.join(":")
-  end
+  def join_path(key, [_ | _] = path), do: path |> append_path(key) |> Enum.join(":")
 
   def append_path(path, num) when is_list(path) and is_integer(num), do: path ++ ["#{num}"]
   def append_path(path, term) when is_list(path) and is_atom(term), do: path ++ [term]
