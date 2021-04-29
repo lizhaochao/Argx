@@ -56,8 +56,9 @@ defmodule Argx.Matcher do
        )
        when is_list(arg_value) do
     fn root, errors, path, curr_m ->
-      with traverse_by_list <- traverse_by_list(from, arg_value, nested_configs) do
-        traverse_by_list.(root, errors, path, curr_m, arg_name)
+      with value_type <- Helper.get_value_type_by_configs(nested_configs),
+           worker <- traverse_by_list(from, arg_value, nested_configs) do
+        worker.(root, errors, path, curr_m, arg_name, value_type)
       end
     end
   end
@@ -68,20 +69,20 @@ defmodule Argx.Matcher do
            @should_drop_flag <- arg_value do
         {errors, root}
       else
-        _ ->
-          {errors, [arg | root]}
+        _ -> {errors, [arg | root]}
       end
     end
   end
 
   ### Reenter Traverse Procedure
   defp traverse_by_list(from, list, configs) do
-    fn root, errors, path, curr_m, parent ->
-      with new_list <- [],
+    fn root, errors, path, curr_m, parent, value_type ->
+      with list <- Helper.build_list(list, value_type),
+           new_list <- [],
            line_num <- 1,
            worker <- do_traverse_by_list(from, list, configs),
            {errors, list} <- worker.(new_list, errors, path, curr_m, parent, line_num),
-           list <- Enum.reverse(list),
+           list <- Helper.return_list(list, value_type),
            root <- Keyword.put(root, parent, list) do
         {errors, root}
       end
@@ -137,10 +138,11 @@ defmodule Argx.Matcher do
   end
 
   defp continue(_from, [] = _rest, _configs) do
-    fn list, _errors, _path, _curr_m, _parent, _line_num, result ->
+    fn list, errors, _path, _curr_m, _parent, _line_num, result ->
       with {new_errors, args} <- result,
+           errors <- merge_errors(errors, new_errors),
            list <- [to_map(args) | list] do
-        {new_errors, list}
+        {errors, list}
       end
     end
   end
@@ -172,8 +174,8 @@ defmodule Argx.Matcher.Helper do
   def get_required_key(configs) do
     configs
     |> Enum.into([])
-    |> Enum.filter(fn {_field, config} ->
-      config.optional == false
+    |> Enum.filter(fn {field, config} ->
+      config.optional == false and field != @value_key
     end)
     |> Keyword.keys()
   end
@@ -187,9 +189,27 @@ defmodule Argx.Matcher.Helper do
     end
   end
 
+  def build_list(list, :list), do: list
+  def build_list([_ | _] = list, :value), do: Enum.map(list, fn term -> %{@value_key => term} end)
+  def build_list(other, _value_type), do: other
+
+  def return_list([_ | _] = list, :value) do
+    list
+    |> Enum.map(fn term ->
+      %{_: value} = term
+      value
+    end)
+    |> Enum.reverse()
+  end
+
+  def return_list([_ | _] = list, :list), do: Enum.reverse(list)
+  def return_list(other_list, _value_type), do: other_list
+
   ### Path
-  def join_path(key, [] = _path) when is_atom(key), do: key
-  def join_path(key, [_ | _] = path), do: path |> append_path(key) |> Enum.join(":")
+  def join_path(key, path, sep \\ ":")
+  def join_path(key, [] = _path, _sep) when is_atom(key), do: key
+  def join_path(@value_key, [_ | _] = path, sep), do: Enum.join(path, sep)
+  def join_path(key, [_ | _] = path, sep), do: path |> append_path(key) |> Enum.join(sep)
 
   def append_path(path, num) when is_list(path) and is_integer(num), do: path ++ ["#{num}"]
   def append_path(path, term) when is_list(path) and is_atom(term), do: path ++ [term]

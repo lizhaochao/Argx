@@ -33,6 +33,10 @@ defmodule NestedListTest do
       args_keyword = [one: nil]
       assert [lacked: [:one]] == NestedListA.get(args_map)
       assert [lacked: [:one]] == NestedListA.get(args_keyword)
+
+      # one record in list
+      args_map = %{one: [%{a: 1}, %{a: nil}]}
+      assert [error_type: ["one:1:a"], lacked: ["one:2:a"]] == NestedListA.get(args_map)
     end
   end
 
@@ -76,6 +80,10 @@ defmodule NestedListTest do
       args_keyword = []
       assert [lacked: [:one]] == NestedListB.get(args_map)
       assert [lacked: [:one]] == NestedListB.get(args_keyword)
+
+      # two records in list
+      args_map = %{one: [%{z: [%{a: "a"}, %{a: 1}]}, %{z: [%{a: nil}, %{a: "aaaa"}]}]}
+      assert [error_type: ["one:1:z:2:a"], lacked: ["one:2:z:1:a"]] == NestedListB.get(args_map)
     end
   end
 
@@ -136,6 +144,88 @@ defmodule NestedListTest do
       args_keyword = []
       assert [lacked: [:one]] == NestedListC.get(args_map)
       assert [lacked: [:one]] == NestedListC.get(args_keyword)
+
+      # one record in list
+      args_keyword = [one: [%{z: [%{a: [%{a: nil}, %{a: 1}]}]}]]
+
+      assert [{:error_type, ["one:1:z:1:a:2:a"]}, {:lacked, ["one:1:z:1:a:1:a"]}] ==
+               NestedListC.get(args_keyword)
+    end
+  end
+
+  describe "list -> integer" do
+    defmodule NestedListAA do
+      use Argx, Project.Argx.Nested.Shared
+      def get(params), do: match(params, [ListIntegerRule])
+    end
+
+    test "ok" do
+      args_map = %{one: [1, 2, 3, 4]}
+      args_keyword = [one: [1, 2, 3, 4]]
+      assert args_map == NestedListAA.get(args_map)
+      assert args_keyword == NestedListAA.get(args_keyword)
+
+      args_map = %{one: []}
+      args_keyword = [one: []]
+      assert args_map == NestedListAA.get(args_map)
+      assert args_keyword == NestedListAA.get(args_keyword)
+    end
+
+    test "auto" do
+      args_map = %{one: ["1", "2", "3", "4"]}
+      args_keyword = [one: ["1", 2, "3", 4]]
+      assert %{one: [1, 2, 3, 4]} == NestedListAA.get(args_map)
+      assert [one: [1, 2, 3, 4]] == NestedListAA.get(args_keyword)
+    end
+
+    test "error" do
+      args_map = %{one: ["1", nil]}
+      args_keyword = [one: ["1", 2, "3", nil]]
+      assert [lacked: ["one:2"]] == NestedListAA.get(args_map)
+      assert [lacked: ["one:4"]] == NestedListAA.get(args_keyword)
+
+      args_map = %{one: [nil, "a"]}
+      args_keyword = [one: ["1", nil, "3", "a"]]
+      assert [{:error_type, ["one:2"]}, {:lacked, ["one:1"]}] == NestedListAA.get(args_map)
+      assert [{:error_type, ["one:4"]}, {:lacked, ["one:2"]}] == NestedListAA.get(args_keyword)
+    end
+  end
+
+  describe "list -> float" do
+    defmodule NestedListAB do
+      use Argx, Project.Argx.Nested.Shared
+      def get(params), do: match(params, [ListFloatRule])
+    end
+
+    test "ok" do
+      args_map = %{one: [1.1, 2.1, 3.1, 4.1]}
+      args_keyword = [one: [1.1, 2.1, 3.1, 4.1]]
+      assert args_map == NestedListAB.get(args_map)
+      assert args_keyword == NestedListAB.get(args_keyword)
+
+      args_map = %{one: []}
+      args_keyword = [one: []]
+      assert args_map == NestedListAB.get(args_map)
+      assert args_keyword == NestedListAB.get(args_keyword)
+    end
+
+    test "auto" do
+      args_map = %{one: ["1", "2", "3", "4"]}
+      args_keyword = [one: ["1", 2, "3", 4]]
+      assert %{one: [1.0, 2.0, 3.0, 4.0]} == NestedListAB.get(args_map)
+      assert [one: [1.0, 2, 3.0, 4]] == NestedListAB.get(args_keyword)
+    end
+
+    test "error" do
+      args_map = %{one: ["1", nil]}
+      args_keyword = [one: ["1", 2, "3", nil]]
+      assert [lacked: ["one:2"]] == NestedListAB.get(args_map)
+      assert [lacked: ["one:4"]] == NestedListAB.get(args_keyword)
+
+      args_map = %{one: [nil, "a"]}
+      args_keyword = [one: ["1", nil, "3", "a"]]
+      assert [{:error_type, ["one:2"]}, {:lacked, ["one:1"]}] == NestedListAB.get(args_map)
+      assert [{:error_type, ["one:4"]}, {:lacked, ["one:2"]}] == NestedListAB.get(args_keyword)
     end
   end
 end
@@ -277,10 +367,12 @@ defmodule Project.Argx.Nested.Shared do
 
   use Argx.Defconfig
 
-  defconfig(IntegerRuleA, [_(:integer)])
+  defconfig(IntegerRule, [_(:integer, :auto)])
+  defconfig(FloatRule, [_(:float, :auto)])
 
   ### List -> Integer
-  defconfig(ListIntegerRule, [one({:list, IntegerRuleA})])
+  defconfig(ListIntegerRule, [one({:list, IntegerRule})])
+  defconfig(ListFloatRule, [one({:list, FloatRule})])
 
   ### Optional
   defconfig(OptionalRuleA, [a(:string, :optional)])
