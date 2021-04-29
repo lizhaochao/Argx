@@ -27,7 +27,7 @@ defmodule Argx.Matcher do
 
   def traverse(from, [{arg_name, _arg_value} = arg | args_rest], [config | configs_rest]) do
     fn root, errors, path, curr_m ->
-      with arg <- Helper.pre_args(arg, config, curr_m),
+      with arg <- Helper.pre_process_args(arg, config, curr_m),
            errors <- Helper.collect_errors(arg, config, path, errors),
            drill_down <- drill_down(from, arg, config),
            new_path <- Helper.append_path(path, arg_name),
@@ -44,7 +44,7 @@ defmodule Argx.Matcher do
          arg,
          {_arg_name2, %Argx.Config{type: type, nested: nil}}
        )
-       when type == :list or type == :map do
+       when type in [:list, :map] do
     fn root, errors, _path, _curr_m ->
       {errors, [arg | root]}
     end
@@ -64,6 +64,19 @@ defmodule Argx.Matcher do
     end
   end
 
+  defp drill_down(
+         from,
+         {arg_name, arg_value},
+         {_arg_name2, %Argx.Config{type: :map, nested: nested_configs}}
+       )
+       when is_map(arg_value) do
+    fn root, errors, path, curr_m ->
+      with worker <- traverse_by_map(from, arg_value, nested_configs) do
+        worker.(root, errors, path, curr_m, arg_name)
+      end
+    end
+  end
+
   defp drill_down(from, {_arg_name, arg_value} = arg, _config) do
     fn root, errors, _path, _curr_m ->
       with :argx <- from,
@@ -76,6 +89,18 @@ defmodule Argx.Matcher do
   end
 
   ### Reenter Traverse Procedure
+  defp traverse_by_map(from, list, configs) do
+    fn root, errors, path, curr_m, parent ->
+      with worker <- reenter(from, list, configs),
+           {new_errors, map} <- worker.(path, curr_m, nil),
+           map <- to_map(map),
+           errors <- merge_errors(errors, new_errors),
+           root <- Keyword.put(root, parent, map) do
+        {errors, root}
+      end
+    end
+  end
+
   defp traverse_by_list(from, list, configs) do
     fn root, errors, path, curr_m, parent, value_type ->
       with list <- Helper.build_list(list, value_type),
@@ -115,6 +140,7 @@ defmodule Argx.Matcher do
     end
   end
 
+  ###
   defp reenter(from, args, configs) do
     fn path, curr_m, line_num ->
       with {args, configs} <- Helper.pre_args_configs(args, configs),
@@ -159,7 +185,7 @@ defmodule Argx.Matcher.Helper do
   @should_drop_flag Const.should_drop_flag()
   @value_key Const.value_key()
 
-  def pre_args(arg, config, curr_m) do
+  def pre_process_args(arg, config, curr_m) do
     arg
     |> Defaulter.set_default(config, curr_m)
     |> Converter.convert(config)
@@ -212,8 +238,9 @@ defmodule Argx.Matcher.Helper do
   def join_path(@value_key, [_ | _] = path, sep), do: Enum.join(path, sep)
   def join_path(key, [_ | _] = path, sep), do: path |> append_path(key) |> Enum.join(sep)
 
-  def append_path(path, num) when is_list(path) and is_integer(num), do: path ++ ["#{num}"]
+  def append_path(path, nil) when is_list(path), do: path
   def append_path(path, term) when is_list(path) and is_atom(term), do: path ++ [term]
+  def append_path(path, num) when is_list(path) and is_integer(num), do: path ++ ["#{num}"]
 
   ### Preprocess
   def pre_args_configs(args, configs) when is_map(args) or is_map(configs) do

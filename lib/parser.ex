@@ -149,13 +149,14 @@ defmodule Argx.Parser do
     )
   end
 
-  defp every_item([{:list = type, {:__aliases__, _, [nested_name]}} | rest], items) do
+  defp every_item([{type, {:__aliases__, _, [nested_name]}} | rest], items)
+       when type in [:list, :map] do
     items = put_nested_name(items, type, nested_name)
     every_item(rest, items)
   end
 
-  defp every_item([{:list = type, nested_name} | rest], items)
-       when is_bitstring(nested_name) or is_atom(nested_name) do
+  defp every_item([{type, nested_name} | rest], items)
+       when type in [:list, :map] and (is_bitstring(nested_name) or is_atom(nested_name)) do
     items = put_nested_name(items, type, nested_name)
     every_item(rest, items)
   end
