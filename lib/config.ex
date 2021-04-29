@@ -5,7 +5,7 @@ defmodule Argx.Config do
 
   alias Argx.Const
 
-  @max_warning_depth 3
+  @warn_max_nested_depth Const.warn_max_nested_depth()
 
   @enforce_keys [:type, :optional, :auto, :range, :default, :empty, :nested]
   defstruct @enforce_keys
@@ -46,7 +46,7 @@ defmodule Argx.Config do
   def get_configs_by_names(_other_all_configs, _other_names, _warn), do: %{}
 
   defp drill_down(all_configs, name, depth, warn) do
-    with _ <- warn_by_depth(name, depth, @max_warning_depth, warn),
+    with _ <- warn_by_depth(name, depth, @warn_max_nested_depth, warn),
          configs <- fetch_by_name(all_configs, name),
          configs_kw <- Enum.into(configs, []) do
       do_drill_down(configs, all_configs, configs_kw, depth, warn)
