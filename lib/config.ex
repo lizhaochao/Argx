@@ -44,18 +44,13 @@ defmodule Argx.Config do
   def get_configs_by_names(_other_all_configs, _other_names), do: %{}
 
   defp drill_down(all_configs, name) do
-    configs = fetch_by_name(all_configs, name)
-
-    do_drill_down(
-      configs,
-      all_configs,
-      Enum.into(configs, [])
-    )
+    with configs <- fetch_by_name(all_configs, name),
+         configs_kw <- Enum.into(configs, []) do
+      do_drill_down(configs, all_configs, configs_kw)
+    end
   end
 
-  defp do_drill_down(new_config, _all_configs, []) do
-    new_config
-  end
+  defp do_drill_down(new_config, _all_configs, []), do: new_config
 
   defp do_drill_down(
          new_config,
@@ -70,9 +65,10 @@ defmodule Argx.Config do
          all_configs,
          [{field, %Argx.Config{nested: nested_name} = map_value} | rest]
        ) do
-    nested_configs = drill_down(all_configs, nested_name)
-    new_config = put_nested(new_config, field, map_value, nested_configs)
-    do_drill_down(new_config, all_configs, rest)
+    with nested_configs <- drill_down(all_configs, nested_name),
+         new_config <- put_nested(new_config, field, map_value, nested_configs) do
+      do_drill_down(new_config, all_configs, rest)
+    end
   end
 
   defp put_nested(%{} = config, key, %Argx.Config{} = value, %{} = nested_configs) do
