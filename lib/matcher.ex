@@ -64,10 +64,12 @@ defmodule Argx.Matcher do
 
   defp drill_down(from, {_arg_name, arg_value} = arg, _config) do
     fn root, errors, _path, _curr_m ->
-      if from == :argx and arg_value == @should_drop_flag do
+      with :argx <- from,
+           @should_drop_flag <- arg_value do
         {errors, root}
       else
-        {errors, [arg | root]}
+        _ ->
+          {errors, [arg | root]}
       end
     end
   end
@@ -152,6 +154,7 @@ defmodule Argx.Matcher.Helper do
   alias Argx.{Checker, Converter, Const, Defaulter}
 
   @should_drop_flag Const.should_drop_flag()
+  @value_key Const.value_key()
 
   def pre_args(arg, config, curr_m) do
     arg
@@ -173,6 +176,15 @@ defmodule Argx.Matcher.Helper do
       config.optional == false
     end)
     |> Keyword.keys()
+  end
+
+  def get_value_type_by_configs(configs) do
+    with [key | []] <- Map.keys(configs),
+         @value_key <- key do
+      :value
+    else
+      _ -> :list
+    end
   end
 
   ### Path

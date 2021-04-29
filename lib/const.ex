@@ -4,6 +4,7 @@ defmodule Argx.Const do
   def should_drop_flag, do: :should_drop
   def names_key, do: :__names__
   def defconfigs_key, do: :__defconfigs__
+  def value_key, do: :_
 
   def allowed_types, do: [:list, :map, :string, :integer, :float, :boolean]
   def allowed_functionalities, do: [:optional, :auto, :empty]
