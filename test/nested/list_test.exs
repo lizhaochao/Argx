@@ -5,7 +5,7 @@ defmodule NestedListTest do
 
   describe "list -> map" do
     defmodule NestedListA do
-      use Argx, Project.Argx.Nested.Shared
+      use Argx, Project.Argx.Nested.List.Shared
       def get(params), do: match(params, [OneRule])
     end
 
@@ -42,7 +42,7 @@ defmodule NestedListTest do
 
   describe "list -> map -> list - map" do
     defmodule NestedListB do
-      use Argx, Project.Argx.Nested.Shared
+      use Argx, Project.Argx.Nested.List.Shared
       def get(params), do: match(params, [TwoRule])
     end
 
@@ -89,7 +89,7 @@ defmodule NestedListTest do
 
   describe "list -> map -> list - map - list" do
     defmodule NestedListC do
-      use Argx, Project.Argx.Nested.Shared
+      use Argx, Project.Argx.Nested.List.Shared
       def get(params), do: match(params, [ThreeRule])
     end
 
@@ -155,7 +155,7 @@ defmodule NestedListTest do
 
   describe "list -> integer" do
     defmodule NestedListAA do
-      use Argx, Project.Argx.Nested.Shared
+      use Argx, Project.Argx.Nested.List.Shared
       def get(params), do: match(params, [ListIntegerRule])
     end
 
@@ -193,7 +193,7 @@ defmodule NestedListTest do
 
   describe "list -> float" do
     defmodule NestedListAB do
-      use Argx, Project.Argx.Nested.Shared
+      use Argx, Project.Argx.Nested.List.Shared
       def get(params), do: match(params, [ListFloatRule])
     end
 
@@ -230,166 +230,28 @@ defmodule NestedListTest do
   end
 end
 
-defmodule NestedOptionalTest do
-  @moduledoc false
-
-  use ExUnit.Case
-
-  describe "one key" do
-    defmodule NestedOptionalA do
-      use Argx, Project.Argx.Nested.Shared
-      def get(params), do: match(params, [OptionalRuleA])
-    end
-
-    test "ok" do
-      args_map = %{a: nil}
-      args_keyword = [a: nil]
-      assert args_map == NestedOptionalA.get(args_map)
-      assert args_keyword == NestedOptionalA.get(args_keyword)
-
-      args_map = %{}
-      args_keyword = []
-      assert args_map == NestedOptionalA.get(args_map)
-      assert args_keyword == NestedOptionalA.get(args_keyword)
-    end
-  end
-
-  describe "two key" do
-    defmodule NestedOptionalB do
-      use Argx, Project.Argx.Nested.Shared
-      def get(params), do: match(params, [OptionalRuleB])
-    end
-
-    test "ok" do
-      args_map = %{a: "a", b: nil}
-      args_keyword = [a: "a", b: nil]
-      assert args_map == NestedOptionalB.get(args_map)
-      assert args_keyword == NestedOptionalB.get(args_keyword)
-
-      args_map = %{a: "a"}
-      args_keyword = [a: "a"]
-      assert args_map == NestedOptionalB.get(args_map)
-      assert args_keyword == NestedOptionalB.get(args_keyword)
-    end
-
-    test "error" do
-      args_map = %{}
-      args_keyword = []
-      assert [lacked: [:a]] == NestedOptionalB.get(args_map)
-      assert [lacked: [:a]] == NestedOptionalB.get(args_keyword)
-    end
-  end
-
-  describe "list -> map" do
-    defmodule NestedOptionalC do
-      use Argx, Project.Argx.Nested.Shared
-      def get(params), do: match(params, [FourRule])
-    end
-
-    test "ok" do
-      args_map = %{one: [%{a: "a", b: nil}]}
-      args_keyword = [one: [%{a: "a", b: nil}]]
-      assert args_map == NestedOptionalC.get(args_map)
-      assert args_keyword == NestedOptionalC.get(args_keyword)
-
-      args_map = %{one: [%{a: "a"}]}
-      args_keyword = [one: [%{a: "a"}]]
-      assert args_map == NestedOptionalC.get(args_map)
-      assert args_keyword == NestedOptionalC.get(args_keyword)
-
-      args_map = %{one: [%{a: "a", b: nil}, %{a: "aa", b: nil}]}
-      args_keyword = [one: [%{a: "a", b: nil}, %{a: "aa", b: nil}]]
-      assert args_map == NestedOptionalC.get(args_map)
-      assert args_keyword == NestedOptionalC.get(args_keyword)
-
-      args_map = %{one: [%{a: "a"}, %{a: "aa"}]}
-      args_keyword = [one: [%{a: "a"}, %{a: "aa"}]]
-      assert args_map == NestedOptionalC.get(args_map)
-      assert args_keyword == NestedOptionalC.get(args_keyword)
-    end
-
-    test "error" do
-      args_map = %{one: [%{}]}
-      args_keyword = [one: [%{}]]
-      assert [lacked: ["one:1:a"]] == NestedOptionalC.get(args_map)
-      assert [lacked: ["one:1:a"]] == NestedOptionalC.get(args_keyword)
-
-      args_map = %{one: []}
-      args_keyword = [one: []]
-      assert [lacked: ["one:a"]] == NestedOptionalC.get(args_map)
-      assert [lacked: ["one:a"]] == NestedOptionalC.get(args_keyword)
-
-      args_map = %{one: nil}
-      args_keyword = [one: nil]
-      assert [lacked: [:one]] == NestedOptionalC.get(args_map)
-      assert [lacked: [:one]] == NestedOptionalC.get(args_keyword)
-    end
-  end
-
-  describe "list -> map -> list - map" do
-    defmodule NestedOptionalD do
-      use Argx, Project.Argx.Nested.Shared
-      def get(params), do: match(params, [FiveRule])
-    end
-
-    test "ok" do
-      args = %{one: [%{z: [%{a: "a", b: nil}]}]}
-      assert args == NestedOptionalD.get(args)
-
-      args = %{one: [%{z: [%{a: "a"}]}]}
-      assert args == NestedOptionalD.get(args)
-
-      args = %{one: [%{z: [%{a: "a", b: nil}, %{a: "a", b: nil}]}]}
-      assert args == NestedOptionalD.get(args)
-
-      args = %{one: [%{z: [%{a: "a"}, %{a: "a"}]}]}
-      assert args == NestedOptionalD.get(args)
-    end
-
-    test "error" do
-      args = %{one: [%{z: [%{}]}]}
-      assert [lacked: ["one:1:z:1:a"]] == NestedOptionalD.get(args)
-
-      args = %{one: [%{}]}
-      assert [lacked: ["one:1:z"]] == NestedOptionalD.get(args)
-
-      args = %{one: []}
-      assert [lacked: ["one:z"]] == NestedOptionalD.get(args)
-
-      args = %{one: nil}
-      assert [lacked: [:one]] == NestedOptionalD.get(args)
-    end
-  end
-end
-
-defmodule Project.Argx.Nested.Shared do
+defmodule Project.Argx.Nested.List.Shared do
   @moduledoc false
 
   use Argx.Defconfig
 
+  ### auto
   defconfig(IntegerRule, [_(:integer, :auto)])
   defconfig(FloatRule, [_(:float, :auto)])
 
-  ### List -> Integer
+  ### value type
   defconfig(ListIntegerRule, [one({:list, IntegerRule})])
   defconfig(ListFloatRule, [one({:list, FloatRule})])
 
-  ### Optional
-  defconfig(OptionalRuleA, [a(:string, :optional)])
-  defconfig(OptionalRuleB, [a(:string), b(:string, :optional)])
-
-  ### Nested
+  ### list type
   defconfig(OneRule, [one({:list, SimpleMapRule})])
   defconfig(TwoRule, [one({:list, SimpleListRule})])
   defconfig(ThreeRule, [one({:list, ListRule})])
-  defconfig(FourRule, [one({:list, OptionalRuleB})])
-  defconfig(FiveRule, [one({:list, ListOptionalRule})])
 
   defconfig(SimpleMapRule, [a(:string)])
   defconfig(SimpleListRule, [z({:list, SimpleMapRule})])
   defconfig(MapRule, [a({:list, SimpleMapRule})])
   defconfig(ListRule, [z({:list, MapRule})])
-  defconfig(ListOptionalRule, [z({:list, OptionalRuleB})])
 
   def fmt_errors({:error, errors}), do: errors
   def fmt_errors(new_args), do: new_args
