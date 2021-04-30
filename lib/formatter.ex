@@ -12,13 +12,13 @@ defmodule Argx.Formatter do
   end
 
   ###
-  def fmt_errors({errors, new_args}, curr_m, share_m, use_m \\ nil) do
+  def fmt_errors({errors, new_args}, curr_m, shared_m, use_m \\ nil) do
     with f <- :fmt_errors,
          arity <- 1,
          a <- get_a(errors, new_args) do
       cond do
         module_name?(curr_m) && function_exported?(curr_m, f, arity) -> curr_m
-        module_name?(share_m) && function_exported?(share_m, f, arity) -> share_m
+        module_name?(shared_m) && function_exported?(shared_m, f, arity) -> shared_m
         module_name?(use_m) && function_exported?(use_m, f, arity) -> use_m
         true -> :default
       end

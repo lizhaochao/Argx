@@ -9,7 +9,7 @@ defmodule Argx.Use.WithCheck do
   alias Argx.Matcher.Helper, as: MatcherHelper
 
   defmacro __using__(opts) do
-    share_m = Keyword.get(opts, :share, [])
+    shared_m = Keyword.get(opts, :share, [])
     warn = Keyword.get(opts, :warn, Const.default_warn())
 
     quote do
@@ -24,12 +24,12 @@ defmodule Argx.Use.WithCheck do
         a = Map.get(fun, :a)
 
         use_m = __MODULE__
-        share_m = unquote(share_m)
+        shared_m = unquote(shared_m)
         arg_names = Helper.get_arg_names(a)
         configs_f_name = Helper.make_get_fun_configs_f_name(f)
 
         configs =
-          share_m
+          shared_m
           |> Self.get_all_defconfigs(@defconfigs)
           |> Self.merge_configs(configs, arg_names, unquote(warn))
 
@@ -57,7 +57,7 @@ defmodule Argx.Use.WithCheck do
                 match.(args, unquote(configs), __MODULE__)
                 |> Self.post_match(
                   __MODULE__,
-                  unquote(share_m),
+                  unquote(shared_m),
                   unquote(use_m),
                   unquote(real_f_name)
                 )
@@ -78,14 +78,14 @@ defmodule Argx.Use.WithCheck do
   end
 
   ###
-  def post_match({[] = _errors, [_ | _] = new_args}, curr_m, _share_m, _use_m, real_f_name) do
+  def post_match({[] = _errors, [_ | _] = new_args}, curr_m, _shared_m, _use_m, real_f_name) do
     apply(curr_m, real_f_name, Keyword.values(new_args))
   end
 
-  def post_match({_errors, _new_args} = result, curr_m, share_m, use_m, _real_f_name) do
+  def post_match({_errors, _new_args} = result, curr_m, shared_m, use_m, _real_f_name) do
     result
     |> Formatter.fmt_match_result()
-    |> Formatter.fmt_errors(curr_m, share_m, use_m)
+    |> Formatter.fmt_errors(curr_m, shared_m, use_m)
   end
 
   ###
@@ -109,17 +109,17 @@ defmodule Argx.Use.WithCheck do
     end
   end
 
-  def get_all_defconfigs([] = _share_m, defconfigs_attr) do
+  def get_all_defconfigs([] = _shared_m, defconfigs_attr) do
     quote do
       list_to_map(unquote(defconfigs_attr))
     end
   end
 
-  def get_all_defconfigs(share_m, defconfigs_attr) when is_atom(share_m) do
+  def get_all_defconfigs(shared_m, defconfigs_attr) when is_atom(shared_m) do
     quote do
-      general_configs = Config.get_defconfigs(unquote(share_m))
+      shared_configs = Config.get_defconfigs(unquote(shared_m))
       defconfigs = list_to_map(unquote(defconfigs_attr))
-      Map.merge(general_configs, defconfigs)
+      Map.merge(shared_configs, defconfigs)
     end
   end
 end
@@ -139,7 +139,7 @@ defmodule Argx.Use.Defconfig do
         name = Parser.parse_defconfig_name(name)
         configs = Parser.parse_configs(configs)
         attr = Macro.escape(%{name => configs})
-        f_name = Helper.make_get_general_configs_f_name(name)
+        f_name = Helper.make_get_shared_configs_f_name(name)
 
         operate_attr_expr =
           quote do
@@ -171,7 +171,7 @@ defmodule Argx.Use.Helper do
   @defconfigs_key Const.defconfigs_key()
 
   ### make function name
-  def make_get_general_configs_f_name(name) do
+  def make_get_shared_configs_f_name(name) do
     make_fun_name("get#{@defconfigs_key}#{name}", &fun_name_rule/1)
   end
 

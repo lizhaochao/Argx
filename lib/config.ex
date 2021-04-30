@@ -17,9 +17,9 @@ defmodule Argx.Config do
     |> Enum.filter(fn {f_name, _arity} ->
       f_name |> to_string() |> Kernel.=~(to_string(@defconfigs_key))
     end)
-    |> Enum.reduce(%{}, fn {f_name, _arity}, general_configs ->
+    |> Enum.reduce(%{}, fn {f_name, _arity}, shared_configs ->
       configs = apply(m, f_name, [])
-      Map.merge(general_configs, configs)
+      Map.merge(shared_configs, configs)
     end)
   end
 
