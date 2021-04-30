@@ -6,6 +6,7 @@ defmodule Argx.Config do
   alias Argx.Const
 
   @warn_max_nested_depth Const.warn_max_nested_depth()
+  @defconfigs_key Const.defconfigs_key()
 
   @enforce_keys [:type, :optional, :auto, :range, :default, :empty, :nested]
   defstruct @enforce_keys
@@ -14,7 +15,7 @@ defmodule Argx.Config do
     :functions
     |> m.__info__()
     |> Enum.filter(fn {f_name, _arity} ->
-      f_name |> to_string() |> Kernel.=~(to_string(Const.defconfigs_key()))
+      f_name |> to_string() |> Kernel.=~(to_string(@defconfigs_key))
     end)
     |> Enum.reduce(%{}, fn {f_name, _arity}, general_configs ->
       configs = apply(m, f_name, [])
