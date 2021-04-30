@@ -42,9 +42,9 @@ defmodule Argx do
     with config_names <- MatcherHelper.prune_names(config_names),
          modules <- [shared_m, curr_m],
          all_configs <- Config.get_configs_by_modules(modules, @defconfigs_key),
-         get <- Config.get_configs_by_names(all_configs, config_names) do
-      warn
-      |> get.(@warn_max_nested_depth)
+         get <- Config.get_configs_by_names(warn, @warn_max_nested_depth) do
+      all_configs
+      |> get.(config_names)
       |> Enum.into([])
     end
   end

@@ -28,17 +28,17 @@ defmodule Argx.Config do
 
   def get_configs_by_modules(_other_modules, _f_name_keyword), do: %{}
 
-  def get_configs_by_names(%{} = all_configs, [_ | _] = names) do
-    fn warn, max_depth ->
-      Enum.reduce(names, %{}, fn name, name_configs ->
-        new_configs = drill_down(all_configs, name, warn, 1, max_depth)
-        Map.merge(name_configs, new_configs)
-      end)
-    end
-  end
+  def get_configs_by_names(warn, max_depth) do
+    fn
+      %{} = configs, [_ | _] = names ->
+        Enum.reduce(names, %{}, fn name, name_configs ->
+          new_configs = drill_down(configs, name, warn, 1, max_depth)
+          Map.merge(name_configs, new_configs)
+        end)
 
-  def get_configs_by_names(_other_all_configs, _other_names) do
-    fn _warn, _max_depth -> %{} end
+      _other_configs, _other_names ->
+        %{}
+    end
   end
 
   defp drill_down(all_configs, name, warn, depth, max_depth) do
@@ -95,7 +95,7 @@ defmodule Argx.Config do
 
   defp warn_by_depth(name, warn, depth, max_depth) do
     with true <- warn,
-         true <- depth >= max_depth,
+         true <- depth > max_depth,
          ":" <> name <- inspect(name) do
       IO.warn("#{name} config's depth is #{depth}.", [])
       :ok

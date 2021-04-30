@@ -103,8 +103,8 @@ defmodule Argx.Use.WithCheck do
     quote do
       with {names, configs} <- Map.pop(unquote(configs), unquote(names_key)),
            names <- Helper.prune_names(names),
-           get <- Config.get_configs_by_names(unquote(defconfigs), names),
-           defconfigs <- get.(unquote(warn), unquote(@warn_max_nested_depth)),
+           get <- Config.get_configs_by_names(unquote(warn), unquote(@warn_max_nested_depth)),
+           defconfigs <- get.(unquote(defconfigs), names),
            merged_configs <- Map.merge(defconfigs, configs) do
         Helper.sort_by_keys(merged_configs, unquote(arg_names), unquote(should_drop_flag))
       end
