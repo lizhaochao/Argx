@@ -1,10 +1,8 @@
 defmodule Argx do
   @moduledoc false
 
-  import Argx.Util
-
   alias Argx.{Checker, Config, Const, Formatter, Matcher}
-  alias Argx.Matcher.Helper
+  alias Argx.Matcher.Helper, as: MatcherHelper
   alias Argx, as: Self
 
   @defconfigs_key Const.defconfigs_key()
@@ -28,9 +26,9 @@ defmodule Argx do
     Checker.check_args!(args)
     Checker.check_config_names!(config_names)
 
-    with origin_type <- get_type(args),
+    with origin_type <- MatcherHelper.get_type(args),
          configs <- get_configs(shared_m, curr_m, config_names, warn),
-         {args, configs} <- Helper.pre_args_configs(args, configs),
+         {args, configs} <- MatcherHelper.pre_args_configs(args, configs),
          from <- :argx do
       match = Matcher.match(from)
 
@@ -41,7 +39,7 @@ defmodule Argx do
   end
 
   def get_configs(shared_m, curr_m, config_names, warn) do
-    with config_names <- prune_names(config_names),
+    with config_names <- MatcherHelper.prune_names(config_names),
          modules <- [shared_m, curr_m],
          all_configs <- Config.get_configs_by_modules(modules, @defconfigs_key),
          get <- Config.get_configs_by_names(all_configs, config_names) do

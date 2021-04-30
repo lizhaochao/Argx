@@ -108,15 +108,17 @@ defmodule Argx.Parser do
   end
 
   defp reduce_defconfig_names(%{} = configs, names_key, name) do
-    name = prune_names(name)
-
-    {_, new_configs} =
+    update = fn configs, names_key, name ->
       Map.get_and_update(configs, names_key, fn curr ->
         new_value = (curr && MapSet.put(curr, name)) || MapSet.new([name])
         {curr, new_value}
       end)
+    end
 
-    new_configs
+    with name <- prune_names(name),
+         {_, new_configs} <- update.(configs, names_key, name) do
+      new_configs
+    end
   end
 
   defp every_config({:||, _, [{field, _, items}, default]}) do
@@ -151,14 +153,18 @@ defmodule Argx.Parser do
 
   defp every_item([{type, {:__aliases__, _, [nested_name]}} | rest], items)
        when type in [:list, :map] do
-    items = put_nested_name(items, type, nested_name)
-    every_item(rest, items)
+    with name <- prune_names(nested_name),
+         items <- put_nested_name(items, type, name) do
+      every_item(rest, items)
+    end
   end
 
   defp every_item([{type, nested_name} | rest], items)
        when type in [:list, :map] and (is_bitstring(nested_name) or is_atom(nested_name)) do
-    items = put_nested_name(items, type, nested_name)
-    every_item(rest, items)
+    with name <- prune_names(nested_name),
+         items <- put_nested_name(items, type, name) do
+      every_item(rest, items)
+    end
   end
 
   defp every_item([:optional | rest], items) do
@@ -203,7 +209,7 @@ defmodule Argx.Parser do
   defp put_nested_name(items, type, nested_name) do
     items
     |> Map.put(:type, type)
-    |> Map.put(:nested, prune_names(nested_name))
+    |> Map.put(:nested, nested_name)
   end
 
   ###

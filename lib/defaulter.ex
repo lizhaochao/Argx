@@ -1,8 +1,6 @@
 defmodule Argx.Defaulter do
   @moduledoc false
 
-  import Argx.Util
-
   def set_default(
         {arg_name, _arg_value} = arg,
         {arg_name2, %Argx.Config{}} = config,
@@ -13,7 +11,7 @@ defmodule Argx.Defaulter do
   end
 
   def set_default(_other_arg, _other_config, _module) do
-    raise(Argx.Error, "not in the same order.")
+    raise Argx.Error, "not in the same order."
   end
 
   defp do_set_default(
@@ -62,4 +60,14 @@ defmodule Argx.Defaulter do
   def get_default({:fn, _, _}, _m), do: raise(Argx.Error, "not support anonymous function")
   def get_default({:&, _, _}, _m), do: raise(Argx.Error, "not support function reference")
   def get_default(_other, _m), do: raise(Argx.Error, "unknown value type")
+
+  ###
+  def make_module_name([term | _] = parts) when is_atom(term) or is_bitstring(term) do
+    [Elixir | parts]
+    |> Enum.map(fn part -> to_string(part) end)
+    |> Enum.join(".")
+    |> String.to_atom()
+  end
+
+  def make_module_name(_other), do: nil
 end

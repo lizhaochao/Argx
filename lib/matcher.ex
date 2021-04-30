@@ -1,7 +1,7 @@
 defmodule Argx.Matcher do
   @moduledoc false
 
-  import Argx.{Error, Util}
+  import Argx.Error
 
   alias Argx.Const
   alias Argx.Matcher.Helper
@@ -95,7 +95,7 @@ defmodule Argx.Matcher do
     fn root, errors, path, curr_m, parent ->
       with worker <- reenter(from, list, configs),
            {new_errors, map} <- worker.(path, curr_m, nil),
-           map <- to_map(map),
+           map <- Helper.to_map(map),
            errors <- merge_errors(errors, new_errors, @check_types),
            root <- Keyword.put(root, parent, map) do
         {errors, root}
@@ -158,7 +158,7 @@ defmodule Argx.Matcher do
     fn new_list, errors, path, curr_m, parent, line_num, result ->
       with {new_errors, args} <- result,
            line_num <- line_num + 1,
-           list <- [to_map(args) | new_list],
+           list <- [Helper.to_map(args) | new_list],
            errors <- merge_errors(errors, new_errors, @check_types),
            worker <- do_traverse_by_list(from, rest, configs) do
         worker.(list, errors, path, curr_m, parent, line_num)
@@ -170,7 +170,7 @@ defmodule Argx.Matcher do
     fn list, errors, _path, _curr_m, _parent, _line_num, result ->
       with {new_errors, args} <- result,
            errors <- merge_errors(errors, new_errors, @check_types),
-           list <- [to_map(args) | list] do
+           list <- [Helper.to_map(args) | list] do
         {errors, list}
       end
     end
@@ -180,9 +180,7 @@ end
 defmodule Argx.Matcher.Helper do
   @moduledoc false
 
-  import Argx.Util
-
-  alias Argx.{Checker, Converter, Const, Defaulter}
+  alias Argx.{Checker, Converter, Const, Defaulter, Util}
 
   @should_drop_flag Const.should_drop_flag()
   @value_key Const.value_key()
@@ -245,10 +243,10 @@ defmodule Argx.Matcher.Helper do
   def join_path(key, [] = _path, _sep, _value_key) when is_atom(key), do: key
 
   def join_path(key, [_ | _] = path, sep, value_key) do
-    with true <- value_key == key do
+    if key == value_key do
       Enum.join(path, sep)
     else
-      _ -> path |> append_path(key) |> Enum.join(sep)
+      path |> append_path(key) |> Enum.join(sep)
     end
   end
 
@@ -259,7 +257,7 @@ defmodule Argx.Matcher.Helper do
   ### Preprocess
   def pre_args_configs(args, configs) when is_map(args) or is_map(configs) do
     args
-    |> to_atom_key()
+    |> Util.to_atom_key()
     |> to_keyword()
     |> pre_args_configs(to_keyword(configs))
   end
@@ -322,4 +320,31 @@ defmodule Argx.Matcher.Helper do
     end)
     |> Enum.reverse()
   end
+
+  def to_map(%{} = term), do: term
+  def to_map(term) when is_list(term), do: Enum.into(term, %{})
+  def to_map(other), do: other
+  def to_keyword(%{} = term), do: Enum.into(term, [])
+  def to_keyword(term) when is_list(term), do: term
+  def to_keyword(other), do: other
+
+  ###
+  def get_type(%{} = _term), do: :map
+  def get_type(term) when is_bitstring(term), do: :string
+  def get_type(term) when is_integer(term), do: :integer
+  def get_type(term) when is_float(term), do: :float
+
+  def get_type(term) when is_list(term) do
+    term
+    |> Keyword.keyword?()
+    |> if(
+      do: :keyword,
+      else: :list
+    )
+  end
+
+  def get_type(_other), do: :unknown
+
+  ### Proxy
+  def prune_names(term), do: Util.prune_names(term)
 end

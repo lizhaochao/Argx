@@ -1,12 +1,9 @@
 defmodule Argx.Use.WithCheck do
   @moduledoc false
 
-  import Argx.Util
-
   alias Argx.{Checker, Config, Const, Formatter, Matcher, Parser}
   alias Argx.Use.WithCheck, as: Self
   alias Argx.Use.Helper
-  alias Argx.Matcher.Helper, as: MatcherHelper
 
   @default_warn Const.default_warn()
   @warn_max_nested_depth Const.warn_max_nested_depth()
@@ -33,13 +30,13 @@ defmodule Argx.Use.WithCheck do
         shared_m = unquote(shared_m)
         arg_names = Helper.get_arg_names(a)
         configs_f_name = Helper.make_get_fun_configs_f_name(f)
-        with_check_configs = configs |> Parser.parse_configs() |> Macro.escape()
+        configs = configs |> Parser.parse_configs() |> Macro.escape()
 
         configs =
           shared_m
           |> Self.get_all_defconfigs(@defconfigs_attr, @defconfigs_key)
           |> Self.merge_configs(
-            with_check_configs,
+            configs,
             arg_names,
             @names_key,
             @should_drop_flag,
@@ -64,7 +61,7 @@ defmodule Argx.Use.WithCheck do
               end
 
               def unquote(f)(unquote_splicing(a)) when unquote(guard) do
-                args = unquote(Helper.make_args(a))
+                args = unquote(Self.make_args(a))
                 match = Matcher.match(:with_check)
 
                 match.(args, unquote(configs), __MODULE__)
@@ -102,29 +99,37 @@ defmodule Argx.Use.WithCheck do
   end
 
   ###
-  def merge_configs(defconfigs, with_check_configs, arg_names, names_key, should_drop_flag, warn) do
+  def merge_configs(defconfigs, configs, arg_names, names_key, should_drop_flag, warn) do
     quote do
-      with {names, configs} <- Map.pop(unquote(with_check_configs), unquote(names_key)),
-           names <- prune_names(names),
+      with {names, configs} <- Map.pop(unquote(configs), unquote(names_key)),
+           names <- Helper.prune_names(names),
            get <- Config.get_configs_by_names(unquote(defconfigs), names),
            defconfigs <- get.(unquote(warn), unquote(@warn_max_nested_depth)),
            merged_configs <- Map.merge(defconfigs, configs) do
-        MatcherHelper.sort_by_keys(merged_configs, unquote(arg_names), unquote(should_drop_flag))
+        Helper.sort_by_keys(merged_configs, unquote(arg_names), unquote(should_drop_flag))
       end
     end
   end
 
   def get_all_defconfigs([] = _shared_m, defconfigs_attr, _defconfigs_key) do
     quote do
-      list_to_map(unquote(defconfigs_attr))
+      Helper.list_to_map(unquote(defconfigs_attr))
     end
   end
 
   def get_all_defconfigs(shared_m, defconfigs_attr, defconfigs_key) when is_atom(shared_m) do
     quote do
       shared_configs = Config.get_defconfigs(unquote(shared_m), unquote(defconfigs_key))
-      defconfigs = list_to_map(unquote(defconfigs_attr))
+      defconfigs = Helper.list_to_map(unquote(defconfigs_attr))
       Map.merge(shared_configs, defconfigs)
+    end
+  end
+
+  def make_args(a_expr) do
+    quote do
+      keys = unquote(Helper.get_arg_names(a_expr))
+      values = [unquote_splicing(a_expr)]
+      Helper.make_args(keys, values, [])
     end
   end
 end
@@ -133,7 +138,6 @@ defmodule Argx.Use.Defconfig do
   @moduledoc false
 
   alias Argx.{Checker, Const, Parser}
-  alias Argx.Use.Defconfig, as: Self
   alias Argx.Use.Helper
 
   defmacro __using__(_opts) do
@@ -170,9 +174,7 @@ end
 defmodule Argx.Use.Helper do
   @moduledoc false
 
-  import Argx.Util
-
-  alias Argx.Use.Helper, as: Self
+  alias Argx.Matcher.Helper, as: MatcherHelper
 
   ### make function name
   def make_get_shared_configs_f_name(name, defconfigs_key) do
@@ -209,14 +211,7 @@ defmodule Argx.Use.Helper do
   end
 
   ###
-  def make_args(a) do
-    quote do
-      keys = unquote(get_arg_names(a))
-      values = [unquote_splicing(a)]
-      Self.do_make_args(keys, values, [])
-    end
-  end
-
+  def make_args(keys, values, args), do: do_make_args(keys, values, args)
   def do_make_args([] = _keys, [] = _values, args), do: Enum.reverse(args)
   def do_make_args([_ | _] = _keys, [] = _values, args), do: args
   def do_make_args([] = _keys, [_ | _] = _values, args), do: args
@@ -230,4 +225,32 @@ defmodule Argx.Use.Helper do
   defp do_get_arg_names([], names), do: Enum.reverse(names)
   defp do_get_arg_names([{arg, _, _} | rest], names), do: do_get_arg_names(rest, [arg | names])
   defp do_get_arg_names([_other_expr | rest], names), do: do_get_arg_names(rest, names)
+
+  ###
+  def list_to_map(list) when is_list(list) do
+    Enum.reduce(list, %{}, fn %{} = term, map ->
+      Map.merge(map, term)
+    end)
+  end
+
+  def list_to_map(other), do: other
+
+  def make_fun_name(name, rule)
+      when (is_atom(name) or is_bitstring(name)) and is_function(rule) do
+    name
+    |> rule.()
+    |> Enum.map(fn part -> to_string(part) end)
+    |> IO.iodata_to_binary()
+    |> String.downcase()
+    |> String.to_atom()
+  end
+
+  def make_fun_name(_other_name, _other_rule), do: nil
+
+  ### Proxy
+  def prune_names(term), do: MatcherHelper.prune_names(term)
+
+  def sort_by_keys(keyword, keys, should_drop_flag) do
+    MatcherHelper.sort_by_keys(keyword, keys, should_drop_flag)
+  end
 end
