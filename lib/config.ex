@@ -1,21 +1,14 @@
 defmodule Argx.Config do
   @moduledoc false
 
-  import Argx.Util
-
-  alias Argx.Const
-
-  @warn_max_nested_depth Const.warn_max_nested_depth()
-  @defconfigs_key Const.defconfigs_key()
-
   @enforce_keys [:type, :optional, :auto, :range, :default, :empty, :nested]
   defstruct @enforce_keys
 
-  def get_defconfigs(m) when is_atom(m) do
+  def get_defconfigs(m, f_name_keyword) when is_atom(m) do
     :functions
     |> m.__info__()
     |> Enum.filter(fn {f_name, _arity} ->
-      f_name |> to_string() |> Kernel.=~(to_string(@defconfigs_key))
+      f_name |> to_string() |> Kernel.=~(to_string(f_name_keyword))
     end)
     |> Enum.reduce(%{}, fn {f_name, _arity}, shared_configs ->
       configs = apply(m, f_name, [])
@@ -23,59 +16,63 @@ defmodule Argx.Config do
     end)
   end
 
-  def get_defconfigs(_other_m), do: %{}
+  def get_defconfigs(_other_m, _f_name_keyword), do: %{}
 
-  def get_configs_by_modules([_ | _] = modules) do
+  def get_configs_by_modules([_ | _] = modules, f_name_keyword) do
     modules
     |> Enum.reduce(%{}, fn m, configs ->
-      defconfigs = get_defconfigs(m)
+      defconfigs = get_defconfigs(m, f_name_keyword)
       Map.merge(configs, defconfigs)
     end)
   end
 
-  def get_configs_by_modules(_other_modules), do: %{}
+  def get_configs_by_modules(_other_modules, _f_name_keyword), do: %{}
 
-  def get_configs_by_names(%{} = all_configs, [_ | _] = names, warn) do
-    names
-    |> prune_names()
-    |> Enum.reduce(%{}, fn name, name_configs ->
-      new_configs = drill_down(all_configs, name, 1, warn)
-      Map.merge(name_configs, new_configs)
-    end)
-  end
-
-  def get_configs_by_names(_other_all_configs, _other_names, _warn), do: %{}
-
-  defp drill_down(all_configs, name, depth, warn) do
-    with _ <- warn_by_depth(name, depth, @warn_max_nested_depth, warn),
-         configs <- fetch_by_name(all_configs, name),
-         configs_kw <- Enum.into(configs, []) do
-      do_drill_down(configs, all_configs, configs_kw, depth, warn)
+  def get_configs_by_names(%{} = all_configs, [_ | _] = names) do
+    fn warn, max_depth ->
+      Enum.reduce(names, %{}, fn name, name_configs ->
+        new_configs = drill_down(all_configs, name, warn, 1, max_depth)
+        Map.merge(name_configs, new_configs)
+      end)
     end
   end
 
-  defp do_drill_down(new_config, _all_configs, [], _depth, _warn), do: new_config
+  def get_configs_by_names(_other_all_configs, _other_names) do
+    fn _warn, _max_depth -> %{} end
+  end
+
+  defp drill_down(all_configs, name, warn, depth, max_depth) do
+    with _ <- warn_by_depth(name, warn, depth, max_depth),
+         configs <- fetch_by_name(all_configs, name),
+         configs_kw <- Enum.into(configs, []) do
+      do_drill_down(configs, all_configs, configs_kw, warn, depth, max_depth)
+    end
+  end
+
+  defp do_drill_down(new_config, _all_configs, [], _warn, _depth, _max_depth), do: new_config
 
   defp do_drill_down(
          new_config,
          all_configs,
          [{_field, %Argx.Config{nested: nil}} | rest],
+         warn,
          depth,
-         warn
+         max_depth
        ) do
-    do_drill_down(new_config, all_configs, rest, depth, warn)
+    do_drill_down(new_config, all_configs, rest, warn, depth, max_depth)
   end
 
   defp do_drill_down(
          new_config,
          all_configs,
          [{field, %Argx.Config{nested: nested_name} = map_value} | rest],
+         warn,
          depth,
-         warn
+         max_depth
        ) do
-    with nested_configs <- drill_down(all_configs, nested_name, depth + 1, warn),
+    with nested_configs <- drill_down(all_configs, nested_name, warn, depth + 1, max_depth),
          new_config <- put_nested(new_config, field, map_value, nested_configs) do
-      do_drill_down(new_config, all_configs, rest, depth, warn)
+      do_drill_down(new_config, all_configs, rest, warn, depth, max_depth)
     end
   end
 
@@ -96,9 +93,9 @@ defmodule Argx.Config do
     end
   end
 
-  defp warn_by_depth(name, depth, max, warn) do
+  defp warn_by_depth(name, warn, depth, max_depth) do
     with true <- warn,
-         true <- depth >= max,
+         true <- depth >= max_depth,
          ":" <> name <- inspect(name) do
       IO.warn("#{name} config's depth is #{depth}.", [])
       :ok

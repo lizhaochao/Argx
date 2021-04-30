@@ -37,10 +37,14 @@ defmodule Argx do
   end
 
   def get_configs(shared_m, curr_m, config_names, warn) do
-    [shared_m, curr_m]
-    |> Config.get_configs_by_modules()
-    |> Config.get_configs_by_names(config_names, warn)
-    |> Enum.into([])
+    with config_names <- prune_names(config_names),
+         modules <- [shared_m, curr_m],
+         all_configs <- Config.get_configs_by_modules(modules, Const.defconfigs_key()),
+         get <- Config.get_configs_by_names(all_configs, config_names) do
+      warn
+      |> get.(Const.warn_max_nested_depth())
+      |> Enum.into([])
+    end
   end
 end
 
@@ -186,14 +190,14 @@ end
 defmodule Argx.Defconfig do
   @moduledoc false
 
-  alias Argx.Config
+  alias Argx.{Config, Const}
 
   defmacro __using__(_opts) do
     quote do
       import Argx.Inner.Defconfig
 
       def __get_defconfigs__() do
-        Config.get_defconfigs(__MODULE__)
+        Config.get_defconfigs(__MODULE__, unquote(Const.defconfigs_key()))
       end
     end
   end

@@ -27,11 +27,12 @@ defmodule Argx.Use.WithCheck do
         shared_m = unquote(shared_m)
         arg_names = Helper.get_arg_names(a)
         configs_f_name = Helper.make_get_fun_configs_f_name(f)
+        with_check_configs = configs |> Parser.parse_configs() |> Macro.escape()
 
         configs =
           shared_m
           |> Self.get_all_defconfigs(@defconfigs)
-          |> Self.merge_configs(configs, arg_names, unquote(warn))
+          |> Self.merge_configs(with_check_configs, arg_names, unquote(warn))
 
         # expr
         ignore_attr_warning_expr = quote do: unquote(Helper.reg_attr(Const.defconfigs_key()))
@@ -89,23 +90,15 @@ defmodule Argx.Use.WithCheck do
   end
 
   ###
-  def merge_configs(defconfigs, configs, arg_names, warn) do
+  def merge_configs(defconfigs, with_check_configs, arg_names, warn) do
     quote do
-      {names, configs} =
-        Map.pop(
-          unquote(configs |> Parser.parse_configs() |> Macro.escape()),
-          unquote(Const.names_key())
-        )
-
-      merged_configs =
-        unquote(defconfigs)
-        |> Config.get_configs_by_names(names, unquote(warn))
-        |> Map.merge(configs)
-
-      MatcherHelper.sort_by_keys(
-        merged_configs,
-        unquote(arg_names)
-      )
+      with {names, configs} <- Map.pop(unquote(with_check_configs), unquote(Const.names_key())),
+           names <- prune_names(names),
+           get <- Config.get_configs_by_names(unquote(defconfigs), names),
+           defconfigs <- get.(unquote(warn), unquote(Const.warn_max_nested_depth())),
+           merged_configs <- Map.merge(defconfigs, configs) do
+        MatcherHelper.sort_by_keys(merged_configs, unquote(arg_names))
+      end
     end
   end
 
@@ -117,7 +110,7 @@ defmodule Argx.Use.WithCheck do
 
   def get_all_defconfigs(shared_m, defconfigs_attr) when is_atom(shared_m) do
     quote do
-      shared_configs = Config.get_defconfigs(unquote(shared_m))
+      shared_configs = Config.get_defconfigs(unquote(shared_m), unquote(Const.defconfigs_key()))
       defconfigs = list_to_map(unquote(defconfigs_attr))
       Map.merge(shared_configs, defconfigs)
     end
