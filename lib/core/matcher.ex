@@ -74,7 +74,7 @@ defmodule Argx.Matcher do
        when is_map(arg_value) do
     fn root, errors, _should_drop_flag, path, curr_m ->
       with worker <- traverse_by_map(from, arg_value, nested_configs) do
-        worker.(root, errors, path, curr_m, arg_name)
+        worker.(root, errors, path, curr_m, arg_name, :map)
       end
     end
   end
@@ -92,11 +92,11 @@ defmodule Argx.Matcher do
 
   ### Reenter Traverse Procedure
   defp traverse_by_map(from, list, configs) do
-    fn root, errors, path, curr_m, parent ->
+    fn root, errors, path, curr_m, parent, value_type ->
       with worker <- reenter(from, list, configs),
            {new_errors, map} <- worker.(path, curr_m, nil),
-           map <- Helper.to_map(map),
            errors <- merge_errors(errors, new_errors, @check_types),
+           map <- Helper.return_child(map, value_type),
            root <- Keyword.put(root, parent, map) do
         {errors, root}
       end
@@ -110,7 +110,7 @@ defmodule Argx.Matcher do
            line_num <- 1,
            worker <- do_traverse_by_list(from, list, configs),
            {errors, list} <- worker.(new_list, errors, path, curr_m, parent, line_num),
-           list <- Helper.return_list(list, value_type),
+           list <- Helper.return_child(list, value_type),
            root <- Keyword.put(root, parent, list) do
         {errors, root}
       end
@@ -158,8 +158,8 @@ defmodule Argx.Matcher do
     fn new_list, errors, path, curr_m, parent, line_num, result ->
       with {new_errors, args} <- result,
            line_num <- line_num + 1,
-           list <- [Helper.to_map(args) | new_list],
            errors <- merge_errors(errors, new_errors, @check_types),
+           list <- Helper.reduce_list(args, new_list),
            worker <- do_traverse_by_list(from, rest, configs) do
         worker.(list, errors, path, curr_m, parent, line_num)
       end
@@ -167,10 +167,10 @@ defmodule Argx.Matcher do
   end
 
   defp continue(_from, [] = _rest, _configs) do
-    fn list, errors, _path, _curr_m, _parent, _line_num, result ->
+    fn new_list, errors, _path, _curr_m, _parent, _line_num, result ->
       with {new_errors, args} <- result,
            errors <- merge_errors(errors, new_errors, @check_types),
-           list <- [Helper.to_map(args) | list] do
+           list <- Helper.reduce_list(args, new_list) do
         {errors, list}
       end
     end
@@ -201,7 +201,7 @@ defmodule Argx.Matcher.Helper do
 
   def get_required_key(configs, value_key) do
     configs
-    |> Enum.into([])
+    |> to_keyword()
     |> Enum.filter(fn {field, config} ->
       config.optional == false and field != value_key
     end)
@@ -226,7 +226,7 @@ defmodule Argx.Matcher.Helper do
   def build_list(list, :list, _value_key), do: list
   def build_list(other, _value_type, _value_key), do: other
 
-  def return_list([_ | _] = list, :value) do
+  def return_child([_ | _] = list, :value) do
     list
     |> Enum.map(fn term ->
       %{_: value} = term
@@ -235,8 +235,15 @@ defmodule Argx.Matcher.Helper do
     |> Enum.reverse()
   end
 
-  def return_list([_ | _] = list, :list), do: Enum.reverse(list)
-  def return_list(other_list, _value_type), do: other_list
+  def return_child([_ | _] = list, :list), do: Enum.reverse(list)
+  def return_child([_ | _] = map, :map), do: to_map(map)
+  def return_child(other_list, _value_type), do: other_list
+
+  def reduce_list(args, new_list) when is_list(args) and is_list(new_list) do
+    [to_map(args) | new_list]
+  end
+
+  def reduce_list(_other_args, new_list) when is_list(new_list), do: new_list
 
   ### Path
   def join_path(key, path, sep \\ @path_sep, value_key \\ @value_key)
