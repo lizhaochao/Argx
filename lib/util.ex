@@ -10,18 +10,6 @@ defmodule Argx.Util do
 
   def list_to_map(other), do: other
 
-  def append(value, keyword, key) when is_list(keyword) and is_atom(key) do
-    {_, new} =
-      Keyword.get_and_update(keyword, key, fn current ->
-        new_value = (current && Enum.reverse([value | Enum.reverse(current)])) || [value]
-        {nil, new_value}
-      end)
-
-    new
-  end
-
-  def append(_value, _other_keyword, _other_key), do: []
-
   ###
   def make_module_name([term | _] = parts) when is_atom(term) or is_bitstring(term) do
     [Elixir | parts]

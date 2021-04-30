@@ -1,10 +1,6 @@
 defmodule Argx.Error do
   @moduledoc false
 
-  import Argx.Util
-
-  alias Argx.Const
-
   defexception message: nil
 
   def reduce_errors(errors, [_ | _] = keys, path, path_handler, check_type) do
@@ -25,15 +21,15 @@ defmodule Argx.Error do
   def reduce_errors(errors, _other_keys, _path, _path_handler, _check_type), do: errors
 
   ###
-  def merge_errors(left, right) when is_list(left) and is_list(right) do
-    with left_errors <- left |> pre_errors() |> Enum.sort(),
-         right_errors <- right |> pre_errors() |> Enum.sort() do
+  def merge_errors(left, right, check_types) when is_list(left) and is_list(right) do
+    with left_errors <- left |> pre_errors(check_types) |> Enum.sort(),
+         right_errors <- right |> pre_errors(check_types) |> Enum.sort() do
       do_merger_errors([], left_errors, right_errors)
     end
   end
 
-  defp pre_errors(errors) when is_list(errors) do
-    Enum.reduce(Const.check_types(), errors, fn type, err ->
+  defp pre_errors(errors, check_types) when is_list(errors) do
+    Enum.reduce(check_types, errors, fn type, err ->
       {_, new} =
         Keyword.get_and_update(err, type, fn current ->
           {nil, current || []}
@@ -79,4 +75,17 @@ defmodule Argx.Error do
 
   def sort_errors({:error, errors}), do: sort_errors(errors)
   def sort_errors([] = errors), do: errors
+
+  ###
+  def append(value, keyword, key) when is_list(keyword) and is_atom(key) do
+    {_, new} =
+      Keyword.get_and_update(keyword, key, fn current ->
+        new_value = (current && Enum.reverse([value | Enum.reverse(current)])) || [value]
+        {nil, new_value}
+      end)
+
+    new
+  end
+
+  def append(_value, _other_keyword, _other_key), do: []
 end

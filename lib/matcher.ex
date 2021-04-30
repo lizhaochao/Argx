@@ -8,6 +8,7 @@ defmodule Argx.Matcher do
 
   @init_errors []
   @should_drop_flag Const.should_drop_flag()
+  @check_types Const.check_types()
 
   def match(from) do
     fn args, configs, curr_m ->
@@ -94,7 +95,7 @@ defmodule Argx.Matcher do
       with worker <- reenter(from, list, configs),
            {new_errors, map} <- worker.(path, curr_m, nil),
            map <- to_map(map),
-           errors <- merge_errors(errors, new_errors),
+           errors <- merge_errors(errors, new_errors, @check_types),
            root <- Keyword.put(root, parent, map) do
         {errors, root}
       end
@@ -157,7 +158,7 @@ defmodule Argx.Matcher do
       with {new_errors, args} <- result,
            line_num <- line_num + 1,
            list <- [to_map(args) | new_list],
-           errors <- merge_errors(errors, new_errors),
+           errors <- merge_errors(errors, new_errors, @check_types),
            worker <- do_traverse_by_list(from, rest, configs) do
         worker.(list, errors, path, curr_m, parent, line_num)
       end
@@ -167,7 +168,7 @@ defmodule Argx.Matcher do
   defp continue(_from, [] = _rest, _configs) do
     fn list, errors, _path, _curr_m, _parent, _line_num, result ->
       with {new_errors, args} <- result,
-           errors <- merge_errors(errors, new_errors),
+           errors <- merge_errors(errors, new_errors, @check_types),
            list <- [to_map(args) | list] do
         {errors, list}
       end
