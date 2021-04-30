@@ -6,7 +6,7 @@ defmodule NestedOptionalTest do
   describe "one key" do
     defmodule NestedOptionalA do
       use Argx, share: Project.Argx.Nested.Optional.Shared
-      def get(params), do: match(params, [OptionalA])
+      def get(params), do: check(params, [OptionalA])
     end
 
     test "ok" do
@@ -25,7 +25,7 @@ defmodule NestedOptionalTest do
   describe "two key" do
     defmodule NestedOptionalB do
       use Argx, share: Project.Argx.Nested.Optional.Shared
-      def get(params), do: match(params, [OptionalB])
+      def get(params), do: check(params, [OptionalB])
     end
 
     test "ok" do
@@ -51,7 +51,7 @@ defmodule NestedOptionalTest do
   describe "list -> map" do
     defmodule NestedOptionalC do
       use Argx, share: Project.Argx.Nested.Optional.Shared
-      def get(params), do: match(params, [RuleA])
+      def get(params), do: check(params, [RuleA])
     end
 
     test "ok" do
@@ -97,7 +97,7 @@ defmodule NestedOptionalTest do
   describe "list -> map -> list - map" do
     defmodule NestedOptionalD do
       use Argx, share: Project.Argx.Nested.Optional.Shared
-      def get(params), do: match(params, [RuleB])
+      def get(params), do: check(params, [RuleB])
     end
 
     test "ok" do

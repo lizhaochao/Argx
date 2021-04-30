@@ -14,7 +14,7 @@ defmodule Argx do
     quote do
       import Argx.Inner.Defconfig
 
-      def match(args, config_names) do
+      def check(args, config_names) do
         Self.match(args, config_names, __MODULE__, unquote(share_m), unquote(warn))
       end
     end

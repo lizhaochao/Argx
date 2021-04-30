@@ -6,7 +6,7 @@ defmodule NestedMapTest do
   describe "map" do
     defmodule NestedMapA do
       use Argx, share: Project.Argx.Nested.Map.Shared
-      def get(params), do: match(params, [OneRule])
+      def get(params), do: check(params, [OneRule])
     end
 
     test "ok" do
@@ -32,7 +32,7 @@ defmodule NestedMapTest do
   describe "map -> map" do
     defmodule NestedMapB do
       use Argx, share: Project.Argx.Nested.Map.Shared
-      def get(params), do: match(params, [TwoRule])
+      def get(params), do: check(params, [TwoRule])
     end
 
     test "ok" do
@@ -58,7 +58,7 @@ defmodule NestedMapTest do
   describe "map -> map -> map" do
     defmodule NestedMapC do
       use Argx, share: Project.Argx.Nested.Map.Shared
-      def get(params), do: match(params, [ThreeRule])
+      def get(params), do: check(params, [ThreeRule])
     end
 
     test "ok" do
@@ -84,7 +84,7 @@ defmodule NestedMapTest do
   describe "map -> list -> map" do
     defmodule NestedMapD do
       use Argx, share: Project.Argx.Nested.Map.Shared
-      def get(params), do: match(params, [ListRuleA])
+      def get(params), do: check(params, [ListRuleA])
     end
 
     test "ok" do
@@ -113,7 +113,7 @@ defmodule NestedMapTest do
   describe "map -> list -> integer" do
     defmodule NestedMapE do
       use Argx, share: Project.Argx.Nested.Map.Shared
-      def get(params), do: match(params, [ListRuleB])
+      def get(params), do: check(params, [ListRuleB])
     end
 
     test "ok" do
@@ -139,7 +139,7 @@ defmodule NestedMapTest do
   describe "string key: map -> map -> map" do
     defmodule NestedMapF do
       use Argx, share: Project.Argx.Nested.Map.Shared
-      def get(params), do: match(params, [ThreeRule])
+      def get(params), do: check(params, [ThreeRule])
     end
 
     test "ok" do

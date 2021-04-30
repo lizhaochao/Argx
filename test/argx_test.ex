@@ -21,12 +21,12 @@ defmodule Project do
   defconfig(ThreeRule, three(:float))
 
   def get(params) do
-    result = match(params, [OneRule, TwoRule, ThreeRule])
+    result = check(params, [OneRule, TwoRule, ThreeRule])
     if result, do: :ok, else: :error
   end
 
   def post(params) do
-    result = match(params, [OneRule, GeneralC])
+    result = check(params, [OneRule, GeneralC])
     if result, do: :ok, else: :error
   end
 end
