@@ -7,9 +7,13 @@ defmodule Argx do
   alias Argx.Matcher.Helper
   alias Argx, as: Self
 
+  @defconfigs_key Const.defconfigs_key()
+  @default_warn Const.default_warn()
+  @warn_max_nested_depth Const.warn_max_nested_depth()
+
   defmacro __using__(opts) do
     shared_m = Keyword.get(opts, :share, [])
-    warn = Keyword.get(opts, :warn, Const.default_warn())
+    warn = Keyword.get(opts, :warn, @default_warn)
 
     quote do
       import Argx.Inner.Defconfig
@@ -39,10 +43,10 @@ defmodule Argx do
   def get_configs(shared_m, curr_m, config_names, warn) do
     with config_names <- prune_names(config_names),
          modules <- [shared_m, curr_m],
-         all_configs <- Config.get_configs_by_modules(modules, Const.defconfigs_key()),
+         all_configs <- Config.get_configs_by_modules(modules, @defconfigs_key),
          get <- Config.get_configs_by_names(all_configs, config_names) do
       warn
-      |> get.(Const.warn_max_nested_depth())
+      |> get.(@warn_max_nested_depth)
       |> Enum.into([])
     end
   end
@@ -192,12 +196,14 @@ defmodule Argx.Defconfig do
 
   alias Argx.{Config, Const}
 
+  @defconfigs_key Const.defconfigs_key()
+
   defmacro __using__(_opts) do
     quote do
       import Argx.Inner.Defconfig
 
       def __get_defconfigs__() do
-        Config.get_defconfigs(__MODULE__, unquote(Const.defconfigs_key()))
+        Config.get_defconfigs(__MODULE__, unquote(@defconfigs_key))
       end
     end
   end

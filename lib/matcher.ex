@@ -9,6 +9,7 @@ defmodule Argx.Matcher do
   @init_errors []
   @should_drop_flag Const.should_drop_flag()
   @check_types Const.check_types()
+  @value_key Const.value_key()
 
   def match(from) do
     fn args, configs, curr_m ->
@@ -32,7 +33,7 @@ defmodule Argx.Matcher do
            errors <- Helper.collect_errors(arg, config, path, errors),
            drill_down <- drill_down(from, arg, config),
            new_path <- Helper.append_path(path, arg_name),
-           {errors, root} <- drill_down.(root, errors, new_path, curr_m),
+           {errors, root} <- drill_down.(root, errors, @should_drop_flag, new_path, curr_m),
            traverse <- traverse(from, args_rest, configs_rest) do
         traverse.(root, errors, path, curr_m)
       end
@@ -46,7 +47,7 @@ defmodule Argx.Matcher do
          {_arg_name2, %Argx.Config{type: type, nested: nil}}
        )
        when type in [:list, :map] do
-    fn root, errors, _path, _curr_m ->
+    fn root, errors, _should_drop_flag, _path, _curr_m ->
       {errors, [arg | root]}
     end
   end
@@ -57,8 +58,8 @@ defmodule Argx.Matcher do
          {_arg_name2, %Argx.Config{type: :list, nested: nested_configs}}
        )
        when is_list(arg_value) do
-    fn root, errors, path, curr_m ->
-      with value_type <- Helper.get_value_type_by_configs(nested_configs),
+    fn root, errors, _should_drop_flag, path, curr_m ->
+      with value_type <- Helper.get_value_type_by_configs(nested_configs, @value_key),
            worker <- traverse_by_list(from, arg_value, nested_configs) do
         worker.(root, errors, path, curr_m, arg_name, value_type)
       end
@@ -71,7 +72,7 @@ defmodule Argx.Matcher do
          {_arg_name2, %Argx.Config{type: :map, nested: nested_configs}}
        )
        when is_map(arg_value) do
-    fn root, errors, path, curr_m ->
+    fn root, errors, _should_drop_flag, path, curr_m ->
       with worker <- traverse_by_map(from, arg_value, nested_configs) do
         worker.(root, errors, path, curr_m, arg_name)
       end
@@ -79,9 +80,9 @@ defmodule Argx.Matcher do
   end
 
   defp drill_down(from, {_arg_name, arg_value} = arg, _config) do
-    fn root, errors, _path, _curr_m ->
+    fn root, errors, should_drop_flag, _path, _curr_m ->
       with :argx <- from,
-           @should_drop_flag <- arg_value do
+           true <- should_drop_flag == arg_value do
         {errors, root}
       else
         _ -> {errors, [arg | root]}
@@ -104,7 +105,7 @@ defmodule Argx.Matcher do
 
   defp traverse_by_list(from, list, configs) do
     fn root, errors, path, curr_m, parent, value_type ->
-      with list <- Helper.build_list(list, value_type),
+      with list <- Helper.build_list(list, value_type, @value_key),
            new_list <- [],
            line_num <- 1,
            worker <- do_traverse_by_list(from, list, configs),
@@ -118,7 +119,7 @@ defmodule Argx.Matcher do
 
   defp do_traverse_by_list(_from, [] = _list, %{} = configs) when map_size(configs) > 0 do
     fn new_list, errors, path, _curr_m, _parent, _line_num ->
-      with lacked_keys <- Helper.get_required_key(configs),
+      with lacked_keys <- Helper.get_required_key(configs, @value_key),
            new_errors <- reduce_errors(errors, lacked_keys, path, &Helper.join_path/2, :lacked) do
         {new_errors, new_list}
       end
@@ -185,6 +186,7 @@ defmodule Argx.Matcher.Helper do
 
   @should_drop_flag Const.should_drop_flag()
   @value_key Const.value_key()
+  @path_sep ":"
 
   def pre_process_args(arg, config, curr_m) do
     arg
@@ -199,27 +201,32 @@ defmodule Argx.Matcher.Helper do
     |> Checker.out_of_range(path, &join_path/2)
   end
 
-  def get_required_key(configs) do
+  def get_required_key(configs, value_key) do
     configs
     |> Enum.into([])
     |> Enum.filter(fn {field, config} ->
-      config.optional == false and field != @value_key
+      config.optional == false and field != value_key
     end)
     |> Keyword.keys()
   end
 
-  def get_value_type_by_configs(configs) do
+  def get_value_type_by_configs(configs, value_key) do
     with [key | []] <- Map.keys(configs),
-         @value_key <- key do
+         true <- key == value_key do
       :value
     else
       _ -> :list
     end
   end
 
-  def build_list(list, :list), do: list
-  def build_list([_ | _] = list, :value), do: Enum.map(list, fn term -> %{@value_key => term} end)
-  def build_list(other, _value_type), do: other
+  def build_list([_ | _] = list, :value, value_key) do
+    Enum.map(list, fn term ->
+      %{value_key => term}
+    end)
+  end
+
+  def build_list(list, :list, _value_key), do: list
+  def build_list(other, _value_type, _value_key), do: other
 
   def return_list([_ | _] = list, :value) do
     list
@@ -234,10 +241,16 @@ defmodule Argx.Matcher.Helper do
   def return_list(other_list, _value_type), do: other_list
 
   ### Path
-  def join_path(key, path, sep \\ ":")
-  def join_path(key, [] = _path, _sep) when is_atom(key), do: key
-  def join_path(@value_key, [_ | _] = path, sep), do: Enum.join(path, sep)
-  def join_path(key, [_ | _] = path, sep), do: path |> append_path(key) |> Enum.join(sep)
+  def join_path(key, path, sep \\ @path_sep, value_key \\ @value_key)
+  def join_path(key, [] = _path, _sep, _value_key) when is_atom(key), do: key
+
+  def join_path(key, [_ | _] = path, sep, value_key) do
+    with true <- value_key == key do
+      Enum.join(path, sep)
+    else
+      _ -> path |> append_path(key) |> Enum.join(sep)
+    end
+  end
 
   def append_path(path, nil) when is_list(path), do: path
   def append_path(path, term) when is_list(path) and is_atom(term), do: path ++ [term]
@@ -262,14 +275,14 @@ defmodule Argx.Matcher.Helper do
 
   defp sort_by_lacked_key([] = _lacked_keys, args, configs) do
     with arg_names <- Keyword.keys(args),
-         configs <- sort_by_keys(configs, arg_names) do
+         configs <- sort_by_keys(configs, arg_names, @should_drop_flag) do
       {args, configs}
     end
   end
 
   defp sort_by_lacked_key([_ | _] = lacked_keys, args, configs) do
-    with {args, arg_names} <- fill_by_lacked_keys(args, lacked_keys),
-         configs <- sort_by_keys(configs, arg_names) do
+    with {args, arg_names} <- fill_by_lacked_keys(args, lacked_keys, @should_drop_flag),
+         configs <- sort_by_keys(configs, arg_names, @should_drop_flag) do
       {args, configs}
     end
   end
@@ -281,11 +294,11 @@ defmodule Argx.Matcher.Helper do
     end
   end
 
-  defp fill_by_lacked_keys(args, lacked_keys) do
+  defp fill_by_lacked_keys(args, lacked_keys, should_drop_flag) do
     args =
       lacked_keys
       |> Enum.reduce(Enum.reverse(args), fn key, args ->
-        Keyword.put(args, key, @should_drop_flag)
+        Keyword.put(args, key, should_drop_flag)
       end)
       |> Enum.reverse()
 
@@ -297,14 +310,14 @@ defmodule Argx.Matcher.Helper do
   defp get_lacked_keys(arg_names, config_names), do: config_names -- arg_names
   defp get_redundant_keys(arg_names, config_names), do: arg_names -- config_names
 
-  def sort_by_keys(keyword, keys) when is_list(keyword) do
-    keyword |> to_map() |> sort_by_keys(keys)
+  def sort_by_keys(keyword, keys, should_drop_flag) when is_list(keyword) do
+    keyword |> to_map() |> sort_by_keys(keys, should_drop_flag)
   end
 
-  def sort_by_keys(%{} = map, keys) do
+  def sort_by_keys(%{} = map, keys, should_drop_flag) do
     keys
     |> Enum.reduce([], fn key, keyword ->
-      value = Map.get(map, key, @should_drop_flag)
+      value = Map.get(map, key, should_drop_flag)
       (value && [{key, value} | keyword]) || keyword
     end)
     |> Enum.reverse()

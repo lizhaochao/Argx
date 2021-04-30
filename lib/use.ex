@@ -8,12 +8,18 @@ defmodule Argx.Use.WithCheck do
   alias Argx.Use.Helper
   alias Argx.Matcher.Helper, as: MatcherHelper
 
+  @default_warn Const.default_warn()
+  @warn_max_nested_depth Const.warn_max_nested_depth()
+
   defmacro __using__(opts) do
     shared_m = Keyword.get(opts, :share, [])
-    warn = Keyword.get(opts, :warn, Const.default_warn())
+    warn = Keyword.get(opts, :warn, @default_warn)
 
     quote do
-      @defconfigs {:@, [], [{Const.defconfigs_key(), [], nil}]}
+      @names_key Const.names_key()
+      @should_drop_flag Const.should_drop_flag()
+      @defconfigs_key Const.defconfigs_key()
+      @defconfigs_attr {:@, [], [{@defconfigs_key, [], nil}]}
 
       defmacro with_check(configs, do: block) do
         Checker.check!(configs, block)
@@ -31,11 +37,17 @@ defmodule Argx.Use.WithCheck do
 
         configs =
           shared_m
-          |> Self.get_all_defconfigs(@defconfigs)
-          |> Self.merge_configs(with_check_configs, arg_names, unquote(warn))
+          |> Self.get_all_defconfigs(@defconfigs_attr, @defconfigs_key)
+          |> Self.merge_configs(
+            with_check_configs,
+            arg_names,
+            @names_key,
+            @should_drop_flag,
+            unquote(warn)
+          )
 
         # expr
-        ignore_attr_warning_expr = quote do: unquote(Helper.reg_attr(Const.defconfigs_key()))
+        ignore_attr_warning_expr = quote do: unquote(Helper.reg_attr(@defconfigs_key))
 
         are_keys_equal_expr =
           quote do: Checker.are_keys_equal!(unquote(f), unquote(arg_names), unquote(configs))
@@ -90,27 +102,27 @@ defmodule Argx.Use.WithCheck do
   end
 
   ###
-  def merge_configs(defconfigs, with_check_configs, arg_names, warn) do
+  def merge_configs(defconfigs, with_check_configs, arg_names, names_key, should_drop_flag, warn) do
     quote do
-      with {names, configs} <- Map.pop(unquote(with_check_configs), unquote(Const.names_key())),
+      with {names, configs} <- Map.pop(unquote(with_check_configs), unquote(names_key)),
            names <- prune_names(names),
            get <- Config.get_configs_by_names(unquote(defconfigs), names),
-           defconfigs <- get.(unquote(warn), unquote(Const.warn_max_nested_depth())),
+           defconfigs <- get.(unquote(warn), unquote(@warn_max_nested_depth)),
            merged_configs <- Map.merge(defconfigs, configs) do
-        MatcherHelper.sort_by_keys(merged_configs, unquote(arg_names))
+        MatcherHelper.sort_by_keys(merged_configs, unquote(arg_names), unquote(should_drop_flag))
       end
     end
   end
 
-  def get_all_defconfigs([] = _shared_m, defconfigs_attr) do
+  def get_all_defconfigs([] = _shared_m, defconfigs_attr, _defconfigs_key) do
     quote do
       list_to_map(unquote(defconfigs_attr))
     end
   end
 
-  def get_all_defconfigs(shared_m, defconfigs_attr) when is_atom(shared_m) do
+  def get_all_defconfigs(shared_m, defconfigs_attr, defconfigs_key) when is_atom(shared_m) do
     quote do
-      shared_configs = Config.get_defconfigs(unquote(shared_m), unquote(Const.defconfigs_key()))
+      shared_configs = Config.get_defconfigs(unquote(shared_m), unquote(defconfigs_key))
       defconfigs = list_to_map(unquote(defconfigs_attr))
       Map.merge(shared_configs, defconfigs)
     end
@@ -126,18 +138,20 @@ defmodule Argx.Use.Defconfig do
 
   defmacro __using__(_opts) do
     quote do
+      @defconfigs_key Const.defconfigs_key()
+
       defmacro defconfig(name, configs) do
         Checker.check_defconfig!(name, configs)
 
         name = Parser.parse_defconfig_name(name)
         configs = Parser.parse_configs(configs)
         attr = Macro.escape(%{name => configs})
-        f_name = Helper.make_get_shared_configs_f_name(name)
+        f_name = Helper.make_get_shared_configs_f_name(name, @defconfigs_key)
 
         operate_attr_expr =
           quote do
-            unquote(Helper.reg_attr(Const.defconfigs_key()))
-            unquote(Helper.put_attr(Const.defconfigs_key(), attr))
+            unquote(Helper.reg_attr(@defconfigs_key))
+            unquote(Helper.put_attr(@defconfigs_key, attr))
           end
 
         configs_fun_expr =
@@ -158,14 +172,11 @@ defmodule Argx.Use.Helper do
 
   import Argx.Util
 
-  alias Argx.Const
   alias Argx.Use.Helper, as: Self
 
-  @defconfigs_key Const.defconfigs_key()
-
   ### make function name
-  def make_get_shared_configs_f_name(name) do
-    make_fun_name("get#{@defconfigs_key}#{name}", &fun_name_rule/1)
+  def make_get_shared_configs_f_name(name, defconfigs_key) do
+    make_fun_name("get#{defconfigs_key}#{name}", &fun_name_rule/1)
   end
 
   def make_get_fun_configs_f_name(f), do: make_fun_name("get_#{f}_configs", &fun_name_rule/1)
