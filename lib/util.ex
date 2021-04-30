@@ -1,13 +1,16 @@
 defmodule Argx.Util do
   @moduledoc false
 
+  ###
   def list_to_map(list) when is_list(list) do
     Enum.reduce(list, %{}, fn %{} = term, map ->
       Map.merge(map, term)
     end)
   end
 
-  def append(value, keyword, key) when is_list(keyword) do
+  def list_to_map(other), do: other
+
+  def append(value, keyword, key) when is_list(keyword) and is_atom(key) do
     {_, new} =
       Keyword.get_and_update(keyword, key, fn current ->
         new_value = (current && Enum.reverse([value | Enum.reverse(current)])) || [value]
@@ -17,6 +20,8 @@ defmodule Argx.Util do
     new
   end
 
+  def append(_value, _other_keyword, _other_key), do: []
+
   ###
   def make_module_name([term | _] = parts) when is_atom(term) or is_bitstring(term) do
     [Elixir | parts]
@@ -25,7 +30,10 @@ defmodule Argx.Util do
     |> String.to_atom()
   end
 
-  def make_fun_name(name, rule) when is_function(rule) do
+  def make_module_name(_other), do: nil
+
+  def make_fun_name(name, rule)
+      when (is_atom(name) or is_bitstring(name)) and is_function(rule) do
     name
     |> rule.()
     |> Enum.map(fn part -> to_string(part) end)
@@ -33,6 +41,8 @@ defmodule Argx.Util do
     |> String.downcase()
     |> String.to_atom()
   end
+
+  def make_fun_name(_other_name, _other_rule), do: nil
 
   ###
   def prune_names([_ | _] = names), do: Enum.map(names, fn name -> prune_names(name) end)
@@ -55,12 +65,14 @@ defmodule Argx.Util do
     )
   end
 
-  def get_type(_other_term), do: :unknown
+  def get_type(_other), do: :unknown
 
   def to_map(%{} = term), do: term
   def to_map(term) when is_list(term), do: Enum.into(term, %{})
+  def to_map(other), do: other
   def to_keyword(%{} = term), do: Enum.into(term, [])
   def to_keyword(term) when is_list(term), do: term
+  def to_keyword(other), do: other
 
   ###
   def to_atom_key(%_{} = map), do: map |> struct_to_map() |> to_atom_key()
@@ -73,13 +85,13 @@ defmodule Argx.Util do
   defp do_traverse_map([], new_map), do: Enum.into(new_map, %{})
 
   defp do_traverse_map([{k, v} | rest], new_map) when is_list(v) do
-    v2 = traverse_list(v, [])
-    do_traverse_map(rest, [{string_to_atom(k), v2} | new_map])
+    new_v = traverse_list(v, [])
+    do_traverse_map(rest, [{string_to_atom(k), new_v} | new_map])
   end
 
   defp do_traverse_map([{k, %{} = v} | rest], new_map) do
-    v2 = traverse_map(v)
-    do_traverse_map(rest, [{string_to_atom(k), v2} | new_map])
+    new_v = traverse_map(v)
+    do_traverse_map(rest, [{string_to_atom(k), new_v} | new_map])
   end
 
   defp do_traverse_map([{k, v} | rest], new_map) do
@@ -89,8 +101,8 @@ defmodule Argx.Util do
   defp traverse_list([], new_list), do: Enum.reverse(new_list)
 
   defp traverse_list([%{} = m | rest], new_list) do
-    m2 = traverse_map(m)
-    traverse_list(rest, [m2 | new_list])
+    new_m = traverse_map(m)
+    traverse_list(rest, [new_m | new_list])
   end
 
   defp traverse_list([term | rest], new_list), do: traverse_list(rest, [term | new_list])
