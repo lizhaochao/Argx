@@ -31,7 +31,9 @@ defmodule Argx.Config do
   def get_configs_by_names(warn, max_depth) do
     fn
       %{} = configs, [_ | _] = names ->
-        Enum.reduce(names, %{}, fn name, name_configs ->
+        names
+        |> distinct()
+        |> Enum.reduce(%{}, fn name, name_configs ->
           new_configs = drill_down(configs, name, warn, 1, max_depth)
           Map.merge(name_configs, new_configs)
         end)
@@ -92,6 +94,9 @@ defmodule Argx.Config do
       :error -> raise(Argx.Error, "not found config by #{name}")
     end
   end
+
+  defp distinct([_ | _] = term), do: term |> MapSet.new() |> MapSet.to_list()
+  defp distinct(other), do: other
 
   defp warn_by_depth(name, warn, depth, max_depth) do
     with true <- warn,
