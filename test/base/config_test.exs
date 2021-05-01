@@ -1,6 +1,4 @@
 defmodule ArgxConfigTest do
-  @moduledoc false
-
   use ExUnit.Case
 
   import Argx.Config

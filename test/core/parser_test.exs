@@ -1,16 +1,7 @@
-defmodule Test.Use do
-  @moduledoc false
-  defmacro __using__, do: nil
-end
-
-defmodule Test.DefaultFunction do
-  @moduledoc false
-  def get_default, do: 1_618_650_000
-end
+ParserTest.Use |> defmodule(do: defmacro(__using__, do: nil))
+ParserTest.Default |> defmodule(do: def(get_default, do: 1_618_650_000))
 
 defmodule ParserTest do
-  @moduledoc false
-
   use ExUnit.Case
 
   import Argx.Const
@@ -20,7 +11,7 @@ defmodule ParserTest do
   @allowed_types allowed_types()
 
   ###
-  describe "parse_fun one def function" do
+  describe "parse_fun/1 one def function" do
     test "one line syntax with guard" do
       block =
         quote do
@@ -54,7 +45,7 @@ defmodule ParserTest do
     end
   end
 
-  describe "parse_fun one defp function" do
+  describe "parse_fun/1 one defp function" do
     test "one line syntax with guard" do
       block =
         quote do
@@ -88,7 +79,7 @@ defmodule ParserTest do
     end
   end
 
-  describe "parse_fun two function" do
+  describe "parse_fun/1 two function" do
     test "guard" do
       m = __MODULE__
 
@@ -145,7 +136,7 @@ defmodule ParserTest do
     end
   end
 
-  describe "parse_fun error" do
+  describe "parse_fun/1 error" do
     test "module attribute" do
       block =
         quote do
@@ -171,7 +162,7 @@ defmodule ParserTest do
     test "use" do
       block =
         quote do
-          use Test.Use
+          use ParserTest.Use
         end
 
       assert_raise Argx.Error, fn ->
@@ -182,7 +173,7 @@ defmodule ParserTest do
     test "require" do
       block =
         quote do
-          require Test.Use
+          require ParserTest.Use
         end
 
       assert_raise Argx.Error, fn ->
@@ -193,7 +184,7 @@ defmodule ParserTest do
     test "import" do
       block =
         quote do
-          import Test.Use
+          import ParserTest.Use
         end
 
       assert_raise Argx.Error, fn ->
@@ -204,7 +195,7 @@ defmodule ParserTest do
     test "alias" do
       block =
         quote do
-          alias Test.Use
+          alias ParserTest.Use
         end
 
       assert_raise Argx.Error, fn ->
@@ -214,7 +205,7 @@ defmodule ParserTest do
   end
 
   ###
-  describe "parse_configs - defconfig - ok" do
+  describe "parse_configs/1 - defconfig - ok" do
     test "type" do
       @allowed_types
       |> Enum.each(fn type ->
@@ -305,7 +296,7 @@ defmodule ParserTest do
       @allowed_types
       |> Enum.each(fn type ->
         fun_expr1 = quote do: get_curr_ts()
-        fun_expr2 = quote do: Test.DefaultFunction.get_default()
+        fun_expr2 = quote do: ParserTest.Default.get_default()
         functions = [fun_expr1, fun_expr2]
         values = [1, 1.1, "default", :default, [1, 2], %{a: 1}, {3, 4, 5, 6}]
 
@@ -352,7 +343,7 @@ defmodule ParserTest do
     end
   end
 
-  describe "parse_configs - defconfig - error" do
+  describe "parse_configs/1 - defconfig - error" do
     test "unknown type" do
       assert_raise Argx.Error, fn ->
         expr = quote do: name(:unknown_type, :optional)
@@ -368,7 +359,7 @@ defmodule ParserTest do
     end
   end
 
-  describe "parse_configs - configs - ok" do
+  describe "parse_configs/1 - configs - ok" do
     test "only config names" do
       expr1 = quote do: configs(RuleA)
       assert %{__names__: [:RuleA]} == P.parse_configs(expr1)
@@ -485,7 +476,7 @@ defmodule ParserTest do
     end
   end
 
-  describe "parse_configs - configs - error" do
+  describe "parse_configs/1 - configs - error" do
     test "empty" do
       assert_raise Argx.Error, fn ->
         expr = quote do: configs()
@@ -495,7 +486,7 @@ defmodule ParserTest do
   end
 
   ###
-  describe "parse_defconfig_name - ok" do
+  describe "parse_defconfig_name/1 - ok" do
     test "module name" do
       expr1 = quote do: TestConfigName
       assert :TestConfigName == P.parse_defconfig_name(expr1)
@@ -516,7 +507,7 @@ defmodule ParserTest do
     end
   end
 
-  describe "parse_defconfig_name - error" do
+  describe "parse_defconfig_name/1 - error" do
     test "anonymous function" do
       assert_raise Argx.Error, fn ->
         expr1 = quote do: fn x -> x end
@@ -546,7 +537,7 @@ defmodule ParserTest do
   end
 
   ###
-  describe "parse_range - ok" do
+  describe "parse_range/1 - ok" do
     test "number" do
       assert [1, 1] == P.parse_range(1)
       assert [1.23, 1.23] == P.parse_range(1.23)
@@ -559,7 +550,7 @@ defmodule ParserTest do
     end
   end
 
-  describe "parse_range - error" do
+  describe "parse_range/1 - error" do
     test "list" do
       assert_raise Argx.Error, fn ->
         expr = quote do: [1, 2, 3]

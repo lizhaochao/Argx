@@ -1,6 +1,4 @@
 defmodule Project.Argx.General do
-  @moduledoc false
-
   use Argx.Defconfig
 
   defconfig(GeneralA, a(:string))
@@ -12,8 +10,6 @@ defmodule Project.Argx.General do
 end
 
 defmodule Project do
-  @moduledoc false
-
   use Argx, share: Project.Argx.General
 
   defconfig(OneRule, [one(:string)])
@@ -32,8 +28,6 @@ defmodule Project do
 end
 
 defmodule ArgxTest do
-  @moduledoc false
-
   use ExUnit.Case
 
   describe "no general defconfigs" do

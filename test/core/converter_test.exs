@@ -1,6 +1,4 @@
 defmodule ConverterTest do
-  @moduledoc false
-
   use ExUnit.Case
 
   alias Argx.Converter, as: C

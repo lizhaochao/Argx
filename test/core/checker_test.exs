@@ -1,6 +1,4 @@
 defmodule CheckerTest do
-  @moduledoc false
-
   use ExUnit.Case
 
   alias Argx.Checker, as: C

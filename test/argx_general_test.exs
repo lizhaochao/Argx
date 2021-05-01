@@ -1,14 +1,9 @@
 defmodule ProjectB.Argx do
-  @moduledoc false
-
   use Argx.WithCheck, share: ProjectB.Argx.General
-
   def fmt_errors(errors), do: errors
 end
 
 defmodule ProjectB.Argx.General do
-  @moduledoc false
-
   use Argx.Defconfig
 
   defconfig(GeneralA, a(:boolean))
@@ -19,8 +14,6 @@ defmodule ProjectB.Argx.General do
 end
 
 defmodule ArgxGeneralTest do
-  @moduledoc false
-
   use ExUnit.Case
 
   import ProjectB.Argx

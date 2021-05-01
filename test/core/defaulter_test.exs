@@ -1,6 +1,4 @@
 defmodule Test.DefaulterYesterday do
-  @moduledoc false
-
   def yesterday_ts, do: 1_618_650_000
   def get_yesterday_ts, do: yesterday_ts()
   def get_yesterday_ts(precision), do: precision

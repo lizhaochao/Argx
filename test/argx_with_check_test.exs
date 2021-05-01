@@ -1,20 +1,11 @@
-defmodule ProjectA.Helper do
-  @moduledoc false
-
-  def get_default, do: "default"
-end
+ProjectA.Helper |> defmodule(do: def(get_default, do: "default"))
 
 defmodule ProjectA.Argx do
-  @moduledoc false
-
   use Argx.WithCheck, warn: false
-
   def fmt_errors(errors), do: errors
 end
 
 defmodule ArgxWithCheckTest do
-  @moduledoc false
-
   use ExUnit.Case
 
   import ProjectA.Argx
