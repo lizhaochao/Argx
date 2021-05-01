@@ -1,4 +1,4 @@
-defmodule ConfigTest do
+defmodule ArgxConfigTest do
   @moduledoc false
 
   use ExUnit.Case
@@ -25,10 +25,128 @@ defmodule ConfigTest do
       configs3 = Map.merge(configs1, configs2)
       assert [:a, :b, :c] == get.(configs3, [:RuleA, :RuleB]) |> Map.keys()
     end
+
+    test "max depth is 2" do
+      # prepare
+      max_depth = 2
+      get = get_configs_by_names(@warn, max_depth)
+
+      #
+      configs1 = %{
+        RuleA: %{a: get_config(:string, :RuleB)},
+        RuleB: %{b: get_config(:string)}
+      }
+
+      # 1 rule
+      result = get.(configs1, [:RuleA])
+      assert [:a] == Map.keys(result)
+      assert result |> Map.get(:a) |> Map.get(:nested) |> Map.get(:b) |> is_struct()
+
+      #
+      configs2 = %{
+        RuleA: %{a: get_config(:string, :RuleB)},
+        RuleB: %{b: get_config(:string)},
+        RuleC: %{c: get_config(:string, :RuleD)},
+        RuleD: %{d: get_config(:string)}
+      }
+
+      # 2 rules
+      result = get.(configs2, [:RuleA, :RuleC])
+      assert [:a, :c] == Map.keys(result)
+      assert result |> Map.get(:a) |> Map.get(:nested) |> Map.get(:b) |> is_struct()
+      assert result |> Map.get(:c) |> Map.get(:nested) |> Map.get(:d) |> is_struct()
+    end
+
+    test "max depth is 3" do
+      # prepare
+      max_depth = 3
+      get = get_configs_by_names(@warn, max_depth)
+
+      #
+      configs = %{
+        RuleA: %{a: get_config(:string, :RuleB)},
+        RuleB: %{b: get_config(:string, :RuleC)},
+        RuleC: %{c: get_config(:string)}
+      }
+
+      # 1 rule
+      result = get.(configs, [:RuleA])
+      assert [:a] == Map.keys(result)
+
+      assert result
+             |> Map.get(:a)
+             |> Map.get(:nested)
+             |> Map.get(:b)
+             |> Map.get(:nested)
+             |> Map.get(:c)
+             |> is_struct()
+
+      # 2 rules
+      result = get.(configs, [:RuleA, :RuleB])
+      assert [:a, :b] == Map.keys(result)
+      assert result |> Map.get(:b) |> Map.get(:nested) |> Map.get(:c) |> is_struct()
+    end
+
+    test "max depth is 4" do
+      # prepare
+      max_depth = 4
+      get = get_configs_by_names(@warn, max_depth)
+
+      #
+      configs = %{
+        RuleA: %{a: get_config(:string, :RuleB)},
+        RuleB: %{b: get_config(:string, :RuleC)},
+        RuleC: %{c: get_config(:string, :RuleD)},
+        RuleD: %{d: get_config(:string)}
+      }
+
+      # 1 rule
+      result = get.(configs, [:RuleA])
+      assert [:a] == Map.keys(result)
+
+      assert result
+             |> Map.get(:a)
+             |> Map.get(:nested)
+             |> Map.get(:b)
+             |> Map.get(:nested)
+             |> Map.get(:c)
+             |> Map.get(:nested)
+             |> Map.get(:d)
+             |> is_struct()
+
+      # 4 rules
+      result = get.(configs, [:RuleA, :RuleB, :RuleC, :RuleD])
+      assert [:a, :b, :c, :d] == Map.keys(result)
+
+      assert result
+             |> Map.get(:b)
+             |> Map.get(:nested)
+             |> Map.get(:c)
+             |> Map.get(:nested)
+             |> Map.get(:d)
+             |> is_struct()
+
+      assert result
+             |> Map.get(:c)
+             |> Map.get(:nested)
+             |> Map.get(:d)
+             |> is_struct()
+    end
+
+    test "repeat rule names" do
+      # prepare
+      max_depth = 1
+      configs = %{RuleA: %{a: get_config(:string)}}
+
+      get = get_configs_by_names(@warn, max_depth)
+      result = get.(configs, [:RuleA, :RuleA])
+      assert [:a] == Map.keys(result)
+      assert result |> Map.get(:a) |> is_struct()
+    end
   end
 
   ###
-  def get_config(type, nested \\ nil) do
+  def get_config(type, nested_name \\ nil) do
     %Argx.Config{
       type: type,
       auto: true,
@@ -36,7 +154,7 @@ defmodule ConfigTest do
       default: nil,
       optional: false,
       empty: false,
-      nested: nested
+      nested: nested_name
     }
   end
 end
