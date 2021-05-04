@@ -1,3 +1,54 @@
+defmodule Argx.Use do
+  @moduledoc false
+
+  alias Argx.{Checker, Config, Const, Formatter, Matcher}
+  alias Argx.Matcher.Helper, as: MatcherHelper
+
+  alias Argx.Use, as: Self
+
+  @defconfigs_key Const.defconfigs_key()
+  @default_warn Const.default_warn()
+  @warn_max_nested_depth Const.warn_max_nested_depth()
+
+  defmacro __using__(opts) do
+    shared_m = Keyword.get(opts, :share, [])
+    warn = Keyword.get(opts, :warn, @default_warn)
+
+    quote do
+      def check(args, config_names) do
+        Self.match(args, config_names, __MODULE__, unquote(shared_m), unquote(warn))
+      end
+    end
+  end
+
+  def match(args, config_names, curr_m, shared_m, warn) do
+    Checker.check_args!(args)
+    Checker.check_config_names!(config_names)
+
+    with origin_type <- MatcherHelper.get_type(args),
+         configs <- get_configs(shared_m, curr_m, config_names, warn),
+         {args, configs} <- MatcherHelper.pre_args_configs(args, configs),
+         from <- :argx do
+      match = Matcher.match(from)
+
+      match.(args, configs, curr_m)
+      |> Formatter.fmt_match_result(origin_type)
+      |> Formatter.fmt_errors(curr_m, shared_m)
+    end
+  end
+
+  def get_configs(shared_m, curr_m, config_names, warn) do
+    with config_names <- MatcherHelper.prune_names(config_names),
+         modules <- [shared_m, curr_m],
+         all_configs <- Config.get_configs_by_modules(modules, @defconfigs_key),
+         get <- Config.get_configs_by_names(warn, @warn_max_nested_depth) do
+      all_configs
+      |> get.(config_names)
+      |> Enum.into([])
+    end
+  end
+end
+
 defmodule Argx.Use.WithCheck do
   @moduledoc false
 
