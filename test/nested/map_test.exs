@@ -4,7 +4,7 @@ defmodule NestedMapTest do
   use ExUnit.Case
 
   describe "map -> map -> map" do
-    defmodule NestedMapC do
+    defmodule NestedMap do
       use Argx, share: Project.Argx.Nested.Map.Shared
       def get(params), do: check(params, [OneRule])
     end
@@ -12,33 +12,33 @@ defmodule NestedMapTest do
     test "ok" do
       args_map = %{one: %{a: %{b: "b", c: "c"}}}
       args_keyword = [one: %{a: %{b: "b", c: "c"}}]
-      assert args_map == NestedMapC.get(args_map)
-      assert args_keyword == NestedMapC.get(args_keyword)
+      assert args_map == NestedMap.get(args_map)
+      assert args_keyword == NestedMap.get(args_keyword)
     end
 
     test "error" do
       args_map = %{one: %{}}
-      assert [lacked: ["one:a"]] == NestedMapC.get(args_map)
+      assert [lacked: ["one:a"]] == NestedMap.get(args_map)
 
       args_map = %{one: %{a: %{b: 1, c: nil}}}
-      assert [error_type: ["one:a:b"], lacked: ["one:a:c"]] == NestedMapC.get(args_map)
+      assert [error_type: ["one:a:b"], lacked: ["one:a:c"]] == NestedMap.get(args_map)
     end
   end
 
   describe "string key: map -> map -> map" do
-    defmodule NestedMapF do
+    defmodule NestedMapStringKey do
       use Argx, share: Project.Argx.Nested.Map.Shared
       def get(params), do: check(params, [OneRule])
     end
 
     test "ok" do
       args_map = %{"one" => %{"a" => %{"b" => "b", "c" => "c"}}}
-      assert %{one: %{a: %{b: "b", c: "c"}}} == NestedMapF.get(args_map)
+      assert %{one: %{a: %{b: "b", c: "c"}}} == NestedMapStringKey.get(args_map)
     end
 
     test "error" do
       args_map = %{"one" => %{"a" => %{"b" => 1, "c" => nil}}}
-      assert [error_type: ["one:a:b"], lacked: ["one:a:c"]] == NestedMapF.get(args_map)
+      assert [error_type: ["one:a:b"], lacked: ["one:a:c"]] == NestedMapStringKey.get(args_map)
     end
   end
 end
