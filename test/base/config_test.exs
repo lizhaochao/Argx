@@ -143,7 +143,7 @@ defmodule ArgxConfigTest do
     end
   end
 
-  ###
+  ### helper
   def get_config(type, nested_name \\ nil) do
     %Argx.Config{
       type: type,

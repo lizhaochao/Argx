@@ -1,6 +1,8 @@
 defmodule Argx.Defaulter do
   @moduledoc false
 
+  alias Argx.Checker
+
   def set_default(
         {arg_name, _arg_value} = arg,
         {arg_name2, %Argx.Config{}} = config,
@@ -15,13 +17,16 @@ defmodule Argx.Defaulter do
   end
 
   defp do_set_default(
-         {arg_name, nil},
-         {_, %Argx.Config{default: default}},
+         {arg_name, arg_value} = arg,
+         {_, %Argx.Config{type: type, default: default}},
          module
        )
        when not is_nil(default) do
-    with new_arg_value <- get_default(default, module) do
+    with true <- is_nil(arg_value) or Checker.empty?(arg_value, type),
+         new_arg_value <- get_default(default, module) do
       {arg_name, new_arg_value}
+    else
+      _ -> arg
     end
   end
 

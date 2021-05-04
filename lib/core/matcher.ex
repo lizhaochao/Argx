@@ -109,7 +109,8 @@ defmodule Argx.Matcher do
            new_list <- [],
            line_num <- 1,
            worker <- do_traverse_by_list(from, list, configs),
-           {errors, list} <- worker.(new_list, errors, path, curr_m, parent, line_num),
+           {errors, list} <-
+             worker.(new_list, errors, path, curr_m, parent, line_num),
            list <- Helper.return_child(list, value_type),
            root <- Keyword.put(root, parent, list) do
         {errors, root}
@@ -132,12 +133,17 @@ defmodule Argx.Matcher do
     end
   end
 
-  defp do_traverse_by_list(from, [%{} = args | rest_args] = _list, configs) do
+  defp do_traverse_by_list(from, [args | rest_args] = _list, configs) do
     fn new_list, errors, path, curr_m, parent, line_num ->
-      with reenter <- reenter(from, args, configs),
+      with %{} <- args,
+           reenter <- reenter(from, args, configs),
            result <- reenter.(path, curr_m, line_num),
            continue <- continue(from, rest_args, configs) do
         continue.(new_list, errors, path, curr_m, parent, line_num, result)
+      else
+        _ ->
+          {errors, _, _} = reduce_errors(errors, nil, path, &Helper.join_path/2, :error_type)
+          {errors, new_list}
       end
     end
   end
@@ -217,7 +223,7 @@ defmodule Argx.Matcher.Helper do
     end
   end
 
-  def build_list([_ | _] = list, :value, value_key) do
+  def build_list(list, :value, value_key) when is_list(list) do
     Enum.map(list, fn term ->
       %{value_key => term}
     end)
@@ -248,18 +254,21 @@ defmodule Argx.Matcher.Helper do
   ### Path
   def join_path(key, path, sep \\ @path_sep, value_key \\ @value_key)
   def join_path(key, [] = _path, _sep, _value_key) when is_atom(key), do: key
+  def join_path(nil = _key, [path | []], _sep, _value_key), do: path
+  def join_path(nil = _key, [_ | _] = path, sep, _value_key), do: path |> Enum.join(sep)
 
-  def join_path(key, [_ | _] = path, sep, value_key) do
-    if key == value_key do
-      Enum.join(path, sep)
-    else
-      path |> append_path(key) |> Enum.join(sep)
-    end
+  def join_path(key, [_ | _] = path, sep, _value_key) do
+    path |> append_path(key) |> Enum.join(sep)
   end
 
-  def append_path(path, nil) when is_list(path), do: path
-  def append_path(path, term) when is_list(path) and is_atom(term), do: path ++ [term]
-  def append_path(path, num) when is_list(path) and is_integer(num), do: path ++ ["#{num}"]
+  def append_path(path, term, value_key \\ @value_key)
+  def append_path(path, nil, _value_key) when is_list(path), do: path
+  def append_path(path, term, value_key) when term == value_key, do: path
+  def append_path(path, term, _value_key) when is_list(path) and is_atom(term), do: path ++ [term]
+
+  def append_path(path, num, _value_key) when is_list(path) and is_integer(num) do
+    path ++ ["#{num}"]
+  end
 
   ### Preprocess
   def pre_args_configs(args, configs) when is_map(args) or is_map(configs) do
