@@ -271,6 +271,44 @@ defmodule MatcherTest do
       assert [] == errors
     end
 
+    test "nested - depth 3 - map->list->map" do
+      configs = [
+        one: %Argx.Config{
+          type: :map,
+          auto: false,
+          range: nil,
+          default: nil,
+          optional: false,
+          empty: false,
+          nested: %{
+            a: %Argx.Config{
+              type: :list,
+              auto: false,
+              range: nil,
+              default: nil,
+              optional: false,
+              empty: false,
+              nested: %{
+                b: %Argx.Config{
+                  type: :map,
+                  auto: false,
+                  range: nil,
+                  default: nil,
+                  optional: false,
+                  empty: false,
+                  nested: nil
+                }
+              }
+            }
+          }
+        }
+      ]
+
+      args = [one: %{a: [%{b: %{}}]}]
+      {errors, _} = argx_match().(args, configs, @curr_m)
+      assert [] == errors
+    end
+
     test "nested - depth 3 - map->map->map" do
       configs = [
         one: %Argx.Config{
@@ -353,6 +391,54 @@ defmodule MatcherTest do
       ]
 
       args = [one: %{a: %{b: %{c: %{}}}}]
+      {errors, _} = argx_match().(args, configs, @curr_m)
+      assert [] == errors
+    end
+
+    test "nested - depth 4 - map->map->list->integer" do
+      configs = [
+        one: %Argx.Config{
+          type: :map,
+          auto: false,
+          range: nil,
+          default: nil,
+          optional: false,
+          empty: false,
+          nested: %{
+            a: %Argx.Config{
+              type: :map,
+              auto: false,
+              range: nil,
+              default: nil,
+              optional: false,
+              empty: false,
+              nested: %{
+                b: %Argx.Config{
+                  type: :list,
+                  auto: false,
+                  range: nil,
+                  default: nil,
+                  optional: false,
+                  empty: false,
+                  nested: %{
+                    _: %Argx.Config{
+                      type: :integer,
+                      auto: false,
+                      range: nil,
+                      default: nil,
+                      optional: false,
+                      empty: false,
+                      nested: nil
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+
+      args = [one: %{a: %{b: [1, 2, 3]}}]
       {errors, _} = argx_match().(args, configs, @curr_m)
       assert [] == errors
     end

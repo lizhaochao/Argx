@@ -17,34 +17,10 @@ defmodule NestedListTest do
         ]
       }
 
-      args_keyword = [
-        one: [
-          %{z: [%{a: [%{a: "a"}, %{a: "aa"}]}, %{a: [%{a: "a"}, %{a: "aa"}]}]},
-          %{z: [%{a: [%{a: "a"}, %{a: "aa"}]}, %{a: [%{a: "a"}, %{a: "aa"}]}]}
-        ]
-      ]
-
       assert args_map == NestedListC.get(args_map)
-      assert args_keyword == NestedListC.get(args_keyword)
     end
 
     test "error" do
-      args_map = %{one: [%{z: [%{a: [%{}]}]}]}
-      assert [lacked: ["one:1:z:1:a:1:a"]] == NestedListC.get(args_map)
-
-      args_map = %{one: [%{z: [%{}]}]}
-      assert [lacked: ["one:1:z:1:a"]] == NestedListC.get(args_map)
-
-      args_map = %{one: [%{z: nil}]}
-      assert [lacked: ["one:1:z"]] == NestedListC.get(args_map)
-
-      args_map = %{one: []}
-      assert [lacked: ["one:z"]] == NestedListC.get(args_map)
-
-      args_map = %{}
-      assert [lacked: [:one]] == NestedListC.get(args_map)
-
-      # one record in list
       args_keyword = [one: [%{z: [%{a: [%{a: nil}, %{a: 1}]}]}]]
 
       assert [{:error_type, ["one:1:z:1:a:2:a"]}, {:lacked, ["one:1:z:1:a:1:a"]}] ==
