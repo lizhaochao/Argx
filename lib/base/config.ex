@@ -102,7 +102,7 @@ defmodule Argx.Config do
     with true <- warn,
          true <- depth > max_depth,
          ":" <> name <- inspect(name) do
-      IO.warn("#{name} config's depth is #{depth}.", [])
+      IO.warn("#{name} config's nested depth is #{depth}.", [])
       :ok
     else
       _ -> :ignore
