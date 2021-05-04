@@ -48,18 +48,23 @@ defmodule Argx.Error do
        )
        when l_type == r_type do
     value =
-      case {l_value, r_value} do
+      {l_value, r_value}
+      |> case do
         {[], []} -> nil
         {[], [_ | _]} -> r_value
         {[_ | _], []} -> l_value
         {[_ | _], [_ | _]} -> l_value ++ r_value
       end
+      |> distinct()
 
     value
     |> Kernel.&&([{l_type, Enum.sort(value)} | new_errors])
     |> Kernel.||(new_errors)
     |> do_merger_errors(l_rest, r_rest)
   end
+
+  defp distinct([_ | _] = term), do: term |> MapSet.new() |> MapSet.to_list()
+  defp distinct(other), do: other
 
   ###
   def sort_errors([_ | _] = errors) do
