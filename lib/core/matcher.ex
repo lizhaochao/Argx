@@ -262,8 +262,8 @@ defmodule Argx.Matcher.Helper do
   end
 
   def append_path(path, term, value_key \\ @value_key)
-  def append_path(path, nil, _value_key) when is_list(path), do: path
-  def append_path(path, term, value_key) when term == value_key, do: path
+  def append_path(path, nil = _term, _value_key) when is_list(path), do: path
+  def append_path(path, term, value_key) when is_list(path) and term == value_key, do: path
   def append_path(path, term, _value_key) when is_list(path) and is_atom(term), do: path ++ [term]
 
   def append_path(path, num, _value_key) when is_list(path) and is_integer(num) do
