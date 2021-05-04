@@ -16,8 +16,7 @@ defmodule Argx.MixProject do
       # Docs
       name: "Argx",
       docs: [
-        main: "Argx",
-        extras: ["README.md"]
+        main: "Argx"
       ]
     ]
   end
