@@ -341,6 +341,27 @@ defmodule ParserTest do
                } == P.parse_configs(expr)
       end)
     end
+
+    test "nested - different type rule name" do
+      expr1 = quote do: name({:list, RuleA}, :optional, :auto, 1..11) || 99
+      expr2 = quote do: name({:list, :RuleA}, :optional, :auto, 1..11) || 99
+      expr3 = quote do: name({:list, "RuleA"}, :optional, :auto, 1..11) || 99
+
+      [expr1, expr2, expr3]
+      |> Enum.each(fn expr ->
+        assert %{
+                 name: %Argx.Config{
+                   auto: true,
+                   default: 99,
+                   optional: true,
+                   range: {:.., [context: __MODULE__, import: Kernel], [1, 11]},
+                   type: :list,
+                   empty: false,
+                   nested: :RuleA
+                 }
+               } == P.parse_configs(expr)
+      end)
+    end
   end
 
   describe "parse_configs/1 - defconfig - error" do
