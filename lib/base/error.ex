@@ -3,9 +3,6 @@ defmodule Argx.Error do
 
   defexception message: nil
 
-  def make_error_type_error(path) when is_list(path), do: Keyword.put([], :error_type, path)
-
-  ###
   def reduce_errors(errors, [_ | _] = keys, path, path_handler, check_type) do
     Enum.reduce(keys, errors, fn arg_name, errors ->
       {errors, _, _} = reduce_errors(errors, arg_name, path, path_handler, check_type)
