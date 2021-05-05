@@ -36,10 +36,10 @@ defmodule YourProject.Argx do
 end
 
 defmodule YourProject do
-	# step 2: import your validator
+  # step 2: import your validator
   import YourProject.Argx
 
-	# step 3: use with_check macro to wrap your function
+  # step 3: use with_check macro to wrap your function
   with_check configs(id(:string)) do
     def get(id) do
       {id}
@@ -87,7 +87,7 @@ There are 3 places to put it.
 **Highest priority**: in the current module.
 ```elixir
 defmodule YourProject do
-	use Argx
+  use Argx
   def fmt_errors({:error, _errors}), do: :error
   def fmt_errors(_new_args_or_result), do: :ok
   ...
