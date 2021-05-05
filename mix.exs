@@ -4,14 +4,14 @@ defmodule Argx.MixProject do
   def project do
     [
       app: :argx,
-      version: "0.2.3",
+      version: "1.0.0",
       elixir: "~> 1.11",
       aliases: aliases(),
       description: description(),
       package: package(),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      test_pattern: "*_test.ex*",
+      test_pattern: "*_test.ex",
 
       # Docs
       name: "Argx",
@@ -35,7 +35,7 @@ defmodule Argx.MixProject do
   end
 
   defp description do
-    "A DSL for validating function's args"
+    "DSLs for checking args"
   end
 
   defp package do
