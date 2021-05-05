@@ -39,7 +39,7 @@ defmodule Argx.Error do
     end)
   end
 
-  defp do_merger_errors(new_errors, [] = _left, [] = _right), do: Enum.reverse(new_errors)
+  defp do_merger_errors(new_errors, [] = _left, [] = _right), do: new_errors
 
   defp do_merger_errors(
          new_errors,
@@ -55,16 +55,12 @@ defmodule Argx.Error do
         {[_ | _], []} -> l_value
         {[_ | _], [_ | _]} -> l_value ++ r_value
       end
-      |> distinct()
 
     value
-    |> Kernel.&&([{l_type, Enum.sort(value)} | new_errors])
+    |> Kernel.&&([{l_type, value} | new_errors])
     |> Kernel.||(new_errors)
     |> do_merger_errors(l_rest, r_rest)
   end
-
-  defp distinct([_ | _] = term), do: term |> MapSet.new() |> MapSet.to_list()
-  defp distinct(other), do: other
 
   ###
   def sort_errors([_ | _] = errors) do
@@ -72,7 +68,8 @@ defmodule Argx.Error do
       errors
       |> Enum.sort()
       |> Enum.map(fn {type, fields} ->
-        {type, Enum.sort(fields)}
+        new_fields = fields |> distinct() |> Enum.sort()
+        {type, new_fields}
       end)
 
     {:error, sorted_errors}
@@ -85,7 +82,7 @@ defmodule Argx.Error do
   def append(value, keyword, key) when is_list(keyword) and is_atom(key) do
     {_, new} =
       Keyword.get_and_update(keyword, key, fn current ->
-        new_value = (current && Enum.reverse([value | Enum.reverse(current)])) || [value]
+        new_value = (current && [value | current]) || [value]
         {nil, new_value}
       end)
 
@@ -93,4 +90,7 @@ defmodule Argx.Error do
   end
 
   def append(_value, _other_keyword, _other_key), do: []
+
+  defp distinct([_ | _] = term), do: term |> MapSet.new() |> MapSet.to_list()
+  defp distinct(other), do: other
 end

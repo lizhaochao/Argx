@@ -74,7 +74,7 @@ defmodule MatcherTest do
       with args <- [one: 1, two: "a"],
            configs <- [one: get_config(:string), two: get_config(:integer)],
            {errors, _} <- argx_match().(args, configs, @curr_m) do
-        assert [{:error_type, [:one, :two]}] == errors
+        assert [{:error_type, [:two, :one]}] == errors
       else
         err -> flunk("#{inspect(err)}")
       end
@@ -101,9 +101,9 @@ defmodule MatcherTest do
            ],
            {errors, _} <- argx_match().(args, configs, @curr_m) do
         assert [
-                 {:lacked, [:six]},
-                 {:out_of_range, [:two]},
-                 {:error_type, [:one, :three, :four, :five]}
+                 lacked: [:six],
+                 out_of_range: [:two],
+                 error_type: [:five, :four, :three, :one]
                ] == errors
       else
         err -> flunk("#{inspect(err)}")
@@ -752,7 +752,7 @@ defmodule MatcherTest do
 
       args = [one: [%{a: ["a", "b"]}]]
       {errors, _} = argx_match().(args, configs, @curr_m)
-      assert [{:error_type, ["one:1:a:1", "one:1:a:2"]}, {:out_of_range, ["one:1:a"]}] == errors
+      assert [{:out_of_range, ["one:1:a"]}, {:error_type, ["one:1:a:1", "one:1:a:2"]}] == errors
 
       args = [one: [%{a: nil}]]
       {errors, _} = argx_match().(args, configs, @curr_m)
@@ -1108,7 +1108,7 @@ defmodule MatcherTest do
 
       args = [one: [[[nil]], [["a"]]]]
       {errors, _} = argx_match().(args, configs, @curr_m)
-      assert [{:error_type, ["one:2:1:1"]}, {:lacked, ["one:1:1:1"]}] == errors
+      assert [{:lacked, ["one:1:1:1"]}, {:error_type, ["one:2:1:1"]}] == errors
     end
 
     ##
@@ -1175,7 +1175,7 @@ defmodule MatcherTest do
 
       args = [one: [%{a: [%{z: ["a"]}], b: "a"}], two: 1]
       {errors, _} = argx_match().(args, configs, @curr_m)
-      assert [{:error_type, ["one:1:a:1:z:1", "one:1:b", :two]}] == errors
+      assert [error_type: [:two, "one:1:b", "one:1:a:1:z:1"]] == errors
 
       args = [one: [%{a: [1], b: nil}], two: nil]
       {errors, _} = argx_match().(args, configs, @curr_m)
