@@ -1,132 +1,151 @@
 defmodule Argx do
   @moduledoc """
-  A DSL for validating function's args.
-
-  including 5 functionalities:
-  - set default value if arg is ```nil```.
-  - convert arg's value automatically, if arg's value is compatible, like: ```"1"``` to ```1```.
-  - check whether arg is lacked
-  - check whether arg's type is error
-  - check whether arg's length/value is out of range
-
-  ### Validator
-  We can define a validator as follows:
-
-  ```
-  defmodule Project.Util.Validator do
+  DSLs for checking args.
+  ## Usage
+  ### Quick Start
+  ```elixir
+  defmodule YourProject do
+    # step 1: introduce check function by Argx module
     use Argx
-  end
-  ```
 
-  ### Usage 1:
+    # step 2: define rule
+    defconfig(Rule, id(:string))
 
-  - ```configs``` keyword is necessary
-  - ```:string``` declare arg's data type.
-  - ```:optional``` declare arg's value that can be nil.
-  - ```:auto``` declare that lib convert it to integer value automatically if it is compatible.
-  - ```10..20``` means arg value should be in 10 to 20, not equal 10 or not equal 20.
-  - ```||``` operator is used to define default value, it also be a value/function.
-
-  ```
-  defmodule Project.A.B do
-    import Project.Util.Validator
-
-    with_check configs(
-                   name(:string, :optional) || Module.A.B.get_ts(),
-                   number(:integer, :auto, 10..20) || 10
-                 ) do
-      def create(name, number) do
-        :ok
+    def get(args) do
+      # step 3: use check function to check args
+      check(args, [Rule])
+      |> case do
+        [] -> :ok
+        _ -> :error
       end
     end
   end
   ```
+  ### Check Via DSL
+  ```elixir
+  # step 1: define your validator
+  defmodule YourProject.Argx do
+    use Argx.WithCheck
+  end
 
-  ### Usage 2 :
+  defmodule YourProject do
+    # step 2: import your validator
+    import YourProject.Argx
 
-  defconfig also is a DSL that define the checking rule,
-  including 2 parts:
-  - config name, must be an atom
-  - config rule, like: ```arg_name(:string, :optional, :auto, 1..10) || 1```
-
-  we can reuse config rule by config name.
-
-  ```
-  defmodule Project.A.B do
-    import Project.Util.Validator
-
-    defconfig(NameRule, name(:string))
-
-    with_check configs(NameRule, number(:integer)) do
-      def create(name, number) do
-        :ok
+    # step 3: use with_check macro to wrap your function
+    with_check configs(id(:string)) do
+      def get(id) do
+        {id}
       end
     end
   end
   ```
-
-  ### Callback
-
-  ```fmt_errors/1```
-
-  we can define in 2 places.
+  ## Advanced
+  ### 1. How to share arg configs?
+  **step 1**: create a module for define shared arg configs.
+  ```elixir
+  defmodule YourProject.ArgConfigs do
+    use Argx.Defconfig
+    defconfig(NumberRule, number(:string, :empty))
+    defconfig(PageSizeRule, page_size(:integer, :auto, 1..100) || 10)
+  end
   ```
-  defmodule Project.A.B do
+  **step 2** : config share module to the following positions.
+  ```elixir
+  use Argx, share: YourProject.ArgConfigs
+  # or
+  use Argx.WithCheck, share: YourProject.ArgConfigs
+  ```
+  **step 3** : use arg config by name.
+  ```elixir
+  def get(args) do
+    check(args, [NumberRule, PageSizeRule])
+    |> case do
+      [] -> :ok
+      _ -> :error
+    end
+  end
+  # or
+  with_check configs(NumberRule, PageSizeRule) do
+    def get(id) do
+      {id}
+    end
+  end
+  ```
+  ### 2. Format errors
+  just implement callback `fmt_errors/1`, Argx invoke your custom format errors function, when check done.
+
+  There are 3 places to put it.
+
+  **Highest priority**: in the current module.
+  ```elixir
+  defmodule YourProject do
+    use Argx
+    def fmt_errors({:error, _errors}), do: :error
+    def fmt_errors(_new_args_or_result), do: :ok
     ...
-
-    with_check configs(NameRule, number(:integer)) do
-      def create(name, number) do
-        :ok
-      end
-    end
-
-    # higher priority
-    def fmt_errors(errors) do
-      errors
-    end
+  end
+  # or
+  defmodule YourProject do
+    import YourProject.Argx
+    def fmt_errors({:error, _errors}), do: :error
+    def fmt_errors(_new_args_or_result), do: :ok
+    ...
+  end
+  ```
+  **Second priority**: in the share arg configs module.
+  ```elixir
+  defmodule YourProject.ArgConfigs do
+    use Argx.Defconfig
+    def fmt_errors({:error, _errors}), do: :error
+    def fmt_errors(_new_args_or_result), do: :ok
+    ...
+  end
+  ```
+  **Lowest priority**: if you use argx via with_check, also implement it in the definition module.
+  ```elixir
+  defmodule YourProject.Argx do
+    use Argx.WithCheck
+    def fmt_errors({:error, _errors}), do: :error
+    def fmt_errors(_new_args_or_result), do: :ok
+    ...
   end
   ```
 
+  ## Features
+  - set default value if arg is ```nil``` or empty.
+  - convert arg's value automatically, if arg's value is compatible, such as: ```"1"``` to ```1```.
+  - check whether arg is lacked or empty.
+  - check whether arg's type is error.
+  - check whether arg's length/value is out of range.
+  - support nested data checking.
+
+  ## Support Data Type
+    -  ```:boolean```
+    -  ```:integer```
+    -  ```:float```
+    -  ```:string```
+    -  ```:list```
+    -  ```:map```
+
+  ## check/2 function
+  - meaning of function's arg:
+    - first arg only accept map or keyword data type as checking args.
+    - second arg must be a list that only contains one or more rule names.
+    ```elixir
+    check(data, [RuleA, :RuleB, "RuleC"])
+    ```
+  - return value:
+    - return new args, if success.
+    - return errors, if failure.
+
+  ## Configuration
+  config `Argx` or `Argx.WithCheck` module.
+  1. set shared arg configs module.
+  2. set warn flag.
+  ```elixir
+  use Argx, share: YourProject.ArgConfigs, warn: false
   ```
-  defmodule Project.Util.Validator do
-    use Argx
-
-    def fmt_errors(errors) do
-      {:error, 1000, errors}
-    end
-  end
-  ```
-
-  ### All DSLs
-  - ```defconfig```
-  - ```with_check```
-
-  ### All Checking Data Type Values
-  -  ```:string```
-  -  ```:integer```
-  -  ```:float```
-  -  ```:list```
-  -  ```:map```
-
-  ### Available Range format
-  - ```1..10``` (1 to 10, not equal 1 or not equal 10)
-  - ```10``` (10 to 10, equal to 10)
-
-  you can apply range setting to all data types.
-
-  ### Available Default value format
-  - value, like: ```1```, ```1.1```, ```"default"```
-  - function, like: ```Module.A.B.get_ts()``` or ```get_ts()```
-
-  not support ```fn``` function at present.
-
-  ### Functionalities
-  - ```:optional```
-  - ```:auto```, including 3 situations:
-  (1). string to integer
-  (2). string to float
-  (3). integer to float
-
   """
 
   defmacro __using__(opts) do
@@ -138,7 +157,37 @@ defmodule Argx do
 end
 
 defmodule Argx.WithCheck do
-  @moduledoc false
+  @moduledoc """
+  ## Usage
+  - `configs` keyword is necessary and it's content is not empty.
+  - define configs directly or reuse rules by name.
+  - wrap multi functions that have different guards.
+    ```elixir
+    defmodule YourProject do
+      import YourProject.Argx
+
+      with_check configs(
+                     Rule,
+                     id(:integer, :optional, :auto, :empty, 1..99) || get_default_id()
+                 ) do
+        def get(id) when is_integer(id) do
+          {:ok, id}
+        end
+        def get(id) when is_bitstring(id) do
+          {:ok, String.to_integer(id)}
+        end
+      end
+    end
+    ```
+
+  ## Configuration
+  config `Argx` or `Argx.WithCheck` module.
+  1. set shared arg configs module.
+  2. set warn flag.
+  ```elixir
+  use Argx.WithCheck, share: YourProject.ArgConfigs, warn: false
+  ```
+  """
 
   defmacro __using__(shared_m) do
     quote do
@@ -149,7 +198,62 @@ defmodule Argx.WithCheck do
 end
 
 defmodule Argx.Defconfig do
-  @moduledoc false
+  @moduledoc """
+  Reuse arg config rule by name.
+  - **config name**, **arg name** and **type** are necessary.
+    ```elixir
+    defconfig(Rule, id(:integer))
+    ```
+    - `Rule` is config name. `:Rule`, `Rule` or `"Rule"` are acceptable.
+    - `id` is arg name.
+    - `:string` is type.
+  - `:optional` declare arg's value that can be nil.
+    ```elixir
+    defconfig(Rule, id(:integer, :optional))
+    ```
+  - `:auto` declare that argx convert it to integer value automatically if it is compatible.
+    - `"1"` to `1`
+    - `"1.2"` to `1.2`
+    - `1` to `1.0`
+    - `1` to `true`
+    - `0` to `false`
+    - `"1"` to `true`
+    - `"0"` to `false`
+    ```elixir
+    defconfig(Rule, id(:integer, :auto))
+    ```
+  - `:empty` empty value the same as nil, the following values are empty.
+    - `0`
+    - `0.0`
+    - `""`
+    - `%{}`
+    - `[]`
+    ```elixir
+    defconfig(Rule, id(:integer, :empty))
+    ```
+  - **range**: there are 2 ways to set value's range.
+    - `10..20`, between 10 and 20, also include begin value and end value.
+    - `20`, equal to 20.
+    ```elixir
+    defconfig(Rule, id(:integer, 10..20))
+    ```
+    `:list`, `:map` and `:string` value calculate it's length or size.
+    `:integer` and `:float` value compare it's value directly.
+    `:boolean` value will be ignored.
+  - **default**: there are 3 ways to set value's default value.
+    - a value, such as: `1`.
+    - local function.
+    - remote function, module name should be fully-qualified name, such as: `YourProject.Helper`.
+    ```elixir
+    defconfig(Rule, id(:integer) || 0)
+    defconfig(Rule, id(:integer) || get_default_id())
+    defconfig(Rule, id(:integer) || YourProject.Helper.get_default_id())
+    ```
+  - **multi configs**: define them in one rule.
+    ```elixir
+    defconfig(Rule, [id(:integer), name(:string)])
+    ```
+  """
 
   alias Argx.{Config, Const}
 

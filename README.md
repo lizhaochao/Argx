@@ -15,7 +15,7 @@ defmodule YourProject do
   # step 1: introduce check function by Argx module
   use Argx
 
-  # step 2: define your check rule
+  # step 2: define rule
   defconfig(Rule, id(:string))
 
   def get(args) do
