@@ -69,6 +69,14 @@ defmodule ArgxWithCheckTest do
 
       with_check configs("rule") do
         def get(one) do
+          %{
+            a: [
+              %{b: "b1"},
+              %{b: "b2"}
+            ],
+            b: [1, 2, 3]
+          }
+
           {one}
         end
       end
