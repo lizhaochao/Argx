@@ -68,8 +68,8 @@ use Argx.WithCheck, share: YourProject.ArgConfigs
 def get(args) do
   check(args, [NumberRule, PageSizeRule])
   |> case do
-    [] -> :ok
-    _ -> :error
+    {:error, _} -> :error
+    _ -> :ok
   end
 end
 # or
