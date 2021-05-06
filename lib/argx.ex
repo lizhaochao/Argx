@@ -15,8 +15,8 @@ defmodule Argx do
       # step 3: use check function to check args
       check(args, [Rule])
       |> case do
-        [] -> :ok
-        _ -> :error
+        {:error, _} -> :error
+        _ -> :ok
       end
     end
   end
