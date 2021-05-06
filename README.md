@@ -1,4 +1,4 @@
-# Argx
+# Argx  [![Hex Version](https://img.shields.io/hexpm/v/argx.svg)](https://hex.pm/packages/argx) [![docs](https://img.shields.io/badge/docs-hexpm-blue.svg)](https://hexdocs.pm/argx/)
 DSLs for checking args.
 ## Installation
 Add argx to your list of dependencies in `mix.exs`:
