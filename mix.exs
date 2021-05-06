@@ -11,7 +11,7 @@ defmodule Argx.MixProject do
       package: package(),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
-      test_pattern: "*_test.ex",
+      test_pattern: "*_test.exs",
 
       # Docs
       name: "Argx",
