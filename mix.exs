@@ -4,7 +4,7 @@ defmodule Argx.MixProject do
   def project do
     [
       app: :argx,
-      version: "1.0.0",
+      version: "1.0.1",
       elixir: "~> 1.11",
       aliases: aliases(),
       description: description(),
@@ -42,7 +42,10 @@ defmodule Argx.MixProject do
     [
       name: "argx",
       licenses: ["MIT"],
-      links: %{"Gitee" => "https://gitee.com/leechaochao/argx"}
+      links: %{
+        "Gitee" => "https://gitee.com/lizhaochao/argx",
+        "GitHub" => "https://github.com/lizhaochao/Argx"
+      }
     ]
   end
 
