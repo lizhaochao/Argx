@@ -18,11 +18,11 @@ defmodule Argx.Defaulter do
 
   defp do_set_default(
          {arg_name, arg_value} = arg,
-         {_, %Argx.Config{type: type, default: default}},
+         {_, %Argx.Config{default: default}},
          module
        )
        when not is_nil(default) do
-    with true <- is_nil(arg_value) or Checker.empty?(arg_value, type),
+    with true <- is_nil(arg_value) or Checker.empty?(arg_value),
          new_arg_value <- get_default(default, module) do
       {arg_name, new_arg_value}
     else

@@ -1,8 +1,9 @@
 defmodule Argx.Use do
   @moduledoc false
 
-  alias Argx.{Checker, Config, Const, Formatter, Matcher}
+  alias Argx.{Config, Const, Formatter, Matcher}
   alias Argx.Matcher.Helper, as: MatcherHelper
+  alias Argx.Checker.DSL, as: Checker
 
   alias Argx.Use, as: Self
 
@@ -53,6 +54,8 @@ defmodule Argx.Use.WithCheck do
   @moduledoc false
 
   alias Argx.{Checker, Config, Const, Formatter, Matcher, Parser}
+  alias Argx.Checker.DSL, as: CheckerDSL
+
   alias Argx.Use.WithCheck, as: Self
   alias Argx.Use.Helper
 
@@ -70,7 +73,7 @@ defmodule Argx.Use.WithCheck do
       @defconfigs_attr {:@, [], [{@defconfigs_key, [], nil}]}
 
       defmacro with_check(configs, do: block) do
-        Checker.check!(configs, block)
+        CheckerDSL.check!(configs, block)
 
         funs = Parser.parse_fun(block)
         [fun | _] = funs
@@ -188,7 +191,8 @@ end
 defmodule Argx.Use.Defconfig do
   @moduledoc false
 
-  alias Argx.{Checker, Const, Parser}
+  alias Argx.{Const, Parser}
+  alias Argx.Checker.DSL, as: Checker
   alias Argx.Use.Helper
 
   defmacro __using__(_opts) do

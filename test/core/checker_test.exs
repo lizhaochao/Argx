@@ -414,25 +414,29 @@ defmodule CheckerTest do
   end
 
   ###
-  describe "check!" do
-    test "block ok" do
-      configs = quote do: configs(Rule)
+  describe "are_keys_equal!" do
+    test "ok" do
+      f_name = :get
+      arg_names = [:a, :b]
+      configs = [a: %{}, b: %{}]
+      assert :ok == C.are_keys_equal!(f_name, arg_names, configs)
+    end
 
-      block =
-        quote do
-          def get(name) when is_bitstring(name) do
-            name
-          end
+    test "error" do
+      f_name = :get
+      arg_names = [:a, :b]
+      configs = %{d: %{}, a: %{}}
 
-          def get(names) when is_list(names) do
-            names
-          end
-        end
-
-      result = C.check!(configs, block)
-      assert :ok == result
+      assert_raise Argx.Error, fn ->
+        C.are_keys_equal!(f_name, arg_names, configs)
+      end
     end
   end
+end
+
+defmodule CheckerISTest do
+  use ExUnit.Case
+  alias Argx.Checker, as: C
 
   ###
   describe "some_type? - integer" do
@@ -547,193 +551,186 @@ defmodule CheckerTest do
   describe "in_range? - integer" do
     test "true" do
       range = [1, 10]
-      assert C.in_range?(1, range, :integer)
-      assert C.in_range?(5, range, :integer)
-      assert C.in_range?(10, range, :integer)
+      assert C.in_range?(1, range)
+      assert C.in_range?(5, range)
+      assert C.in_range?(10, range)
 
       range = [10, 10]
-      assert C.in_range?(10, range, :integer)
+      assert C.in_range?(10, range)
     end
 
     test "false" do
       range = [1, 10]
-      refute C.in_range?(0, range, :integer)
-      refute C.in_range?(11, range, :integer)
+      refute C.in_range?(0, range)
+      refute C.in_range?(11, range)
 
       range = [10, 10]
-      refute C.in_range?(5, range, :integer)
-      refute C.in_range?(15, range, :integer)
+      refute C.in_range?(5, range)
+      refute C.in_range?(15, range)
     end
   end
 
   describe "in_range? - float" do
     test "true" do
       range = [1, 10]
-      assert C.in_range?(1.0, range, :float)
-      assert C.in_range?(1.5, range, :float)
-      assert C.in_range?(5.5, range, :float)
-      assert C.in_range?(9.5, range, :float)
-      assert C.in_range?(10.0, range, :float)
+      assert C.in_range?(1.0, range)
+      assert C.in_range?(1.5, range)
+      assert C.in_range?(5.5, range)
+      assert C.in_range?(9.5, range)
+      assert C.in_range?(10.0, range)
 
       range = [10, 10]
-      assert C.in_range?(10.0, range, :float)
+      assert C.in_range?(10.0, range)
 
       range = [10.5, 10.5]
-      assert C.in_range?(10.5, range, :float)
+      assert C.in_range?(10.5, range)
     end
 
     test "false" do
       range = [1, 10]
-      refute C.in_range?(0.9, range, :float)
-      refute C.in_range?(10.5, range, :float)
+      refute C.in_range?(0.9, range)
+      refute C.in_range?(10.5, range)
 
       range = [10, 10]
-      refute C.in_range?(5.0, range, :float)
-      refute C.in_range?(15.0, range, :float)
+      refute C.in_range?(5.0, range)
+      refute C.in_range?(15.0, range)
 
       range = [10.5, 10.5]
-      refute C.in_range?(5.5, range, :float)
-      refute C.in_range?(15.5, range, :float)
+      refute C.in_range?(5.5, range)
+      refute C.in_range?(15.5, range)
     end
   end
 
   describe "in_range? - string" do
     test "true" do
       range = [1, 3]
-      assert C.in_range?("a", range, :string)
-      assert C.in_range?("aa", range, :string)
-      assert C.in_range?("aaa", range, :string)
+      assert C.in_range?("a", range)
+      assert C.in_range?("aa", range)
+      assert C.in_range?("aaa", range)
 
       range = [3, 3]
-      assert C.in_range?("aaa", range, :string)
+      assert C.in_range?("aaa", range)
     end
 
     test "false" do
       range = [1, 3]
-      refute C.in_range?("", range, :string)
-      refute C.in_range?("aaaa", range, :string)
+      refute C.in_range?("", range)
+      refute C.in_range?("aaaa", range)
 
       range = [3, 3]
-      refute C.in_range?("aa", range, :string)
-      refute C.in_range?("aaaa", range, :string)
+      refute C.in_range?("aa", range)
+      refute C.in_range?("aaaa", range)
     end
   end
 
   describe "in_range? - list" do
     test "true" do
       range = [1, 3]
-      assert C.in_range?([1], range, :list)
-      assert C.in_range?([1, 2], range, :list)
-      assert C.in_range?([1, 2, 3], range, :list)
+      assert C.in_range?([1], range)
+      assert C.in_range?([1, 2], range)
+      assert C.in_range?([1, 2, 3], range)
 
       range = [3, 3]
-      assert C.in_range?([1, 2, 3], range, :list)
+      assert C.in_range?([1, 2, 3], range)
     end
 
     test "false" do
       range = [1, 3]
-      refute C.in_range?([], range, :list)
-      refute C.in_range?([1, 2, 3, 4], range, :list)
+      refute C.in_range?([], range)
+      refute C.in_range?([1, 2, 3, 4], range)
 
       range = [3, 3]
-      refute C.in_range?([1, 2], range, :list)
-      refute C.in_range?([1, 2, 3, 4], range, :list)
+      refute C.in_range?([1, 2], range)
+      refute C.in_range?([1, 2, 3, 4], range)
     end
   end
 
   describe "in_range? - map" do
     test "true" do
       range = [1, 3]
-      assert C.in_range?(%{a: 1}, range, :map)
-      assert C.in_range?(%{a: 1, b: 2}, range, :map)
-      assert C.in_range?(%{a: 1, b: 2, c: 3}, range, :map)
+      assert C.in_range?(%{a: 1}, range)
+      assert C.in_range?(%{a: 1, b: 2}, range)
+      assert C.in_range?(%{a: 1, b: 2, c: 3}, range)
 
       range = [3, 3]
-      assert C.in_range?(%{a: 1, b: 2, c: 3}, range, :map)
+      assert C.in_range?(%{a: 1, b: 2, c: 3}, range)
     end
 
     test "false" do
       range = [1, 3]
-      refute C.in_range?(%{}, range, :map)
-      refute C.in_range?(%{a: 1, b: 2, c: 3, d: 4}, range, :map)
+      refute C.in_range?(%{}, range)
+      refute C.in_range?(%{a: 1, b: 2, c: 3, d: 4}, range)
 
       range = [3, 3]
-      refute C.in_range?(%{a: 1, b: 2}, range, :map)
-      refute C.in_range?(%{a: 1, b: 2, c: 3, d: 4}, range, :map)
+      refute C.in_range?(%{a: 1, b: 2}, range)
+      refute C.in_range?(%{a: 1, b: 2, c: 3, d: 4}, range)
     end
   end
 
   describe "in_range? - boolean" do
     test "true" do
       range = [1, 3]
-      assert C.in_range?(true, range, :boolean)
-      assert C.in_range?(false, range, :boolean)
+      assert C.in_range?(true, range)
+      assert C.in_range?(false, range)
 
       range = [3, 3]
-      assert C.in_range?(true, range, :boolean)
-      assert C.in_range?(false, range, :boolean)
-    end
-
-    test "false" do
-      range = [1, 3]
-      refute C.in_range?("true", range, :boolean)
-      refute C.in_range?(1, range, :boolean)
-
-      range = [3, 3]
-      refute C.in_range?(1.23, range, :boolean)
-      refute C.in_range?("false", range, :boolean)
+      assert C.in_range?(true, range)
+      assert C.in_range?(false, range)
     end
   end
 
   describe "in_range? - other" do
     test "false" do
       range = [1, 3]
-      refute C.in_range?([1, 2, 3], range, :map)
-      refute C.in_range?(%{a: 1}, range, :string)
-      refute C.in_range?("string", range, :integer)
-      refute C.in_range?(1.23, range, :list)
-      refute C.in_range?(:argx, range, :float)
+      refute C.in_range?(:string, range)
+      refute C.in_range?(:argx, range)
     end
   end
 
   ###
   describe "empty?" do
     test "true" do
-      assert C.empty?(0, :integer)
-      assert C.empty?(0.0, :float)
-      assert C.empty?("", :string)
-      assert C.empty?([], :list)
-      assert C.empty?(%{}, :map)
+      assert C.empty?(0)
+      assert C.empty?(0.0)
+      assert C.empty?("")
+      assert C.empty?([])
+      assert C.empty?(%{})
     end
 
     test "false" do
-      refute C.empty?(-1, :integer)
-      refute C.empty?(1, :integer)
-      refute C.empty?(-1.0, :float)
-      refute C.empty?(1.0, :float)
-      refute C.empty?("a", :string)
-      refute C.empty?([1], :list)
-      refute C.empty?(%{a: 1}, :map)
+      refute C.empty?(-1)
+      refute C.empty?(1)
+      refute C.empty?(-1.0)
+      refute C.empty?(1.0)
+      refute C.empty?("a")
+      refute C.empty?([1])
+      refute C.empty?(%{a: 1})
     end
   end
+end
+
+defmodule CheckerDSLTest do
+  use ExUnit.Case
+  alias Argx.Checker.DSL, as: CheckerDSL
 
   ###
-  describe "are_keys_equal!" do
-    test "ok" do
-      f_name = :get
-      arg_names = [:a, :b]
-      configs = [a: %{}, b: %{}]
-      assert :ok == C.are_keys_equal!(f_name, arg_names, configs)
-    end
+  describe "check!" do
+    test "block ok" do
+      configs = quote do: configs(Rule)
 
-    test "error" do
-      f_name = :get
-      arg_names = [:a, :b]
-      configs = %{d: %{}, a: %{}}
+      block =
+        quote do
+          def get(name) when is_bitstring(name) do
+            name
+          end
 
-      assert_raise Argx.Error, fn ->
-        C.are_keys_equal!(f_name, arg_names, configs)
-      end
+          def get(names) when is_list(names) do
+            names
+          end
+        end
+
+      result = CheckerDSL.check!(configs, block)
+      assert :ok == result
     end
   end
 end
