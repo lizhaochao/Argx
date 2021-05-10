@@ -183,49 +183,49 @@ defmodule Argx.Checker do
   def check_defconfig!({_, _, []}), do: raise(Argx.Error, "at least config type")
 
   ###
-  def some_type?(v, :integer), do: is_integer(v)
-  def some_type?(v, :float), do: is_float(v)
-  def some_type?(v, :string), do: is_bitstring(v)
-  def some_type?(v, :list), do: is_list(v)
-  def some_type?(v, :map), do: is_map(v)
-  def some_type?(v, :boolean), do: is_boolean(v)
-  def some_type?(_other_v, _other_type), do: false
+  def some_type?(term, :integer), do: is_integer(term)
+  def some_type?(term, :float), do: is_float(term)
+  def some_type?(term, :string), do: is_bitstring(term)
+  def some_type?(term, :list), do: is_list(term)
+  def some_type?(term, :map), do: is_map(term)
+  def some_type?(term, :boolean), do: is_boolean(term)
+  def some_type?(_other_term, _other_type), do: false
 
-  def in_range?(v, [l, r], :integer) when is_integer(v) do
-    (v >= l and v <= r) or (v == l and v == r)
+  def in_range?(term, [l, r], :integer) when is_integer(term) do
+    (term >= l and term <= r) or (term == l and term == r)
   end
 
-  def in_range?(v, [l, r], :float) when is_float(v) do
-    (v >= l and v <= r) or (v == l and v == r)
+  def in_range?(term, [l, r], :float) when is_float(term) do
+    (term >= l and term <= r) or (term == l and term == r)
   end
 
-  def in_range?(v, [l, r], :string) when is_bitstring(v) do
-    len = String.length(v)
+  def in_range?(term, [l, r], :string) when is_bitstring(term) do
+    len = String.length(term)
     (len >= l and len <= r) or (len == l and len == r)
   end
 
-  def in_range?(v, [l, r], :list) when is_list(v) do
-    len = length(v)
+  def in_range?(term, [l, r], :list) when is_list(term) do
+    len = length(term)
     (len >= l and len <= r) or (len == l and len == r)
   end
 
-  def in_range?(v, [l, r], :map) when is_map(v) do
-    len = map_size(v)
+  def in_range?(term, [l, r], :map) when is_map(term) do
+    len = map_size(term)
     (len >= l and len <= r) or (len == l and len == r)
   end
 
-  def in_range?(v, [_l, _r], :boolean) when is_boolean(v) do
+  def in_range?(term, [_l, _r], :boolean) when is_boolean(term) do
     true
   end
 
-  def in_range?(_other_v, _range, _other_type), do: false
+  def in_range?(_other_term, _range, _other_type), do: false
 
   def empty?(0, :integer), do: true
   def empty?(0.0, :float), do: true
   def empty?("", :string), do: true
   def empty?([], :list), do: true
-  def empty?(%{} = v, :map), do: Enum.empty?(v)
-  def empty?(_other_v, _other_type), do: false
+  def empty?(%{} = term, :map), do: Enum.empty?(term)
+  def empty?(_other_term, _other_type), do: false
 
   def are_keys_equal!(
         f_name,
