@@ -46,7 +46,7 @@ defmodule Argx.Defaulter do
   end
 
   def get_default(
-        {{:., _, [{:__aliases__, _, [_ | _] = m}, f]}, _, [] = a},
+        {{:., _, [{:__aliases__, _, [_ | _] = m}, f]}, _, a},
         _m
       ) do
     m
@@ -55,7 +55,7 @@ defmodule Argx.Defaulter do
   end
 
   def get_default(
-        {f, _, [] = a},
+        {f, _, a},
         m
       )
       when f != :fn and f != :& do

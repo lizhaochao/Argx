@@ -175,6 +175,18 @@ defmodule DefaulterTest do
     end
   end
 
+  describe "get_default - function - arity is not zero" do
+    test "in the current module - arity is not zero" do
+      fun_expr = quote do: get_curr_ts(:second)
+      D.get_default(fun_expr, __MODULE__)
+    end
+
+    test "in the another module - arity is not zero" do
+      fun_expr = quote do: get_yesterday_ts(:second)
+      D.get_default(fun_expr, Test.DefaulterYesterday)
+    end
+  end
+
   describe "get_default - error" do
     test "in the current module - function reference" do
       fun_expr = quote do: &get_curr_ts/0
@@ -194,22 +206,6 @@ defmodule DefaulterTest do
 
       assert_raise Argx.Error, fn ->
         D.get_default(fun_expr2, __MODULE__)
-      end
-    end
-
-    test "in the current module - arity is not zero" do
-      fun_expr = quote do: get_curr_ts(:second)
-
-      assert_raise Argx.Error, fn ->
-        D.get_default(fun_expr, __MODULE__)
-      end
-    end
-
-    test "in the another module - arity is not zero" do
-      fun_expr = quote do: get_yesterday_ts(:second)
-
-      assert_raise Argx.Error, fn ->
-        D.get_default(fun_expr, Test.DefaulterYesterday)
       end
     end
   end
