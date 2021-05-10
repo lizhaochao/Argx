@@ -434,7 +434,7 @@ defmodule CheckerTest do
   end
 end
 
-defmodule CheckerISTest do
+defmodule CheckerIsTest do
   use ExUnit.Case
   alias Argx.Checker, as: C
 
