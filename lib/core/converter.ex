@@ -28,28 +28,28 @@ defmodule Argx.Converter do
     arg
   end
 
-  def to_type(value, :integer) when is_bitstring(value) do
-    value
+  def to_type(term, :integer) when is_bitstring(term) do
+    term
     |> Integer.parse()
     |> case do
       {integer, ""} -> integer
-      _ -> value
+      _ -> term
     end
   end
 
-  def to_type(value, :integer) when is_integer(value), do: value
+  def to_type(term, :integer) when is_integer(term), do: term
 
-  def to_type(value, :float) when is_bitstring(value) do
-    value
+  def to_type(term, :float) when is_bitstring(term) do
+    term
     |> Float.parse()
     |> case do
       {float, ""} -> float
-      _ -> value
+      _ -> term
     end
   end
 
-  def to_type(value, :float) when is_float(value), do: value
-  def to_type(value, :float) when is_integer(value), do: value / 1.0
+  def to_type(term, :float) when is_float(term), do: term
+  def to_type(term, :float) when is_integer(term), do: term / 1.0
 
   def to_type(true, :boolean), do: true
   def to_type(false, :boolean), do: false
@@ -58,5 +58,5 @@ defmodule Argx.Converter do
   def to_type("1", :boolean), do: true
   def to_type("0", :boolean), do: false
 
-  def to_type(value, _other_type), do: value
+  def to_type(term, _other_type), do: term
 end

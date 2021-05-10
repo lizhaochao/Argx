@@ -189,7 +189,7 @@ defmodule Argx.Checker do
   def some_type?(term, :list), do: is_list(term)
   def some_type?(term, :map), do: is_map(term)
   def some_type?(term, :boolean), do: is_boolean(term)
-  def some_type?(_other_term, _other_type), do: false
+  def some_type?(_term, _other_type), do: false
 
   def in_range?(term, [l, r], :integer) when is_integer(term) do
     (term >= l and term <= r) or (term == l and term == r)
@@ -218,14 +218,14 @@ defmodule Argx.Checker do
     true
   end
 
-  def in_range?(_other_term, _range, _other_type), do: false
+  def in_range?(_term, _range, _other_type), do: false
 
   def empty?(0, :integer), do: true
   def empty?(0.0, :float), do: true
   def empty?("", :string), do: true
   def empty?([], :list), do: true
   def empty?(%{} = term, :map), do: Enum.empty?(term)
-  def empty?(_other_term, _other_type), do: false
+  def empty?(_term, _other_type), do: false
 
   def are_keys_equal!(
         f_name,
