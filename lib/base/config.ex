@@ -46,7 +46,7 @@ defmodule Argx.Config do
   defp drill_down(all_configs, name, warn, depth, max_depth) do
     with _ <- warn_by_depth(name, warn, depth, max_depth),
          configs <- fetch_by_name(all_configs, name),
-         configs_kw <- Enum.into(configs, []) do
+         configs_kw <- Keyword.new(configs) do
       do_drill_down(configs, all_configs, configs_kw, warn, depth, max_depth)
     end
   end

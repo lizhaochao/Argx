@@ -16,7 +16,7 @@ defmodule Argx.Util do
   defp traverse_map(%{} = map) when map_size(map) == 0, do: map
   defp traverse_map(%{} = map), do: map |> Enum.into([]) |> do_traverse_map([])
 
-  defp do_traverse_map([], new_map), do: Enum.into(new_map, %{})
+  defp do_traverse_map([], new_map), do: Map.new(new_map)
 
   defp do_traverse_map([{k, v} | rest], new_map) when is_list(v) do
     new_v = traverse_list(v, [])

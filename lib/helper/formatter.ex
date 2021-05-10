@@ -52,8 +52,8 @@ defmodule Argx.Formatter do
   defp default(new_args), do: new_args
 
   ###
-  def restore(:keyword, %{} = new_args), do: Enum.into(new_args, [])
-  def restore(:map, new_args) when is_list(new_args), do: Enum.into(new_args, %{})
+  def restore(:keyword, %{} = new_args), do: Keyword.new(new_args)
+  def restore(:map, new_args) when is_list(new_args), do: Map.new(new_args)
   def restore(_origin_type, new_args), do: new_args
 
   defp module_name?(name) when not is_nil(name) and is_atom(name), do: true

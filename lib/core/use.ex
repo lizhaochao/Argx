@@ -44,7 +44,7 @@ defmodule Argx.Use do
          get <- Config.get_configs_by_names(warn, @warn_max_nested_depth) do
       all_configs
       |> get.(config_names)
-      |> Enum.into([])
+      |> Keyword.new()
     end
   end
 end

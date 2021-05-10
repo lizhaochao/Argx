@@ -338,9 +338,9 @@ defmodule Argx.Matcher.Helper do
   end
 
   def to_map(%{} = term), do: term
-  def to_map(term) when is_list(term), do: Enum.into(term, %{})
+  def to_map(term) when is_list(term), do: Map.new(term)
   def to_map(other), do: other
-  def to_keyword(%{} = term), do: Enum.into(term, [])
+  def to_keyword(%{} = term), do: Keyword.new(term)
   def to_keyword(term) when is_list(term), do: term
   def to_keyword(other), do: other
 
