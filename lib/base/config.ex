@@ -12,7 +12,7 @@ defmodule Argx.Config do
     end)
     |> Enum.reduce(%{}, fn {f_name, _arity}, shared_configs ->
       configs = apply(m, f_name, [])
-      Map.merge(shared_configs, configs)
+      :maps.merge(shared_configs, configs)
     end)
   end
 
@@ -22,7 +22,7 @@ defmodule Argx.Config do
     modules
     |> Enum.reduce(%{}, fn m, configs ->
       defconfigs = get_defconfigs(m, f_name_keyword)
-      Map.merge(configs, defconfigs)
+      :maps.merge(configs, defconfigs)
     end)
   end
 
@@ -35,7 +35,7 @@ defmodule Argx.Config do
         |> distinct()
         |> Enum.reduce(%{}, fn name, name_configs ->
           new_configs = drill_down(configs, name, warn, 1, max_depth)
-          Map.merge(name_configs, new_configs)
+          :maps.merge(name_configs, new_configs)
         end)
 
       _other_configs, _other_names ->

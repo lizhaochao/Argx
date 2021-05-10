@@ -215,7 +215,7 @@ defmodule Argx.Matcher.Helper do
   end
 
   def get_value_type_by_configs(configs, value_key) do
-    with [key | []] <- Map.keys(configs),
+    with [key | []] <- :maps.keys(configs),
          true <- key == value_key do
       :value
     else
@@ -331,7 +331,7 @@ defmodule Argx.Matcher.Helper do
   def sort_by_keys(%{} = map, keys, should_drop_flag) do
     keys
     |> Enum.reduce([], fn key, keyword ->
-      value = Map.get(map, key, should_drop_flag)
+      value = :maps.get(key, map, should_drop_flag)
       (value && [{key, value} | keyword]) || keyword
     end)
     |> Enum.reverse()

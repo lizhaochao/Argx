@@ -71,8 +71,7 @@ defmodule Argx.Parser do
   def parse_configs([]), do: raise(Argx.Error, "configs is empty")
 
   defp do_parse_configs([], configs) do
-    configs
-    |> Map.get(@names_key)
+    :maps.get(@names_key, configs, nil)
     |> is_nil()
     |> if(
       do: configs,
@@ -103,7 +102,7 @@ defmodule Argx.Parser do
 
   defp do_parse_configs([config | rest], configs) do
     config_map = every_config(config)
-    new_configs = Map.merge(configs, config_map)
+    new_configs = :maps.merge(configs, config_map)
     do_parse_configs(rest, new_configs)
   end
 

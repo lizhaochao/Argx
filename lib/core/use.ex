@@ -77,8 +77,8 @@ defmodule Argx.Use.WithCheck do
 
         funs = Parser.parse_fun(block)
         [fun | _] = funs
-        f = Map.get(fun, :f)
-        a = Map.get(fun, :a)
+        f = :maps.get(:f, fun)
+        a = :maps.get(:a, fun)
 
         use_m = __MODULE__
         shared_m = unquote(shared_m)
@@ -159,7 +159,7 @@ defmodule Argx.Use.WithCheck do
            names <- Helper.prune_names(names),
            get <- Config.get_configs_by_names(unquote(warn), unquote(@warn_max_nested_depth)),
            defconfigs <- get.(unquote(defconfigs), names),
-           merged_configs <- Map.merge(defconfigs, configs) do
+           merged_configs <- :maps.merge(defconfigs, configs) do
         Helper.sort_by_keys(merged_configs, unquote(arg_names), unquote(should_drop_flag))
       end
     end
@@ -175,7 +175,7 @@ defmodule Argx.Use.WithCheck do
     quote do
       shared_configs = Config.get_defconfigs(unquote(shared_m), unquote(defconfigs_key))
       defconfigs = Helper.list_to_map(unquote(defconfigs_attr))
-      Map.merge(shared_configs, defconfigs)
+      :maps.merge(shared_configs, defconfigs)
     end
   end
 
@@ -284,7 +284,7 @@ defmodule Argx.Use.Helper do
   ###
   def list_to_map(list) when is_list(list) do
     Enum.reduce(list, %{}, fn %{} = term, map ->
-      Map.merge(map, term)
+      :maps.merge(map, term)
     end)
   end
 
