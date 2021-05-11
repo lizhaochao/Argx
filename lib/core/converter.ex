@@ -9,7 +9,9 @@ defmodule Argx.Converter do
     do_convert(args, configs)
   end
 
-  def convert(_other_arg, _other_config), do: raise(Argx.Error, "not in the same order.")
+  def convert(_other_arg, _other_config) do
+    raise Argx.Error, "maybe there are some args that not found configs."
+  end
 
   defp do_convert(
          {arg_name, arg_value},
