@@ -3,7 +3,7 @@ defmodule Argx.Parser do
 
   import Argx.Util
 
-  alias Argx.Const
+  alias Argx.{Const, Error}
 
   @allowed_fun_types Const.allowed_fun_types()
   @not_support_types Const.not_support_types()
@@ -57,8 +57,8 @@ defmodule Argx.Parser do
     |> Map.put(:a, [])
   end
 
-  defp do_parse_fun({type, _, [_ | _]}, _parts), do: raise(Argx.Error, "not support #{type}")
-  defp do_parse_fun(_other_expr, _parts), do: raise(Argx.Error, "unknown function")
+  defp do_parse_fun({type, _, [_ | _]}, _parts), do: raise(Error, "not support #{type}")
+  defp do_parse_fun(_other_expr, _parts), do: raise(Error, "unknown function")
 
   ###
   def parse_configs({name, _, _} = configs) when name != @configs_keyword do
@@ -67,8 +67,8 @@ defmodule Argx.Parser do
 
   def parse_configs([_ | _] = configs), do: do_parse_configs(configs, %{})
   def parse_configs({@configs_keyword, _, [_ | _] = configs}), do: do_parse_configs(configs, %{})
-  def parse_configs({@configs_keyword, _, []}), do: raise(Argx.Error, "configs is empty")
-  def parse_configs([]), do: raise(Argx.Error, "configs is empty")
+  def parse_configs({@configs_keyword, _, []}), do: raise(Error, "configs is empty")
+  def parse_configs([]), do: raise(Error, "configs is empty")
 
   defp do_parse_configs([], configs) do
     :maps.get(@names_key, configs, nil)
@@ -202,7 +202,7 @@ defmodule Argx.Parser do
   end
 
   defp every_item([other_expr | _rest], _items) do
-    raise(Argx.Error, "unknown #{inspect(other_expr)}")
+    raise(Error, "unknown #{inspect(other_expr)}")
   end
 
   defp put_nested_name(items, type, nested_name) do
@@ -222,10 +222,10 @@ defmodule Argx.Parser do
     |> String.to_atom()
   end
 
-  def parse_defconfig_name(_other), do: raise(Argx.Error, "defconfig name should be atom/string")
+  def parse_defconfig_name(_other), do: raise(Error, "defconfig name should be atom/string")
 
   ###
   def parse_range(v) when is_number(v), do: [v, v]
   def parse_range({:.., _, [l, r]}), do: [l, r]
-  def parse_range(other), do: raise(Argx.Error, "not support #{inspect(other)}")
+  def parse_range(other), do: raise(Error, "not support #{inspect(other)}")
 end

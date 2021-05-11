@@ -1,6 +1,8 @@
 defmodule Argx.Config do
   @moduledoc false
 
+  alias Argx.Error
+
   @enforce_keys [:type, :optional, :auto, :range, :default, :empty, :nested]
   defstruct @enforce_keys
 
@@ -91,7 +93,7 @@ defmodule Argx.Config do
     |> Map.fetch(name)
     |> case do
       {:ok, config} -> config
-      :error -> raise(Argx.Error, "not found config by #{name}")
+      :error -> raise Error, "not found config by #{name}"
     end
   end
 

@@ -1,7 +1,7 @@
 defmodule Argx.Defaulter do
   @moduledoc false
 
-  alias Argx.Checker
+  alias Argx.{Checker, Error}
 
   def set_default(
         {arg_name, _arg_value} = arg,
@@ -13,7 +13,7 @@ defmodule Argx.Defaulter do
   end
 
   def set_default(_other_arg, _other_config, _module) do
-    raise Argx.Error, "maybe there are some args that not found configs."
+    raise Error, "maybe there are some args that not found configs."
   end
 
   defp do_set_default(
@@ -62,9 +62,9 @@ defmodule Argx.Defaulter do
     apply(m, f, a)
   end
 
-  def get_default({:fn, _, _}, _m), do: raise(Argx.Error, "not support anonymous function")
-  def get_default({:&, _, _}, _m), do: raise(Argx.Error, "not support function reference")
-  def get_default(_other, _m), do: raise(Argx.Error, "unknown value type")
+  def get_default({:fn, _, _}, _m), do: raise(Error, "not support anonymous function")
+  def get_default({:&, _, _}, _m), do: raise(Error, "not support function reference")
+  def get_default(_other, _m), do: raise(Error, "unknown value type")
 
   ###
   def make_module_name([term | _] = parts) when is_atom(term) or is_bitstring(term) do

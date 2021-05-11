@@ -428,7 +428,7 @@ defmodule CheckerTest do
       arg_names = [:a, :b]
       configs = [c: %{}, b: %{}]
 
-      assert_raise Argx.Error, fn ->
+      assert_raise FunctionClauseError, fn ->
         C.are_keys_equal!(f_name, arg_names, configs)
       end
     end

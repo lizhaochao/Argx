@@ -93,4 +93,15 @@ defmodule Argx.Error do
 
   defp distinct([_ | _] = term), do: term |> MapSet.new() |> MapSet.to_list()
   defp distinct(other), do: other
+
+  ###
+  def syntax_error(term) do
+    msg =
+      case term do
+        term when is_bitstring(term) -> term
+        term -> inspect(term)
+      end
+
+    raise __MODULE__, "syntax error: #{msg}"
+  end
 end

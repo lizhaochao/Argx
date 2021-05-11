@@ -1,6 +1,8 @@
 defmodule Argx.Converter do
   @moduledoc false
 
+  alias Argx.Error
+
   def convert(
         {arg_name, _arg_value} = args,
         {arg_name2, %Argx.Config{}} = configs
@@ -10,7 +12,7 @@ defmodule Argx.Converter do
   end
 
   def convert(_other_arg, _other_config) do
-    raise Argx.Error, "maybe there are some args that not found configs."
+    raise Error, "maybe there are some args that not found configs."
   end
 
   defp do_convert(

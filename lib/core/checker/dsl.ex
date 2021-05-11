@@ -1,7 +1,7 @@
 defmodule Argx.Checker.DSL do
   @moduledoc false
 
-  alias Argx.Const
+  alias Argx.{Const, Error}
 
   @allowed_fun_types Const.allowed_fun_types()
   @configs_keyword Const.configs_keyword()
@@ -14,16 +14,16 @@ defmodule Argx.Checker.DSL do
     |> Keyword.keyword?()
     |> if(
       do: :ignore,
-      else: raise(Argx.Error, "args must be map or keyword")
+      else: raise(Error, "args must be map or keyword")
     )
   end
 
-  def check_args!(_other_args), do: raise(Argx.Error, "args must be map or keyword")
+  def check_args!(_other_args), do: raise(Error, "args must be map or keyword")
 
   def check_config_names!(config_names) do
     case config_names do
       [_ | _] -> :ignore
-      _ -> raise Argx.Error, "config names must be list & not empty"
+      _ -> raise Error, "config names must be list & not empty"
     end
   end
 
@@ -33,9 +33,9 @@ defmodule Argx.Checker.DSL do
          :ok = ok <- check_block(block) do
       ok
     else
-      :configs_error -> raise Argx.Error, "not found #{@configs_keyword} keyword"
-      :block_error -> raise Argx.Error, "unknown function type"
-      :block_empty_error -> raise Argx.Error, "required one function at least"
+      :configs_error -> raise Error, "not found #{@configs_keyword} keyword"
+      :block_error -> raise Error, "unknown function type"
+      :block_empty_error -> raise Error, "required one function at least"
       _ -> :ok
     end
   end
@@ -49,12 +49,16 @@ defmodule Argx.Checker.DSL do
   defp check_block(_), do: :block_error
 
   ### defconfig macro
-  def check_defconfig!(_name, [_ | _] = configs), do: check_defconfig!(configs)
-  def check_defconfig!(_name, {_, _, _} = config), do: check_defconfig!([config])
-  def check_defconfig!(_name, []), do: raise(Argx.Error, "configs is empty")
+  def check_defconfig!(_name, [_ | _] = configs), do: do_check_defconfig!(configs)
+  def check_defconfig!(_name, {_, _, _} = config), do: do_check_defconfig!([config])
+  def check_defconfig!(_name, [] = config), do: do_check_defconfig!(config)
 
-  def check_defconfig!([{:||, _, [{_, _, _} = config, _]} | _]), do: check_defconfig!(config)
-  def check_defconfig!([{_, _, _} = config | _]), do: check_defconfig!(config)
-  def check_defconfig!({_, _, [_ | _]}), do: :ok
-  def check_defconfig!({_, _, []}), do: raise(Argx.Error, "at least config type")
+  def do_check_defconfig!(term) do
+    case term do
+      {f, _, [_ | _]} when f != :__aliases__ -> :ok
+      [{:||, _, [{_, _, _} = config, _]} | _] -> do_check_defconfig!(config)
+      [{_, _, _} = config | _] -> do_check_defconfig!(config)
+      _ -> Error.syntax_error(term)
+    end
+  end
 end

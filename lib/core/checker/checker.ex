@@ -156,8 +156,6 @@ defmodule Argx.Checker do
     )
   end
 
-  def are_keys_equal!(_f_name, _arg_names, _configs), do: raise(Argx.Error, "data type error")
-
   ###
   def empty?(term), do: Is.empty?(term)
 
