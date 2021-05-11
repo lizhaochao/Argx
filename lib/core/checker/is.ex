@@ -1,4 +1,5 @@
 defprotocol Argx.Checker.Is do
+  @moduledoc false
   def in_range?(term, range)
   def empty?(term)
 end

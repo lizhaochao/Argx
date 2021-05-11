@@ -211,15 +211,37 @@ Reuse arg config rule by name.
                    Rule,
                    id(:integer, :optional, :auto, :empty, 1..99) || get_default_id()
                ) do
-      def get(id) when is_integer(id) do
+      def create(id) when is_integer(id) do
         {:ok, id}
       end
-      def get(id) when is_bitstring(id) do
+      def create(id) when is_bitstring(id) do
         {:ok, String.to_integer(id)}
       end
     end
   end
   ```
+- getting all arg configs.
+  - format: `__get_[function_name]_configs__`.
+  - such as: `configs = YourProject.__get_create_configs__()`.
+  - configs' data type is keyword, sorted by function arg_names.
+## Errors
+There are 3 types.
+1. lacked some fields.
+2. some fields' type is error.
+3. some field's range/length/size is out of range.
+
+Example:
+```elixir
+{
+  :error,
+  [
+    error_type: ["cargoes:1:number", "cargoes:2:name"], # report nested data's error
+    lacked: [:mobile],
+    out_of_range: [:weight]
+  ]
+}
+```
+If you want to convert meta errors to readable message, just implement [fmt_errors/1](#2-format-errors).
 ## Configuration
 config `Argx` or `Argx.WithCheck` module.
 1. set shared arg configs module.
