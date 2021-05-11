@@ -418,14 +418,15 @@ defmodule CheckerTest do
     test "ok" do
       f_name = :get
       arg_names = [:a, :b]
-      configs = [a: %{}, b: %{}]
-      assert :ok == C.are_keys_equal!(f_name, arg_names, configs)
+      configs = %{b: %{}, a: %{}}
+
+      C.are_keys_equal!(f_name, arg_names, configs)
     end
 
     test "error" do
       f_name = :get
       arg_names = [:a, :b]
-      configs = %{d: %{}, a: %{}}
+      configs = [c: %{}, b: %{}]
 
       assert_raise Argx.Error, fn ->
         C.are_keys_equal!(f_name, arg_names, configs)

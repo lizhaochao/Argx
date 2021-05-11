@@ -86,22 +86,19 @@ defmodule Argx.Use.WithCheck do
         configs_f_name = Helper.make_get_fun_configs_f_name(f)
         configs = configs |> Parser.parse_configs() |> Macro.escape()
 
-        configs =
+        raw_fun_configs =
           shared_m
           |> Self.get_all_defconfigs(@defconfigs_attr, @defconfigs_key)
-          |> Self.merge_configs(
-            configs,
-            arg_names,
-            @names_key,
-            @should_drop_flag,
-            unquote(warn)
-          )
+          |> Self.merge_configs(configs, @names_key, unquote(warn))
 
-        # expr
-        ignore_attr_warning_expr = quote do: unquote(Helper.reg_attr(@defconfigs_key))
-
-        are_keys_equal_expr =
-          quote do: Checker.are_keys_equal!(unquote(f), unquote(arg_names), unquote(configs))
+        sorted_fun_configs =
+          quote do
+            Helper.sort_by_keys(
+              unquote(raw_fun_configs),
+              unquote(arg_names),
+              unquote(@should_drop_flag)
+            )
+          end
 
         funs_expr =
           Enum.map(funs, fn fun ->
@@ -118,7 +115,7 @@ defmodule Argx.Use.WithCheck do
                 args = unquote(Self.make_args(a))
                 match = Matcher.match(:with_check)
 
-                match.(args, unquote(configs), __MODULE__)
+                match.(args, unquote(sorted_fun_configs), __MODULE__)
                 |> Self.post_match(
                   __MODULE__,
                   unquote(shared_m),
@@ -132,10 +129,23 @@ defmodule Argx.Use.WithCheck do
         configs_fun_expr =
           quote do
             def unquote(configs_f_name)() do
-              unquote(configs)
+              unquote(sorted_fun_configs)
             end
           end
 
+        # helper
+        ignore_attr_warning_expr = quote do: unquote(Helper.reg_attr(@defconfigs_key))
+
+        are_keys_equal_expr =
+          quote do
+            Checker.are_keys_equal!(
+              unquote(f),
+              unquote(arg_names),
+              unquote(raw_fun_configs)
+            )
+          end
+
+        # resort expr
         [ignore_attr_warning_expr] ++ [are_keys_equal_expr] ++ funs_expr ++ [configs_fun_expr]
       end
     end
@@ -153,14 +163,13 @@ defmodule Argx.Use.WithCheck do
   end
 
   ###
-  def merge_configs(defconfigs, configs, arg_names, names_key, should_drop_flag, warn) do
+  def merge_configs(defconfigs, configs, names_key, warn) do
     quote do
       with {names, configs} <- Map.pop(unquote(configs), unquote(names_key)),
            names <- Helper.prune_names(names),
            get <- Config.get_configs_by_names(unquote(warn), unquote(@warn_max_nested_depth)),
-           defconfigs <- get.(unquote(defconfigs), names),
-           merged_configs <- :maps.merge(defconfigs, configs) do
-        Helper.sort_by_keys(merged_configs, unquote(arg_names), unquote(should_drop_flag))
+           defconfigs <- get.(unquote(defconfigs), names) do
+        :maps.merge(defconfigs, configs)
       end
     end
   end

@@ -135,10 +135,11 @@ defmodule Argx.Checker do
         arg_names,
         configs
       )
-      when is_atom(f_name) and is_list(arg_names) and is_list(configs) do
-    arg_names2 = Keyword.keys(configs)
+      when is_atom(f_name) and is_list(arg_names) and is_map(configs) do
+    arg_names2 = configs |> Map.keys() |> Enum.sort()
 
     arg_names
+    |> Enum.sort()
     |> Kernel.==(arg_names2)
     |> if(
       do: :ok,
