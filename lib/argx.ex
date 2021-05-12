@@ -156,7 +156,7 @@ defmodule Argx do
     ]
   }
   ```
-  If you want to convert meta errors to readable message, just implement [fmt_errors/1](#2-format-errors).
+  If you want to convert meta errors to readable message, just implement fmt_errors/1.
 
   ## Configuration
   config `Argx` or `Argx.WithCheck` module.
@@ -234,7 +234,7 @@ defmodule Argx.Defconfig do
     ```elixir
     defconfig(Rule, id(:integer, :optional))
     ```
-  - `:auto` declare that argx convert it to integer value automatically if it is compatible.
+  - `:auto` declare that argx convert it to expected type automatically if it is compatible.
     - `"1"` to `1`
     - `"1.2"` to `1.2`
     - `1` to `1.0`

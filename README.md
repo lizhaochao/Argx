@@ -157,7 +157,7 @@ Reuse arg config rule by name.
   ```elixir
   defconfig(Rule, id(:integer, :optional))
   ```
-- `:auto` declare that argx convert it to integer value automatically if it is compatible.
+- `:auto` declare that argx convert it to expected type automatically if it is compatible.
   - `"1"` to `1`
   - `"1.2"` to `1.2`
   - `1` to `1.0`
