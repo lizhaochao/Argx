@@ -13,7 +13,7 @@ defmodule ProjectB.Argx.General do
   def fmt_errors(errors), do: {:general, errors}
 end
 
-defmodule ArgxGeneralTest do
+defmodule ArgxShareTest do
   use ExUnit.Case
 
   import ProjectB.Argx
