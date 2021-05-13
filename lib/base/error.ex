@@ -21,6 +21,8 @@ defmodule Argx.Error do
   def reduce_errors(errors, _other_keys, _path, _path_handler, _check_type), do: errors
 
   ###
+  def merge_errors(left, right, _check_types) when left == right, do: left
+
   def merge_errors(left, right, check_types) when is_list(left) and is_list(right) do
     with left_errors <- left |> pre_errors(check_types) |> Enum.sort(),
          right_errors <- right |> pre_errors(check_types) |> Enum.sort() do

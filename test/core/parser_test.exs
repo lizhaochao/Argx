@@ -400,6 +400,13 @@ defmodule ParserTest do
         P.parse_configs(expr)
       end
     end
+
+    test "both checkbox & radio" do
+      assert_raise Argx.Error, fn ->
+        expr = quote do: name(:list, :checkbox, :radio)
+        P.parse_configs(expr)
+      end
+    end
   end
 
   describe "parse_configs/1 - configs - ok" do

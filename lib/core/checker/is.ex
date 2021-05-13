@@ -1,21 +1,23 @@
 defprotocol Argx.Checker.Is do
   @moduledoc false
   def in_range?(term, range)
-  def empty?(term)
+  def empty?(term, config)
 end
 
 defimpl Argx.Checker.Is, for: Integer do
   def in_range?(term, [l, r]), do: (term >= l and term <= r) or (term == l and term == r)
 
-  def empty?(0), do: true
-  def empty?(_other), do: false
+  def empty?(0, nil = _config), do: true
+  def empty?(0, %Argx.Config{empty: true}), do: true
+  def empty?(_other, _config), do: false
 end
 
 defimpl Argx.Checker.Is, for: Float do
   def in_range?(term, [l, r]), do: (term >= l and term <= r) or (term == l and term == r)
 
-  def empty?(0.0), do: true
-  def empty?(_other), do: false
+  def empty?(0.0, nil = _config), do: true
+  def empty?(0.0, %Argx.Config{empty: true}), do: true
+  def empty?(_other, _config), do: false
 end
 
 defimpl Argx.Checker.Is, for: BitString do
@@ -25,8 +27,9 @@ defimpl Argx.Checker.Is, for: BitString do
     end
   end
 
-  def empty?(""), do: true
-  def empty?(_other), do: false
+  def empty?("", nil = _config), do: true
+  def empty?("", %Argx.Config{empty: true}), do: true
+  def empty?(_other, _config), do: false
 end
 
 defimpl Argx.Checker.Is, for: List do
@@ -36,8 +39,9 @@ defimpl Argx.Checker.Is, for: List do
     end
   end
 
-  def empty?([]), do: true
-  def empty?(_other), do: false
+  def empty?([], nil = _config), do: true
+  def empty?([], %Argx.Config{empty: true}), do: true
+  def empty?(_other, _config), do: false
 end
 
 defimpl Argx.Checker.Is, for: Map do
@@ -47,18 +51,19 @@ defimpl Argx.Checker.Is, for: Map do
     end
   end
 
-  def empty?(%{} = term), do: Enum.empty?(term)
-  def empty?(_other), do: false
+  def empty?(%{} = term, nil = _config), do: Enum.empty?(term)
+  def empty?(%{} = term, %Argx.Config{empty: true}), do: Enum.empty?(term)
+  def empty?(_other, _config), do: false
 end
 
 defimpl Argx.Checker.Is, for: Atom do
   def in_range?(term, _range), do: is_boolean(term)
 
-  def empty?(_term), do: false
+  def empty?(_term, _config), do: false
 end
 
 defimpl Argx.Checker.Is, for: Any do
   def in_range?(_term, _range), do: false
 
-  def empty?(_term), do: false
+  def empty?(_term, _config), do: false
 end

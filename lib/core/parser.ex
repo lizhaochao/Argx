@@ -138,7 +138,7 @@ defmodule Argx.Parser do
       empty: false
     }
 
-    items = every_item(items, config)
+    items = every_item(items, config) |> check_checkbox_radio()
     Map.put(%{}, field, items)
   end
 
@@ -221,4 +221,11 @@ defmodule Argx.Parser do
   def parse_range(v) when is_number(v), do: [v, v]
   def parse_range({:.., _, [l, r]}), do: [l, r]
   def parse_range(other), do: raise(Error, "not support #{inspect(other)}")
+
+  ###
+  def check_checkbox_radio(%{checkbox: true, radio: true}) do
+    raise Error, ":checkbox & :radio cannot set both in one arg."
+  end
+
+  def check_checkbox_radio(config), do: config
 end

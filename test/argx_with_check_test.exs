@@ -92,9 +92,9 @@ defmodule ArgxWithCheckTest do
 
   describe "mixed defconfig & with_check" do
     defmodule ProjectA.Argx.C do
-      defconfig(RuleA, one(:map, :optional))
+      defconfig(RuleA, one(:map, :optional, :checkbox))
       defconfig(RuleB, two(:integer, :auto) || 99)
-      defconfig(RuleC, [three(:list, 2), four(:float, :auto, :empty)])
+      defconfig(RuleC, [three(:list, 2), four(:float, :auto, :empty, :checkbox)])
       defconfig(SimpleMapRule, [a(:string)])
 
       with_check configs(
@@ -118,12 +118,16 @@ defmodule ArgxWithCheckTest do
       end
 
       with_check configs(RuleA) do
+        def post(one) when %{a: "one"} == one do
+          {:error, :second}
+        end
+
         def post(one) when is_map(one) do
           {one, :first}
         end
 
-        def post(one) when is_nil(one) do
-          {:error, :second}
+        def post(one) do
+          {one, :else}
         end
       end
 
@@ -141,29 +145,125 @@ defmodule ArgxWithCheckTest do
     end
 
     test "get - error" do
-      result = ProjectA.Argx.C.get(1, "a", [3], 0.0, 1.23, [%{a: "a"}])
+      result = ProjectA.Argx.C.get(nil, "a", [3], 0.0, 1.23, nil)
 
-      assert {
-               :custom_err,
-               {
-                 :error,
-                 [
-                   error_type: [:five, :one, :two],
-                   lacked: [:four],
-                   out_of_range: [:three]
-                 ]
-               }
-             } == result
+      assert {:custom_err,
+              {:error,
+               [
+                 checkbox_error: [:four, :one],
+                 error_type: [:five, :two],
+                 lacked: [:six],
+                 out_of_range: [:three]
+               ]}} == result
     end
 
     test "post - ok" do
-      result = ProjectA.Argx.C.post(%{})
-      assert {%{}, :first} == result
+      assert {%{}, :first} == ProjectA.Argx.C.post(%{})
     end
 
     test "post - error" do
-      result = ProjectA.Argx.C.post(nil)
-      assert {:error, :second} == result
+      assert {:error, :second} == ProjectA.Argx.C.post(%{a: "one"})
+    end
+
+    test "post - checkbox error" do
+      assert {:custom_err, {:error, [checkbox_error: [:one]]}} == ProjectA.Argx.C.post(nil)
+    end
+  end
+
+  describe "checkbox" do
+    defmodule ProjectA.Argx.D do
+      with_check configs(
+                   one(:string, :checkbox),
+                   two(:string, :optional, :checkbox),
+                   three(:string)
+                 ) do
+        def get(one, two, three) do
+          {one, two, three}
+        end
+      end
+
+      with_check configs(
+                   one(:string, :checkbox, :empty),
+                   two(:string)
+                 ) do
+        def post(one, two) do
+          {one, two}
+        end
+      end
+    end
+
+    ###
+    test "ok - two args set :checkbox" do
+      result = ProjectA.Argx.D.get(nil, "two", "three")
+      assert {nil, "two", "three"} == result
+
+      result = ProjectA.Argx.D.get("one", nil, "three")
+      assert {"one", nil, "three"} == result
+
+      result = ProjectA.Argx.D.get("one", "two", "three")
+      assert {"one", "two", "three"} == result
+    end
+
+    test "error - two args set :checkbox" do
+      assert {:error, [checkbox_error: [:one, :two]]} == ProjectA.Argx.D.get(nil, nil, "three")
+    end
+
+    ###
+    test "ok - only one arg set :checkbox" do
+      result = ProjectA.Argx.D.post("one", "two")
+      assert {"one", "two"} == result
+    end
+
+    test "error - only one arg set :checkbox" do
+      assert {:error, [checkbox_error: [:one]]} == ProjectA.Argx.D.post(nil, "two")
+      assert {:error, [checkbox_error: [:one]]} == ProjectA.Argx.D.post("", "two")
+    end
+  end
+
+  describe "radio" do
+    defmodule ProjectA.Argx.E do
+      with_check configs(
+                   one(:string, :radio),
+                   two(:string, :optional, :radio),
+                   three(:string)
+                 ) do
+        def get(one, two, three) do
+          {one, two, three}
+        end
+      end
+
+      with_check configs(
+                   one(:string, :radio, :empty),
+                   two(:string)
+                 ) do
+        def post(one, two) do
+          {one, two}
+        end
+      end
+    end
+
+    ###
+    test "ok - two args set :radio" do
+      result = ProjectA.Argx.E.get(nil, "two", "three")
+      assert {nil, "two", "three"} == result
+
+      result = ProjectA.Argx.E.get("one", nil, "three")
+      assert {"one", nil, "three"} == result
+    end
+
+    test "error - two args set :radio" do
+      assert {:error, [radio_error: [:one, :two]]} == ProjectA.Argx.E.get(nil, nil, "three")
+    end
+
+    ###
+    test "ok - only one arg set :radio" do
+      result = ProjectA.Argx.E.post("one", "two")
+      assert {"one", "two"} == result
+    end
+
+    test "error - only one arg set :radio" do
+      assert {:error, [radio_error: [:one]]} == ProjectA.Argx.E.post(nil, "one")
+      assert {:error, [radio_error: [:one]]} == ProjectA.Argx.E.post("", "one")
     end
   end
 end

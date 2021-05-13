@@ -13,9 +13,12 @@ defmodule Argx.Matcher do
 
   def match(from) do
     fn args, configs, curr_m ->
-      with traverse <- traverse(from, args, configs),
-           {root, path} <- {[], []} do
-        traverse.(root, @init_errors, path, curr_m)
+      with traverse_via_depth_first <- traverse(from, args, configs),
+           {root, path} <- {[], []},
+           {errors, new_args} <- traverse_via_depth_first.(root, @init_errors, path, curr_m),
+           args <- Helper.keep_checkbox_radio(new_args, configs),
+           new_errors <- Helper.collect_errors(args, configs, errors) do
+        {new_errors, new_args}
       end
     end
   end
@@ -198,13 +201,6 @@ defmodule Argx.Matcher.Helper do
     |> Converter.convert(config)
   end
 
-  def collect_errors(arg, config, path, errors) do
-    arg
-    |> Checker.lacked(config, path, errors, &join_path/2)
-    |> Checker.error_type(path, &join_path/2)
-    |> Checker.out_of_range(path, &join_path/2)
-  end
-
   def get_required_key(configs, value_key) do
     configs
     |> to_keyword()
@@ -360,6 +356,41 @@ defmodule Argx.Matcher.Helper do
   end
 
   def get_type(_other), do: :unknown
+
+  ###
+  def keep_checkbox_radio(args, configs), do: do_keep_checkbox_radio(args, configs, {[], []})
+  defp do_keep_checkbox_radio([], _configs, new_args), do: new_args
+
+  defp do_keep_checkbox_radio(
+         [{arg_name, _arg_value} = arg | arg_rest],
+         configs,
+         {checkboxes, radios}
+       ) do
+    %{checkbox: checkbox, radio: radio} = Keyword.get(configs, arg_name)
+
+    new_args =
+      case {checkbox, radio} do
+        {true, nil} -> {[arg | checkboxes], radios}
+        {nil, true} -> {checkboxes, [arg | radios]}
+        {nil, nil} -> {checkboxes, radios}
+      end
+
+    do_keep_checkbox_radio(arg_rest, configs, new_args)
+  end
+
+  ###
+  def collect_errors(arg, config, path, errors) do
+    arg
+    |> Checker.lacked(config, path, errors, &join_path/2)
+    |> Checker.error_type(path, &join_path/2)
+    |> Checker.out_of_range(path, &join_path/2)
+  end
+
+  def collect_errors({checkbox_args, radio_args}, configs, errors) do
+    errors
+    |> Checker.check_checkbox(checkbox_args, configs)
+    |> Checker.check_radio(radio_args, configs)
+  end
 
   ### Proxy
   def prune_names(term), do: Util.prune_names(term)

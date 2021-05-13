@@ -7,6 +7,7 @@ defmodule Argx.Checker do
   alias Argx.Checker.Is
 
   @should_drop_flag Const.should_drop_flag()
+  @check_types Const.check_types()
 
   ###
   def lacked(
@@ -129,6 +130,41 @@ defmodule Argx.Checker do
     end
   end
 
+  def check_checkbox(errors, checkbox_args, configs) do
+    checkbox_args
+    |> remove_nil_empty(configs)
+    |> Kernel.==([])
+    |> if(
+      do:
+        merge_errors(
+          errors,
+          [checkbox_error: Keyword.keys(checkbox_args)],
+          @check_types
+        ),
+      else: errors
+    )
+  end
+
+  def check_radio(errors, radio_args, configs) do
+    new_radio_args = remove_nil_empty(radio_args, configs)
+
+    radio_error =
+      new_radio_args
+      |> case do
+        [_] -> errors
+        [] -> [radio_error: Keyword.keys(radio_args)]
+        _great_than_one -> [radio_error: Keyword.keys(new_radio_args)]
+      end
+
+    merge_errors(errors, radio_error, @check_types)
+  end
+
+  def remove_nil_empty(args, configs) do
+    Enum.reject(args, fn {k, v} ->
+      is_nil(v) or (not is_nil(v) and empty?(v, Keyword.get(configs, k)))
+    end)
+  end
+
   ###
   def are_keys_equal!(
         f_name,
@@ -157,7 +193,7 @@ defmodule Argx.Checker do
   end
 
   ###
-  def empty?(term), do: Is.empty?(term)
+  def empty?(term, config \\ nil), do: Is.empty?(term, config)
 
   def some_type?(term, :integer), do: is_integer(term)
   def some_type?(term, :float), do: is_float(term)

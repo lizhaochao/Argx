@@ -13,7 +13,7 @@ defmodule Argx.Const do
 
   def allowed_fun_types, do: [:def, :defp]
   def not_support_types, do: [:@, :defmodule, :use, :require, :import, :alias]
-  def check_types, do: [:error_type, :lacked, :out_of_range]
+  def check_types, do: [:error_type, :lacked, :out_of_range, :checkbox_error, :radio_error]
 
   def should_drop_flag, do: :should_drop
   def configs_keyword, do: :configs

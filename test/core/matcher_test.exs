@@ -101,8 +101,8 @@ defmodule MatcherTest do
            ],
            {errors, _} <- argx_match().(args, configs, @curr_m) do
         assert [
-                 lacked: [:six],
                  out_of_range: [:two],
+                 lacked: [:six],
                  error_type: [:five, :four, :three, :one]
                ] == errors
       else
@@ -606,7 +606,7 @@ defmodule MatcherTest do
 
       args = [one: []]
       {errors, _} = argx_match().(args, configs, @curr_m)
-      assert [{:lacked, ["one:a"]}, {:out_of_range, [:one]}] == errors
+      assert [out_of_range: [:one], lacked: ["one:a"]] == errors
     end
 
     test "nested - depth 3 - list->map->list->integer" do
