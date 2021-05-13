@@ -275,50 +275,16 @@ defmodule Argx.Matcher.Helper do
   end
 
   def pre_args_configs(args, configs) when is_list(args) and is_list(configs) do
-    with {arg_names, config_names} <- {Keyword.keys(args), Keyword.keys(configs)},
-         redundant_keys <- get_redundant_keys(arg_names, config_names),
-         {args, arg_names} <- drop_by_redundant_keys(args, redundant_keys),
-         lacked_keys <- get_lacked_keys(arg_names, config_names) do
-      sort_by_lacked_key(lacked_keys, args, configs)
-    end
-  end
-
-  defp sort_by_lacked_key([] = _lacked_keys, args, configs) do
-    with arg_names <- Keyword.keys(args),
-         configs <- sort_by_keys(configs, arg_names, @should_drop_flag) do
-      {args, configs}
-    end
-  end
-
-  defp sort_by_lacked_key([_ | _] = lacked_keys, args, configs) do
-    with {args, arg_names} <- fill_by_lacked_keys(args, lacked_keys, @should_drop_flag),
-         configs <- sort_by_keys(configs, arg_names, @should_drop_flag) do
-      {args, configs}
-    end
-  end
-
-  defp drop_by_redundant_keys(args, redundant_keys) do
-    with args <- Keyword.drop(args, redundant_keys),
-         arg_names <- Keyword.keys(args) do
-      {args, arg_names}
-    end
-  end
-
-  defp fill_by_lacked_keys(args, lacked_keys, should_drop_flag) do
     args =
-      lacked_keys
-      |> Enum.reduce(Enum.reverse(args), fn key, args ->
-        Keyword.put(args, key, should_drop_flag)
+      configs
+      |> Keyword.keys()
+      |> Enum.map(fn key ->
+        value = Keyword.get(args, key, @should_drop_flag)
+        {key, value}
       end)
-      |> Enum.reverse()
 
-    arg_names = Keyword.keys(args)
-
-    {args, arg_names}
+    {args, configs}
   end
-
-  defp get_lacked_keys(arg_names, config_names), do: config_names -- arg_names
-  defp get_redundant_keys(arg_names, config_names), do: arg_names -- config_names
 
   def sort_by_keys(keyword, keys, should_drop_flag) when is_list(keyword) do
     keyword |> to_map() |> sort_by_keys(keys, should_drop_flag)
