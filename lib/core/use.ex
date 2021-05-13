@@ -165,11 +165,16 @@ defmodule Argx.Use.WithCheck do
   ###
   def merge_configs(defconfigs, configs, names_key, warn) do
     quote do
-      with {names, configs} <- Map.pop(unquote(configs), unquote(names_key)),
+      with warn <- unquote(warn),
+           max_depth <- unquote(@warn_max_nested_depth),
+           defconfigs <- unquote(defconfigs),
+           {names, configs} <- Map.pop(unquote(configs), unquote(names_key)),
            names <- Helper.prune_names(names),
-           get <- Config.get_configs_by_names(unquote(warn), unquote(@warn_max_nested_depth)),
-           defconfigs <- get.(unquote(defconfigs), names) do
-        :maps.merge(defconfigs, configs)
+           get_nested <- Config.get_nested_config(warn, max_depth),
+           get_by_names <- Config.get_configs_by_names(warn, max_depth),
+           configs <- get_nested.(defconfigs, configs),
+           name_configs <- get_by_names.(defconfigs, names) do
+        :maps.merge(name_configs, configs)
       end
     end
   end

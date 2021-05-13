@@ -95,23 +95,25 @@ defmodule ArgxWithCheckTest do
       defconfig(RuleA, one(:map, :optional))
       defconfig(RuleB, two(:integer, :auto) || 99)
       defconfig(RuleC, [three(:list, 2), four(:float, :auto, :empty)])
+      defconfig(SimpleMapRule, [a(:string)])
 
       with_check configs(
                    RuleA,
                    RuleB,
                    five(:string),
-                   RuleC
+                   RuleC,
+                   six({:list, SimpleMapRule})
                  ) do
-        def get(one, two, three, four, five) when is_bitstring(one) do
-          {one, two, three, four, five, :first}
+        def get(one, two, three, four, five, six) when is_bitstring(one) do
+          {one, two, three, four, five, six, :first}
         end
 
-        def get(one, two, three, four, five) when is_nil(one) do
-          {one, two, three, four, five, :i_am_nil}
+        def get(one, two, three, four, five, six) when is_nil(one) do
+          {one, two, three, four, five, six, :i_am_nil}
         end
 
-        def get(one, two, three, four, five) do
-          {one, two, three, four, five, :else}
+        def get(one, two, three, four, five, six) do
+          {one, two, three, four, five, six, :else}
         end
       end
 
@@ -131,15 +133,15 @@ defmodule ArgxWithCheckTest do
     end
 
     test "get - ok" do
-      result1 = ProjectA.Argx.C.get(%{}, 1, [1, 2], 1.23, "hello")
-      assert {%{}, 1, [1, 2], 1.23, "hello", :else} == result1
+      result1 = ProjectA.Argx.C.get(%{}, 1, [1, 2], 1.23, "hello", [%{a: "a"}])
+      assert {%{}, 1, [1, 2], 1.23, "hello", [%{a: "a"}], :else} == result1
 
-      result2 = ProjectA.Argx.C.get(nil, nil, [1, 2], 1.23, "hello")
-      assert {nil, 99, [1, 2], 1.23, "hello", :i_am_nil} == result2
+      result2 = ProjectA.Argx.C.get(nil, nil, [1, 2], 1.23, "hello", [%{a: "a"}])
+      assert {nil, 99, [1, 2], 1.23, "hello", [%{a: "a"}], :i_am_nil} == result2
     end
 
     test "get - error" do
-      result = ProjectA.Argx.C.get(1, "a", [3], 0.0, 1.23)
+      result = ProjectA.Argx.C.get(1, "a", [3], 0.0, 1.23, [%{a: "a"}])
 
       assert {
                :custom_err,

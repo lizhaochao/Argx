@@ -45,6 +45,18 @@ defmodule Argx.Config do
     end
   end
 
+  def get_nested_config(warn, max_depth) do
+    fn all_configs, configs ->
+      drill_down(all_configs, configs, warn, 1, max_depth)
+    end
+  end
+
+  defp drill_down(all_configs, %{} = configs, warn, depth, max_depth) do
+    with configs_kw <- Keyword.new(configs) do
+      do_drill_down(configs, all_configs, configs_kw, warn, depth, max_depth)
+    end
+  end
+
   defp drill_down(all_configs, name, warn, depth, max_depth) do
     with _ <- warn_by_depth(name, warn, depth, max_depth),
          configs <- fetch_by_name(all_configs, name),
