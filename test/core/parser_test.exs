@@ -212,15 +212,7 @@ defmodule ParserTest do
         expr = quote do: name(unquote(type))
 
         assert %{
-                 name: %Argx.Config{
-                   auto: false,
-                   default: nil,
-                   optional: false,
-                   range: nil,
-                   type: type,
-                   empty: false,
-                   nested: nil
-                 }
+                 name: %Argx.Config{auto: false, optional: false, type: type, empty: false}
                } == P.parse_configs(expr)
       end)
     end
@@ -231,15 +223,7 @@ defmodule ParserTest do
         expr = quote do: name(unquote(type), :optional)
 
         assert %{
-                 name: %Argx.Config{
-                   auto: false,
-                   default: nil,
-                   optional: true,
-                   range: nil,
-                   type: type,
-                   empty: false,
-                   nested: nil
-                 }
+                 name: %Argx.Config{auto: false, optional: true, type: type, empty: false}
                } == P.parse_configs(expr)
       end)
     end
@@ -250,15 +234,7 @@ defmodule ParserTest do
         expr = quote do: name(unquote(type), :optional, :auto)
 
         assert %{
-                 name: %Argx.Config{
-                   auto: true,
-                   default: nil,
-                   optional: true,
-                   range: nil,
-                   type: type,
-                   empty: false,
-                   nested: nil
-                 }
+                 name: %Argx.Config{auto: true, optional: true, type: type, empty: false}
                } == P.parse_configs(expr)
       end)
     end
@@ -277,12 +253,10 @@ defmodule ParserTest do
           %{
             name: %Argx.Config{
               auto: true,
-              default: nil,
               optional: true,
               range: parsed_range,
               type: parsed_type,
-              empty: false,
-              nested: nil
+              empty: false
             }
           } = P.parse_configs(Enum.at(expr, idx))
 
@@ -311,8 +285,7 @@ defmodule ParserTest do
                      optional: true,
                      range: 33,
                      type: type,
-                     empty: false,
-                     nested: nil
+                     empty: false
                    }
                  } == P.parse_configs(expr)
         end)
@@ -335,8 +308,7 @@ defmodule ParserTest do
                    optional: true,
                    range: {:.., [context: __MODULE__, import: Kernel], [1, 11]},
                    type: :list,
-                   empty: false,
-                   nested: nil
+                   empty: false
                  }
                } == P.parse_configs(expr)
       end)
@@ -362,12 +334,62 @@ defmodule ParserTest do
                } == P.parse_configs(expr)
       end)
     end
+
+    test "checkbox & radio" do
+      @allowed_types
+      |> Enum.each(fn type ->
+        expr1 = quote do: name(unquote(type), :checkbox, :optional)
+        expr2 = quote do: name(unquote(type), :checkbox)
+        expr3 = quote do: name(unquote(type), :radio, :optional)
+        expr4 = quote do: name(unquote(type), :radio)
+
+        assert %{
+                 name: %Argx.Config{
+                   auto: false,
+                   optional: true,
+                   checkbox: true,
+                   type: type,
+                   empty: false
+                 }
+               } == P.parse_configs(expr1)
+
+        assert %{
+                 name: %Argx.Config{
+                   auto: false,
+                   optional: true,
+                   checkbox: true,
+                   type: type,
+                   empty: false
+                 }
+               } == P.parse_configs(expr2)
+
+        assert %{
+                 name: %Argx.Config{
+                   auto: false,
+                   optional: true,
+                   radio: true,
+                   type: type,
+                   empty: false
+                 }
+               } == P.parse_configs(expr3)
+
+        assert %{
+                 name: %Argx.Config{
+                   auto: false,
+                   optional: true,
+                   radio: true,
+                   type: type,
+                   empty: false
+                 }
+               } == P.parse_configs(expr4)
+      end)
+    end
   end
 
   describe "parse_configs/1 - defconfig - error" do
     test "unknown type" do
       assert_raise Argx.Error, fn ->
-        expr = quote do: name(:unknown_type, :optional)
+        expr = quote do: name(:unknown_type)
         P.parse_configs(expr)
       end
     end
@@ -399,48 +421,16 @@ defmodule ParserTest do
       expr3 = quote do: configs(name(:string), house(:map))
 
       assert %{
-               name: %Argx.Config{
-                 auto: false,
-                 default: nil,
-                 optional: false,
-                 range: nil,
-                 type: :string,
-                 empty: false,
-                 nested: nil
-               }
+               name: %Argx.Config{auto: false, optional: false, type: :string, empty: false}
              } == P.parse_configs(expr1)
 
       assert %{
-               name: %Argx.Config{
-                 auto: false,
-                 default: nil,
-                 optional: false,
-                 range: nil,
-                 type: :list,
-                 empty: false,
-                 nested: nil
-               }
+               name: %Argx.Config{auto: false, optional: false, type: :list, empty: false}
              } == P.parse_configs(expr2)
 
       assert %{
-               house: %Argx.Config{
-                 auto: false,
-                 default: nil,
-                 optional: false,
-                 range: nil,
-                 type: :map,
-                 empty: false,
-                 nested: nil
-               },
-               name: %Argx.Config{
-                 auto: false,
-                 default: nil,
-                 optional: false,
-                 range: nil,
-                 type: :string,
-                 empty: false,
-                 nested: nil
-               }
+               house: %Argx.Config{auto: false, optional: false, type: :map, empty: false},
+               name: %Argx.Config{auto: false, optional: false, type: :string, empty: false}
              } == P.parse_configs(expr3)
     end
 
@@ -448,24 +438,8 @@ defmodule ParserTest do
       expr = quote do: configs(RuleA, RuleB, name(:string), house(:map))
 
       assert %{
-               name: %Argx.Config{
-                 auto: false,
-                 default: nil,
-                 optional: false,
-                 range: nil,
-                 type: :string,
-                 empty: false,
-                 nested: nil
-               },
-               house: %Argx.Config{
-                 auto: false,
-                 default: nil,
-                 optional: false,
-                 range: nil,
-                 type: :map,
-                 empty: false,
-                 nested: nil
-               },
+               name: %Argx.Config{auto: false, optional: false, type: :string, empty: false},
+               house: %Argx.Config{auto: false, optional: false, type: :map, empty: false},
                __names__: [:RuleA, :RuleB]
              } == P.parse_configs(expr)
     end
@@ -474,24 +448,8 @@ defmodule ParserTest do
       expr = quote do: configs(name(:string), RuleB, house(:map), RuleA)
 
       assert %{
-               name: %Argx.Config{
-                 auto: false,
-                 default: nil,
-                 optional: false,
-                 range: nil,
-                 type: :string,
-                 empty: false,
-                 nested: nil
-               },
-               house: %Argx.Config{
-                 auto: false,
-                 default: nil,
-                 optional: false,
-                 range: nil,
-                 type: :map,
-                 empty: false,
-                 nested: nil
-               },
+               name: %Argx.Config{auto: false, optional: false, type: :string, empty: false},
+               house: %Argx.Config{auto: false, optional: false, type: :map, empty: false},
                __names__: [:RuleA, :RuleB]
              } == P.parse_configs(expr)
     end

@@ -5,8 +5,12 @@ defmodule Argx.Const do
   def defconfigs_key, do: :__defconfigs__
   def value_key, do: :_
 
-  def allowed_types, do: [:list, :map, :string, :integer, :float, :boolean]
-  def allowed_functionalities, do: [:optional, :auto, :empty]
+  def selection_modes, do: [:checkbox, :radio]
+  def allowed_functionalities, do: [:optional, :auto, :empty] ++ selection_modes()
+
+  def container_types, do: [:list, :map]
+  def allowed_types, do: [:string, :integer, :float, :boolean] ++ container_types()
+
   def allowed_fun_types, do: [:def, :defp]
   def not_support_types, do: [:@, :defmodule, :use, :require, :import, :alias]
   def check_types, do: [:error_type, :lacked, :out_of_range]

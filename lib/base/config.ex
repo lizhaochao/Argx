@@ -3,8 +3,8 @@ defmodule Argx.Config do
 
   alias Argx.Error
 
-  @enforce_keys [:type, :optional, :auto, :range, :default, :empty, :nested]
-  defstruct @enforce_keys
+  @enforce_keys [:type, :optional, :auto, :empty]
+  defstruct @enforce_keys ++ [:range, :nested, :default, :checkbox, :radio]
 
   def get_defconfigs(m, f_name_keyword) when is_atom(m) do
     :functions

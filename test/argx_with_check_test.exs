@@ -12,7 +12,6 @@ defmodule ArgxWithCheckTest do
 
   describe "with_check" do
     defmodule ProjectA.Argx.A do
-      @moduledoc false
       @fixed_curr_ts 1_618_653_110
       with_check configs(
                    one(:float, :auto),
@@ -63,8 +62,6 @@ defmodule ArgxWithCheckTest do
 
   describe "defconfig" do
     defmodule ProjectA.Argx.B do
-      @moduledoc false
-
       defconfig("rule", one(:string, :optional, 7) || ProjectA.Helper.get_default())
 
       with_check configs("rule") do
@@ -95,8 +92,6 @@ defmodule ArgxWithCheckTest do
 
   describe "mixed defconfig & with_check" do
     defmodule ProjectA.Argx.C do
-      @moduledoc false
-
       defconfig(RuleA, one(:map, :optional))
       defconfig(RuleB, two(:integer, :auto) || 99)
       defconfig(RuleC, [three(:list, 2), four(:float, :auto, :empty)])

@@ -5,9 +5,12 @@ defmodule Argx.Parser do
 
   alias Argx.{Const, Error}
 
+  @selection_modes Const.selection_modes()
+  @allowed_functionalities Const.allowed_functionalities()
+  @container_types Const.container_types()
+  @allowed_types Const.allowed_types()
   @allowed_fun_types Const.allowed_fun_types()
   @not_support_types Const.not_support_types()
-  @allowed_types Const.allowed_types()
   @names_key Const.names_key()
   @configs_keyword Const.configs_keyword()
 
@@ -128,13 +131,11 @@ defmodule Argx.Parser do
 
   defp do_every_config(field, items, default \\ nil) do
     config = %Argx.Config{
+      type: nil,
       auto: false,
       optional: false,
-      type: nil,
-      range: nil,
       default: default,
-      empty: false,
-      nested: nil
+      empty: false
     }
 
     items = every_item(items, config)
@@ -151,7 +152,7 @@ defmodule Argx.Parser do
   end
 
   defp every_item([{type, {:__aliases__, _, [nested_name]}} | rest], items)
-       when type in [:list, :map] do
+       when type in @container_types do
     with name <- prune_names(nested_name),
          items <- put_nested_name(items, type, name) do
       every_item(rest, items)
@@ -159,32 +160,24 @@ defmodule Argx.Parser do
   end
 
   defp every_item([{type, nested_name} | rest], items)
-       when type in [:list, :map] and (is_bitstring(nested_name) or is_atom(nested_name)) do
+       when type in @container_types and (is_bitstring(nested_name) or is_atom(nested_name)) do
     with name <- prune_names(nested_name),
          items <- put_nested_name(items, type, name) do
       every_item(rest, items)
     end
   end
 
-  defp every_item([:optional | rest], items) do
-    every_item(
-      rest,
-      Map.put(items, :optional, true)
-    )
-  end
+  defp every_item([functionality | rest], items) when functionality in @allowed_functionalities do
+    items = Map.put(items, functionality, true)
 
-  defp every_item([:auto | rest], items) do
-    every_item(
-      rest,
-      Map.put(items, :auto, true)
-    )
-  end
+    items =
+      if functionality in @selection_modes do
+        Map.put(items, :optional, true)
+      else
+        items
+      end
 
-  defp every_item([:empty | rest], items) do
-    every_item(
-      rest,
-      Map.put(items, :empty, true)
-    )
+    every_item(rest, items)
   end
 
   defp every_item([{:.., _, [_, _]} = range | rest], items) do

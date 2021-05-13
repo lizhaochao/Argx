@@ -10,15 +10,7 @@ defmodule ConverterTest do
 
       config = {
         :total,
-        %Argx.Config{
-          type: :integer,
-          auto: true,
-          range: nil,
-          default: nil,
-          optional: false,
-          empty: false,
-          nested: nil
-        }
+        %Argx.Config{type: :integer, auto: true, optional: false, empty: false}
       }
 
       assert {:total, 3} == C.convert(arg, config)
@@ -29,15 +21,7 @@ defmodule ConverterTest do
 
       config = {
         :weight,
-        %Argx.Config{
-          type: :float,
-          auto: true,
-          range: nil,
-          default: nil,
-          optional: false,
-          empty: false,
-          nested: nil
-        }
+        %Argx.Config{type: :float, auto: true, optional: false, empty: false}
       }
 
       assert {:weight, 3.21} == C.convert(arg, config)
@@ -50,15 +34,7 @@ defmodule ConverterTest do
 
       config = {
         :total,
-        %Argx.Config{
-          type: :integer,
-          auto: true,
-          range: nil,
-          default: nil,
-          optional: false,
-          empty: false,
-          nested: nil
-        }
+        %Argx.Config{type: :integer, auto: true, optional: false, empty: false}
       }
 
       assert_raise Argx.Error, fn ->

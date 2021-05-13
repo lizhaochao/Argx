@@ -117,19 +117,14 @@ defmodule MatcherTest do
         one: %Argx.Config{
           type: :list,
           auto: false,
-          range: nil,
-          default: nil,
           optional: false,
           empty: false,
           nested: %{
             a: %Argx.Config{
               type: :string,
               auto: false,
-              range: nil,
-              default: nil,
               optional: false,
-              empty: false,
-              nested: nil
+              empty: false
             }
           }
         }
@@ -145,27 +140,20 @@ defmodule MatcherTest do
         one: %Argx.Config{
           type: :list,
           auto: false,
-          range: nil,
-          default: nil,
           optional: false,
           empty: false,
           nested: %{
             a: %Argx.Config{
               type: :list,
               auto: false,
-              range: nil,
-              default: nil,
               optional: false,
               empty: false,
               nested: %{
                 _: %Argx.Config{
                   type: :integer,
                   auto: true,
-                  range: nil,
-                  default: nil,
                   optional: false,
-                  empty: false,
-                  nested: nil
+                  empty: false
                 }
               }
             }
@@ -191,35 +179,26 @@ defmodule MatcherTest do
         one: %Argx.Config{
           type: :list,
           auto: false,
-          range: nil,
-          default: nil,
           optional: false,
           empty: false,
           nested: %{
             a: %Argx.Config{
               type: :list,
               auto: false,
-              range: nil,
-              default: nil,
               optional: false,
               empty: false,
               nested: %{
                 b: %Argx.Config{
                   type: :list,
                   auto: true,
-                  range: nil,
-                  default: nil,
                   optional: false,
                   empty: false,
                   nested: %{
                     _: %Argx.Config{
                       type: :integer,
                       auto: true,
-                      range: nil,
-                      default: nil,
                       optional: false,
-                      empty: false,
-                      nested: nil
+                      empty: false
                     }
                   }
                 }
@@ -248,19 +227,14 @@ defmodule MatcherTest do
         one: %Argx.Config{
           type: :map,
           auto: false,
-          range: nil,
-          default: nil,
           optional: false,
           empty: false,
           nested: %{
             a: %Argx.Config{
               type: :map,
               auto: false,
-              range: nil,
-              default: nil,
               optional: false,
-              empty: false,
-              nested: nil
+              empty: false
             }
           }
         }
@@ -276,27 +250,20 @@ defmodule MatcherTest do
         one: %Argx.Config{
           type: :map,
           auto: false,
-          range: nil,
-          default: nil,
           optional: false,
           empty: false,
           nested: %{
             a: %Argx.Config{
               type: :list,
               auto: false,
-              range: nil,
-              default: nil,
               optional: false,
               empty: false,
               nested: %{
                 b: %Argx.Config{
                   type: :map,
                   auto: false,
-                  range: nil,
-                  default: nil,
                   optional: false,
-                  empty: false,
-                  nested: nil
+                  empty: false
                 }
               }
             }
@@ -314,27 +281,20 @@ defmodule MatcherTest do
         one: %Argx.Config{
           type: :map,
           auto: false,
-          range: nil,
-          default: nil,
           optional: false,
           empty: false,
           nested: %{
             a: %Argx.Config{
               type: :map,
               auto: false,
-              range: nil,
-              default: nil,
               optional: false,
               empty: false,
               nested: %{
                 b: %Argx.Config{
                   type: :map,
                   auto: false,
-                  range: nil,
-                  default: nil,
                   optional: false,
-                  empty: false,
-                  nested: nil
+                  empty: false
                 }
               }
             }
@@ -352,35 +312,26 @@ defmodule MatcherTest do
         one: %Argx.Config{
           type: :map,
           auto: false,
-          range: nil,
-          default: nil,
           optional: false,
           empty: false,
           nested: %{
             a: %Argx.Config{
               type: :map,
               auto: false,
-              range: nil,
-              default: nil,
               optional: false,
               empty: false,
               nested: %{
                 b: %Argx.Config{
                   type: :map,
                   auto: false,
-                  range: nil,
-                  default: nil,
                   optional: false,
                   empty: false,
                   nested: %{
                     c: %Argx.Config{
                       type: :map,
                       auto: false,
-                      range: nil,
-                      default: nil,
                       optional: false,
-                      empty: false,
-                      nested: nil
+                      empty: false
                     }
                   }
                 }
@@ -400,35 +351,26 @@ defmodule MatcherTest do
         one: %Argx.Config{
           type: :map,
           auto: false,
-          range: nil,
-          default: nil,
           optional: false,
           empty: false,
           nested: %{
             a: %Argx.Config{
               type: :map,
               auto: false,
-              range: nil,
-              default: nil,
               optional: false,
               empty: false,
               nested: %{
                 b: %Argx.Config{
                   type: :list,
                   auto: false,
-                  range: nil,
-                  default: nil,
                   optional: false,
                   empty: false,
                   nested: %{
                     _: %Argx.Config{
                       type: :integer,
                       auto: false,
-                      range: nil,
-                      default: nil,
                       optional: false,
-                      empty: false,
-                      nested: nil
+                      empty: false
                     }
                   }
                 }
@@ -449,19 +391,14 @@ defmodule MatcherTest do
         one: %Argx.Config{
           type: :list,
           auto: false,
-          range: nil,
-          default: nil,
           optional: false,
           empty: false,
           nested: %{
             _: %Argx.Config{
               type: :list,
               auto: false,
-              range: nil,
-              default: nil,
               optional: false,
-              empty: false,
-              nested: nil
+              empty: false
             }
           }
         }
@@ -477,27 +414,20 @@ defmodule MatcherTest do
         one: %Argx.Config{
           type: :list,
           auto: false,
-          range: nil,
-          default: nil,
           optional: false,
           empty: false,
           nested: %{
             _: %Argx.Config{
               type: :list,
               auto: false,
-              range: nil,
-              default: nil,
               optional: false,
               empty: false,
               nested: %{
                 _: %Argx.Config{
                   type: :list,
                   auto: false,
-                  range: nil,
-                  default: nil,
                   optional: false,
-                  empty: false,
-                  nested: nil
+                  empty: false
                 }
               }
             }
@@ -515,27 +445,20 @@ defmodule MatcherTest do
         one: %Argx.Config{
           type: :list,
           auto: false,
-          range: nil,
-          default: nil,
           optional: false,
           empty: false,
           nested: %{
             _: %Argx.Config{
               type: :list,
               auto: false,
-              range: nil,
-              default: nil,
               optional: false,
               empty: false,
               nested: %{
                 _: %Argx.Config{
                   type: :integer,
                   auto: false,
-                  range: nil,
-                  default: nil,
                   optional: false,
-                  empty: false,
-                  nested: nil
+                  empty: false
                 }
               }
             }
@@ -553,35 +476,26 @@ defmodule MatcherTest do
         one: %Argx.Config{
           type: :list,
           auto: false,
-          range: nil,
-          default: nil,
           optional: false,
           empty: false,
           nested: %{
             _: %Argx.Config{
               type: :list,
               auto: false,
-              range: nil,
-              default: nil,
               optional: false,
               empty: false,
               nested: %{
                 _: %Argx.Config{
                   type: :list,
                   auto: false,
-                  range: nil,
-                  default: nil,
                   optional: false,
                   empty: false,
                   nested: %{
                     _: %Argx.Config{
                       type: :integer,
                       auto: false,
-                      range: nil,
-                      default: nil,
                       optional: false,
-                      empty: false,
-                      nested: nil
+                      empty: false
                     }
                   }
                 }
@@ -602,44 +516,32 @@ defmodule MatcherTest do
         one: %Argx.Config{
           type: :list,
           auto: false,
-          range: nil,
-          default: nil,
           optional: false,
           empty: false,
           nested: %{
             b: %Argx.Config{
               type: :boolean,
               auto: true,
-              range: nil,
-              default: nil,
               optional: true,
-              empty: false,
-              nested: nil
+              empty: false
             },
             a: %Argx.Config{
               type: :list,
               auto: false,
-              range: nil,
-              default: nil,
               optional: false,
               empty: false,
               nested: %{
                 z: %Argx.Config{
                   type: :list,
                   auto: false,
-                  range: nil,
-                  default: nil,
                   optional: false,
                   empty: false,
                   nested: %{
                     _: %Argx.Config{
                       type: :integer,
                       auto: true,
-                      range: nil,
-                      default: nil,
                       optional: true,
-                      empty: true,
-                      nested: nil
+                      empty: true
                     }
                   }
                 }
@@ -650,11 +552,9 @@ defmodule MatcherTest do
         two: %Argx.Config{
           type: :string,
           auto: false,
-          range: nil,
           default: "hi",
           optional: false,
-          empty: false,
-          nested: nil
+          empty: false
         }
       ]
 
@@ -679,18 +579,14 @@ defmodule MatcherTest do
           type: :list,
           auto: false,
           range: 1,
-          default: nil,
           optional: false,
           empty: false,
           nested: %{
             a: %Argx.Config{
               type: :string,
               auto: false,
-              range: nil,
-              default: nil,
               optional: false,
-              empty: false,
-              nested: nil
+              empty: false
             }
           }
         }
@@ -718,8 +614,6 @@ defmodule MatcherTest do
         one: %Argx.Config{
           type: :list,
           auto: false,
-          range: nil,
-          default: nil,
           optional: false,
           empty: false,
           nested: %{
@@ -727,18 +621,14 @@ defmodule MatcherTest do
               type: :list,
               auto: false,
               range: 1,
-              default: nil,
               optional: false,
               empty: false,
               nested: %{
                 _: %Argx.Config{
                   type: :integer,
                   auto: true,
-                  range: nil,
-                  default: nil,
                   optional: false,
-                  empty: false,
-                  nested: nil
+                  empty: false
                 }
               }
             }
@@ -764,35 +654,26 @@ defmodule MatcherTest do
         one: %Argx.Config{
           type: :list,
           auto: false,
-          range: nil,
-          default: nil,
           optional: false,
           empty: false,
           nested: %{
             a: %Argx.Config{
               type: :list,
               auto: false,
-              range: nil,
-              default: nil,
               optional: false,
               empty: false,
               nested: %{
                 b: %Argx.Config{
                   type: :list,
                   auto: true,
-                  range: nil,
-                  default: nil,
                   optional: false,
                   empty: false,
                   nested: %{
                     _: %Argx.Config{
                       type: :integer,
                       auto: true,
-                      range: nil,
-                      default: nil,
                       optional: false,
-                      empty: false,
-                      nested: nil
+                      empty: false
                     }
                   }
                 }
@@ -821,19 +702,14 @@ defmodule MatcherTest do
         one: %Argx.Config{
           type: :map,
           auto: false,
-          range: nil,
-          default: nil,
           optional: false,
           empty: false,
           nested: %{
             a: %Argx.Config{
               type: :map,
               auto: false,
-              range: nil,
-              default: nil,
               optional: false,
-              empty: false,
-              nested: nil
+              empty: false
             }
           }
         }
@@ -857,27 +733,20 @@ defmodule MatcherTest do
         one: %Argx.Config{
           type: :map,
           auto: false,
-          range: nil,
-          default: nil,
           optional: false,
           empty: false,
           nested: %{
             a: %Argx.Config{
               type: :map,
               auto: false,
-              range: nil,
-              default: nil,
               optional: false,
               empty: false,
               nested: %{
                 b: %Argx.Config{
                   type: :map,
                   auto: false,
-                  range: nil,
-                  default: nil,
                   optional: false,
-                  empty: false,
-                  nested: nil
+                  empty: false
                 }
               }
             }
@@ -899,35 +768,26 @@ defmodule MatcherTest do
         one: %Argx.Config{
           type: :map,
           auto: false,
-          range: nil,
-          default: nil,
           optional: false,
           empty: false,
           nested: %{
             a: %Argx.Config{
               type: :map,
               auto: false,
-              range: nil,
-              default: nil,
               optional: false,
               empty: false,
               nested: %{
                 b: %Argx.Config{
                   type: :map,
                   auto: false,
-                  range: nil,
-                  default: nil,
                   optional: false,
                   empty: false,
                   nested: %{
                     c: %Argx.Config{
                       type: :map,
                       auto: false,
-                      range: nil,
-                      default: nil,
                       optional: false,
-                      empty: false,
-                      nested: nil
+                      empty: false
                     }
                   }
                 }
@@ -952,19 +812,14 @@ defmodule MatcherTest do
         one: %Argx.Config{
           type: :list,
           auto: false,
-          range: nil,
-          default: nil,
           optional: false,
           empty: false,
           nested: %{
             _: %Argx.Config{
               type: :list,
               auto: false,
-              range: nil,
-              default: nil,
               optional: false,
-              empty: false,
-              nested: nil
+              empty: false
             }
           }
         }
@@ -984,27 +839,20 @@ defmodule MatcherTest do
         one: %Argx.Config{
           type: :list,
           auto: false,
-          range: nil,
-          default: nil,
           optional: false,
           empty: false,
           nested: %{
             _: %Argx.Config{
               type: :list,
               auto: false,
-              range: nil,
-              default: nil,
               optional: false,
               empty: false,
               nested: %{
                 _: %Argx.Config{
                   type: :list,
                   auto: false,
-                  range: nil,
-                  default: nil,
                   optional: false,
-                  empty: false,
-                  nested: nil
+                  empty: false
                 }
               }
             }
@@ -1030,27 +878,20 @@ defmodule MatcherTest do
         one: %Argx.Config{
           type: :list,
           auto: false,
-          range: nil,
-          default: nil,
           optional: false,
           empty: false,
           nested: %{
             _: %Argx.Config{
               type: :list,
               auto: false,
-              range: nil,
-              default: nil,
               optional: false,
               empty: false,
               nested: %{
                 _: %Argx.Config{
                   type: :integer,
                   auto: false,
-                  range: nil,
-                  default: nil,
                   optional: false,
-                  empty: false,
-                  nested: nil
+                  empty: false
                 }
               }
             }
@@ -1068,35 +909,26 @@ defmodule MatcherTest do
         one: %Argx.Config{
           type: :list,
           auto: false,
-          range: nil,
-          default: nil,
           optional: false,
           empty: false,
           nested: %{
             _: %Argx.Config{
               type: :list,
               auto: false,
-              range: nil,
-              default: nil,
               optional: false,
               empty: false,
               nested: %{
                 _: %Argx.Config{
                   type: :list,
                   auto: false,
-                  range: nil,
-                  default: nil,
                   optional: false,
                   empty: false,
                   nested: %{
                     _: %Argx.Config{
                       type: :integer,
                       auto: false,
-                      range: nil,
-                      default: nil,
                       optional: false,
-                      empty: false,
-                      nested: nil
+                      empty: false
                     }
                   }
                 }
@@ -1117,44 +949,32 @@ defmodule MatcherTest do
         one: %Argx.Config{
           type: :list,
           auto: false,
-          range: nil,
-          default: nil,
           optional: false,
           empty: false,
           nested: %{
             b: %Argx.Config{
               type: :boolean,
               auto: true,
-              range: nil,
-              default: nil,
               optional: true,
-              empty: false,
-              nested: nil
+              empty: false
             },
             a: %Argx.Config{
               type: :list,
               auto: false,
-              range: nil,
-              default: nil,
               optional: false,
               empty: false,
               nested: %{
                 z: %Argx.Config{
                   type: :list,
                   auto: false,
-                  range: nil,
-                  default: nil,
                   optional: false,
                   empty: false,
                   nested: %{
                     _: %Argx.Config{
                       type: :integer,
                       auto: true,
-                      range: nil,
-                      default: nil,
                       optional: true,
-                      empty: true,
-                      nested: nil
+                      empty: true
                     }
                   }
                 }
@@ -1165,11 +985,9 @@ defmodule MatcherTest do
         two: %Argx.Config{
           type: :string,
           auto: false,
-          range: nil,
           default: "hi",
           optional: false,
-          empty: false,
-          nested: nil
+          empty: false
         }
       ]
 

@@ -22,8 +22,7 @@ defmodule CheckerTest do
             auto: false,
             default: "hi",
             range: 7,
-            type: :string,
-            nested: nil
+            type: :string
           }
         }
 
@@ -49,8 +48,7 @@ defmodule CheckerTest do
             auto: false,
             default: "hi",
             range: 7,
-            type: :string,
-            nested: nil
+            type: :string
           }
         }
 
@@ -76,8 +74,7 @@ defmodule CheckerTest do
             auto: false,
             default: "hi",
             range: 7,
-            type: :string,
-            nested: nil
+            type: :string
           }
         }
 
@@ -103,8 +100,7 @@ defmodule CheckerTest do
             auto: false,
             default: "hi",
             range: 7,
-            type: :string,
-            nested: nil
+            type: :string
           }
         }
 
@@ -130,8 +126,7 @@ defmodule CheckerTest do
             auto: false,
             default: "hi",
             range: 7,
-            type: :string,
-            nested: nil
+            type: :string
           }
         }
 
@@ -159,8 +154,7 @@ defmodule CheckerTest do
             # following configs dont care
             auto: false,
             default: "hi",
-            range: 7,
-            nested: nil
+            range: 7
           }
         }
 
@@ -186,8 +180,7 @@ defmodule CheckerTest do
             # following configs dont care
             auto: false,
             default: "hi",
-            range: 7,
-            nested: nil
+            range: 7
           }
         }
 
@@ -213,8 +206,7 @@ defmodule CheckerTest do
             # following configs dont care
             auto: false,
             default: "hi",
-            range: 7,
-            nested: nil
+            range: 7
           }
         }
 
@@ -240,8 +232,7 @@ defmodule CheckerTest do
             # following configs dont care
             auto: false,
             default: "hi",
-            range: 7,
-            nested: nil
+            range: 7
           }
         }
 
@@ -267,8 +258,7 @@ defmodule CheckerTest do
             # following configs dont care
             auto: false,
             default: "hi",
-            range: 7,
-            nested: nil
+            range: 7
           }
         }
 
@@ -296,8 +286,7 @@ defmodule CheckerTest do
             type: :string,
             empty: false,
             auto: false,
-            default: "hi",
-            nested: nil
+            default: "hi"
           }
         }
 
@@ -323,8 +312,7 @@ defmodule CheckerTest do
             type: :string,
             empty: false,
             auto: false,
-            default: "hi",
-            nested: nil
+            default: "hi"
           }
         }
 
@@ -350,8 +338,7 @@ defmodule CheckerTest do
             type: :string,
             empty: false,
             auto: false,
-            default: "hi",
-            nested: nil
+            default: "hi"
           }
         }
 
@@ -377,8 +364,7 @@ defmodule CheckerTest do
             type: :string,
             empty: false,
             auto: false,
-            default: "hi",
-            nested: nil
+            default: "hi"
           }
         }
 
@@ -402,8 +388,7 @@ defmodule CheckerTest do
             type: :string,
             empty: false,
             auto: false,
-            default: "hi",
-            nested: nil
+            default: "hi"
           }
         }
 
