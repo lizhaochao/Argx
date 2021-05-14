@@ -125,6 +125,8 @@ end
 - check whether arg's type is error.
 - check whether arg's length/value is out of range.
 - support nested data checking.
+- similar checkbox functionality, required at least one arg is not nil in group. [usage](#defconfig)
+- similar radio functionality, required only one arg is not nil in group. [usage](#defconfig)
 ## Support Data Type
   -  ```:boolean```
   -  ```:integer```
@@ -156,6 +158,14 @@ Reuse arg config rule by name.
 - `:optional` declare arg's value that can be nil.
   ```elixir
   defconfig(Rule, id(:integer, :optional))
+  ```
+- `:checkbox` declare this arg has checkbox functionality, `:optional` was set by default.
+  ```elixir
+  defconfig(Rule, [weight(:integer, :checkbox), height(:integer, :checkbox, :optional)])
+  ```
+- `:radio` declare this arg has radio functionality, `:optional` was set by default also.
+  ```elixir
+  defconfig(Rule, [weight(:integer, :radio), height(:integer, :radio, :optional)])
   ```
 - `:auto` declare that argx convert it to expected type automatically if it is compatible.
   - `"1"` to `1`

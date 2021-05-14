@@ -119,6 +119,8 @@ defmodule Argx do
   - check whether arg's type is error.
   - check whether arg's length/value is out of range.
   - support nested data checking.
+  - similar checkbox functionality, required at least one arg is not nil in group.
+  - similar radio functionality, required only one arg is not nil in group.
 
   ## Support Data Type
     -  ```:boolean```
@@ -230,9 +232,18 @@ defmodule Argx.Defconfig do
     - `Rule` is config name. `:Rule`, `Rule` or `"Rule"` are acceptable.
     - `id` is arg name.
     - `:string` is type.
+
   - `:optional` declare arg's value that can be nil.
     ```elixir
     defconfig(Rule, id(:integer, :optional))
+    ```
+  - `:checkbox` declare this arg has checkbox functionality, `:optional` was set by default.
+    ```elixir
+    defconfig(Rule, [weight(:integer, :checkbox), height(:integer, :checkbox, :optional)])
+    ```
+  - `:radio` declare this arg has radio functionality, `:optional` was set by default also.
+    ```elixir
+    defconfig(Rule, [weight(:integer, :radio), height(:integer, :radio, :optional)])
     ```
   - `:auto` declare that argx convert it to expected type automatically if it is compatible.
     - `"1"` to `1`
