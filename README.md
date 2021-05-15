@@ -10,6 +10,7 @@ end
 Install via `mix deps.get` and the happy check your args as described in [Usage](#usage) and [Advanced](#advanced).
 ## Usage
 ### Quick Start
+Here’s a commented example.
 ```elixir
 # Use Argx like this in Your Project.
 iex> defmodule YourProject do
@@ -245,7 +246,7 @@ There are 3 types.
 2. some fields' type is error.
 3. some field's range/length/size is out of range.
 
-Example:
+As shown below:
 ```elixir
 {
   :error,

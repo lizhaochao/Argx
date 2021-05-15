@@ -2,6 +2,7 @@ defmodule Argx do
   @moduledoc """
   Check args via configs.
   ### Quick Start
+  Here’s a commented example.
   ```elixir
   # Use Argx like this in Your Project.
   iex> defmodule YourProject do
@@ -151,7 +152,7 @@ defmodule Argx do
   2. some fields' type is error.
   3. some field's range/length/size is out of range.
 
-  Example:
+  As shown below:
   ```elixir
   {
     :error,
