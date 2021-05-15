@@ -27,8 +27,21 @@ defmodule Project do
   end
 end
 
+defmodule YourProject do
+  use Argx
+  defconfig(Rule, id(:string))
+  def get(args), do: check(args, [Rule])
+end
+
 defmodule ArgxTest do
   use ExUnit.Case
+
+  doctest Argx
+
+  test "README.md Demo" do
+    assert {:error, ["error type: id"]} == YourProject.get(%{id: 1})
+    assert [id: "a"] == YourProject.get(id: "a")
+  end
 
   describe "no general defconfigs" do
     test "ok" do

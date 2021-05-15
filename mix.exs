@@ -4,7 +4,7 @@ defmodule Argx.MixProject do
   def project do
     [
       app: :argx,
-      version: "1.1.0",
+      version: "1.1.1",
       elixir: "~> 1.11",
       aliases: aliases(),
       description: description(),

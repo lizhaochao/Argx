@@ -11,22 +11,27 @@ Install via `mix deps.get` and the happy check your args as described in [Usage]
 ## Usage
 ### Quick Start
 ```elixir
-defmodule YourProject do
-  # step 1: introduce check function by Argx module
-  use Argx
+# Use Argx like this in Your Project.
+iex> defmodule YourProject do
+...>   # step 1: introduce check function by Argx module
+...>   use Argx
+...>
+...>   # step 2: define rule
+...>   defconfig(Rule, id(:string))
+...>
+...>   def get(args) do
+...>     # step 3: use check function to check args
+...>     check(args, [Rule])
+...>   end
+...> end
 
-  # step 2: define rule
-  defconfig(Rule, id(:string))
+# Return errors.
+iex> YourProject.get(%{id: 1})
+{:error, ["error type: id"]}
 
-  def get(args) do
-    # step 3: use check function to check args
-    check(args, [Rule])
-    |> case do
-      {:error, _} -> :error
-      _ -> :ok
-    end
-  end
-end
+# If passed, return original args.
+iex> YourProject.get(id: "a")
+[id: "a"]
 ```
 ### Check Via DSL
 ```elixir

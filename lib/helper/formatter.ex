@@ -22,17 +22,17 @@ defmodule Argx.Formatter do
         module_name?(use_m) && function_exported?(use_m, f, arity) -> use_m
         true -> :default
       end
-      |> invoke(f, a, errors)
+      |> invoke(f, a)
     end
   end
 
-  defp invoke(:default, _f, _a, errors), do: default(errors)
-  defp invoke(m, f, a, _errors), do: apply(m, f, a)
+  defp invoke(:default, _f, a), do: default(a)
+  defp invoke(m, f, a), do: apply(m, f, a)
 
   defp get_a([] = _errors, new_args), do: [new_args]
   defp get_a({:error, _} = errors, _new_args), do: [errors]
 
-  defp default({:error, errors}) do
+  defp default([{:error, errors}]) do
     fields_ph = "{{fields}}"
 
     result =
@@ -49,7 +49,7 @@ defmodule Argx.Formatter do
     {:error, result}
   end
 
-  defp default(new_args), do: new_args
+  defp default([new_args]), do: new_args
 
   ###
   def restore(:keyword, %{} = new_args), do: Keyword.new(new_args)
