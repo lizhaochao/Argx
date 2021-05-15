@@ -4,7 +4,7 @@ DSLs for checking args.
 Add argx to your list of dependencies in `mix.exs`:
 ```elixir
 defp deps do
-  [{:argx, ">= 0.0.0"}]
+  [{:argx, ">= 1.1.1"}]
 end
 ```
 Install via `mix deps.get` and the happy check your args as described in [Usage](#usage) and [Advanced](#advanced).
