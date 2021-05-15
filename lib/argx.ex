@@ -1,7 +1,6 @@
 defmodule Argx do
   @moduledoc """
-  DSLs for checking args.
-  ## Usage
+  Check args via configs.
   ### Quick Start
   ```elixir
   # Use Argx like this in Your Project.
@@ -184,7 +183,7 @@ end
 
 defmodule Argx.WithCheck do
   @moduledoc """
-  ## Usage
+  DSLs for checking args.
   - `configs` keyword is necessary and it's content is not empty.
   - define configs directly or reuse rules by name.
   - wrap multi functions that have different guards.
@@ -229,7 +228,7 @@ end
 
 defmodule Argx.Defconfig do
   @moduledoc """
-  Reuse arg config rule by name.
+  Reuse arg configs by name.
   - **config name**, **arg name** and **type** are necessary.
     ```elixir
     defconfig(Rule, id(:integer))

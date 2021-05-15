@@ -152,7 +152,7 @@ end
   - return errors, if failure.
 ## DSL
 ### defconfig
-Reuse arg config rule by name.
+Reuse arg configs by name.
 - **config name**, **arg name** and **type** are necessary. [all types](#support-data-type)
   ```elixir
   defconfig(Rule, id(:integer))
