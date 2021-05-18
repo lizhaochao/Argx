@@ -37,15 +37,15 @@ iex> YourProject.get(id: "a")
 ### Check Via DSL
 ```elixir
 # step 1: define your validator
-defmodule YourProject.Argx do
+defmodule YourProject.Validator do
   use Argx.WithCheck
 end
 
 defmodule YourProject do
   # step 2: import your validator
-  import YourProject.Argx
+  import YourProject.Validator
 
-  # step 3: use with_check macro to wrap your function
+  # step 3: use with_check macro to wrap your function(s)
   with_check configs(id(:string)) do
     def get(id) do
       {id}
@@ -100,7 +100,7 @@ defmodule YourProject do
 end
 # or
 defmodule YourProject do
-  import YourProject.Argx
+  import YourProject.Validator
   def fmt_errors({:error, _errors}), do: :error
   def fmt_errors(_new_args_or_result), do: :ok
   ...
@@ -117,7 +117,7 @@ end
 ```
 **Lowest priority**: if you use argx via with_check, also implement it in the definition module.
 ```elixir
-defmodule YourProject.Argx do
+defmodule YourProject.Validator do
   use Argx.WithCheck
   def fmt_errors({:error, _errors}), do: :error
   def fmt_errors(_new_args_or_result), do: :ok
@@ -221,7 +221,7 @@ Reuse arg configs by name.
 - wrap multi functions that have different guards.
   ```elixir
   defmodule YourProject do
-    import YourProject.Argx
+    import YourProject.Validator
   
     with_check configs(
                    Rule,
