@@ -6,7 +6,7 @@ defmodule Argx.MixProject do
   @gitee_repo_url "https://gitee.com/lizhaochao/argx"
   @github_repo_url "https://github.com/lizhaochao/Argx"
 
-  @version "1.1.1"
+  @version "1.1.2"
 
   def project do
     [
@@ -34,6 +34,7 @@ defmodule Argx.MixProject do
 
   defp deps do
     [
+      {:atomic_map, "~> 0.9.3"},
       {:credo, "~> 1.5.5", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.24.2", only: :dev, runtime: false}
     ]

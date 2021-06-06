@@ -57,7 +57,7 @@ defmodule ArgxTest do
 
   describe "mixed general defconfigs & defconfigs in current module" do
     test "ok" do
-      assert :ok == Project.post(%{one: "one", c: [1, 2], d: %{a: 1}})
+      assert :ok == Project.post(%{"one" => "one", "c" => [1, 2], "d" => %{"a" => 1}})
       assert :ok == Project.post(one: "one", c: [1, 2], d: %{a: 1})
     end
 
