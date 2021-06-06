@@ -1,6 +1,11 @@
 defmodule Argx do
   @moduledoc """
-  Check args via configs.
+  Check args using configs.
+
+  ### Example
+  This Example Project is the basis for Argx, help you use well.
+  Download via [Gitee](https://gitee.com/lizhaochao/argx_example) or [Github](https://github.com/lizhaochao/argx_example).
+
   ### Quick Start
   Here’s a commented example.
   ```elixir
@@ -151,6 +156,8 @@ defmodule Argx do
   1. lacked some fields.
   2. some fields' type is error.
   3. some field's range/length/size is out of range.
+  4. checkbox functionality error.
+  5. radio functionality error.
 
   As shown below:
   ```elixir
@@ -159,7 +166,9 @@ defmodule Argx do
     [
       error_type: ["cargoes:1:number", "cargoes:2:name"], # report nested data's error
       lacked: [:mobile],
-      out_of_range: [:weight]
+      out_of_range: [:weight],
+      checkbox_error: [:id, :number],
+      radio_error: [:ip, :addr]
     ]
   }
   ```
