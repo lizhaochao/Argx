@@ -280,6 +280,14 @@ use Argx.WithCheck, share: YourProject.ArgConfigs, warn: false
 | with_check DSL | 55.57 K   | 17.99 μs | ±124.26%   | 15.90 μs | 56.90 μs  |    YES    |
 | check          | 22.64 K   | 44.18 μs | ±94.15%    | 36.90 μs | 153.90 μs |    NO     |
 
+## Benchmark
+```bash
+mix bench
+## ArgxBench
+benchmark name                  iterations   average time 
+deep match (4 nested level)     50000        44.65 µs/op
+```
+
 ## Contributing
 Contributions to Argx are very welcome!
 

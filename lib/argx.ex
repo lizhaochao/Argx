@@ -181,6 +181,13 @@ defmodule Argx do
   ```elixir
   use Argx, share: YourProject.ArgConfigs, warn: false
   ```
+
+  ## Benchmark
+  ```bash
+  mix bench
+  ## ArgxBench
+  benchmark name                  iterations   average time
+  deep match (4 nested level)     50000        44.65 µs/op
   """
 
   defmacro __using__(opts) do
