@@ -4,25 +4,25 @@ defmodule ArgxBench do
   @nested_configs [
     one: %Argx.Config{
       type: :list,
-      auto: false,
+      autoconvert: false,
       optional: false,
       empty: false,
       nested: %{
         a: %Argx.Config{
           type: :list,
-          auto: false,
+          autoconvert: false,
           optional: false,
           empty: false,
           nested: %{
             b: %Argx.Config{
               type: :list,
-              auto: true,
+              autoconvert: true,
               optional: false,
               empty: false,
               nested: %{
                 _: %Argx.Config{
                   type: :integer,
-                  auto: true,
+                  autoconvert: true,
                   optional: false,
                   empty: false
                 }

@@ -14,13 +14,13 @@ defmodule ArgxWithCheckTest do
     defmodule ProjectA.Argx.A do
       @fixed_curr_ts 1_618_653_110
       with_check configs(
-                   one(:float, :auto),
+                   one(:float, :autoconvert),
                    two(:integer, :optional) || get_curr_ts(),
                    three(:string, :empty, 1..10),
                    four(:list) || [1, 2, 3],
                    five(:map, :empty),
                    six(:string, :optional, 7) || ProjectA.Helper.get_default(),
-                   seven(:boolean, :empty, :auto)
+                   seven(:boolean, :empty, :autoconvert)
                  ) do
         def get(one, two, three, four, five, six, seven) do
           {one, two, three, four, five, six, seven}
@@ -93,8 +93,8 @@ defmodule ArgxWithCheckTest do
   describe "mixed defconfig & with_check" do
     defmodule ProjectA.Argx.C do
       defconfig(RuleA, one(:map, :optional, :checkbox))
-      defconfig(RuleB, two(:integer, :auto) || 99)
-      defconfig(RuleC, [three(:list, 2), four(:float, :auto, :empty, :checkbox)])
+      defconfig(RuleB, two(:integer, :autoconvert) || 99)
+      defconfig(RuleC, [three(:list, 2), four(:float, :autoconvert, :empty, :checkbox)])
       defconfig(SimpleMapRule, [a(:string)])
 
       with_check configs(

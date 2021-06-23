@@ -17,7 +17,7 @@ defmodule Argx.Converter do
 
   defp do_convert(
          {arg_name, arg_value},
-         {_, %Argx.Config{auto: true, type: type}}
+         {_, %Argx.Config{autoconvert: true, type: type}}
        )
        when not is_nil(arg_value) do
     with new_arg_value <- to_type(arg_value, type) do

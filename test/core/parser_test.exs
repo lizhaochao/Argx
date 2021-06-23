@@ -212,7 +212,7 @@ defmodule ParserTest do
         expr = quote do: name(unquote(type))
 
         assert %{
-                 name: %Argx.Config{auto: false, optional: false, type: type, empty: false}
+                 name: %Argx.Config{autoconvert: false, optional: false, type: type, empty: false}
                } == P.parse_configs(expr)
       end)
     end
@@ -223,7 +223,7 @@ defmodule ParserTest do
         expr = quote do: name(unquote(type), :optional)
 
         assert %{
-                 name: %Argx.Config{auto: false, optional: true, type: type, empty: false}
+                 name: %Argx.Config{autoconvert: false, optional: true, type: type, empty: false}
                } == P.parse_configs(expr)
       end)
     end
@@ -231,10 +231,10 @@ defmodule ParserTest do
     test "type & optional & auto" do
       @allowed_types
       |> Enum.each(fn type ->
-        expr = quote do: name(unquote(type), :optional, :auto)
+        expr = quote do: name(unquote(type), :optional, :autoconvert)
 
         assert %{
-                 name: %Argx.Config{auto: true, optional: true, type: type, empty: false}
+                 name: %Argx.Config{autoconvert: true, optional: true, type: type, empty: false}
                } == P.parse_configs(expr)
       end)
     end
@@ -242,8 +242,8 @@ defmodule ParserTest do
     test "type & optional & auto & range" do
       @allowed_types
       |> Enum.each(fn type ->
-        expr1 = quote do: name(unquote(type), :optional, :auto, 22)
-        expr2 = quote do: name(unquote(type), :optional, :auto, 1..11)
+        expr1 = quote do: name(unquote(type), :optional, :autoconvert, 22)
+        expr2 = quote do: name(unquote(type), :optional, :autoconvert, 1..11)
 
         expr = [expr1, expr2]
         expected_range = [22, {:.., [context: __MODULE__, import: Kernel], [1, 11]}]
@@ -252,7 +252,7 @@ defmodule ParserTest do
         |> Enum.each(fn idx ->
           %{
             name: %Argx.Config{
-              auto: true,
+              autoconvert: true,
               optional: true,
               range: parsed_range,
               type: parsed_type,
@@ -276,11 +276,11 @@ defmodule ParserTest do
 
         (values ++ functions)
         |> Enum.each(fn default ->
-          expr = quote do: name(unquote(type), :optional, :auto, 33) || unquote(default)
+          expr = quote do: name(unquote(type), :optional, :autoconvert, 33) || unquote(default)
 
           assert %{
                    name: %Argx.Config{
-                     auto: true,
+                     autoconvert: true,
                      default: default,
                      optional: true,
                      range: 33,
@@ -293,17 +293,17 @@ defmodule ParserTest do
     end
 
     test "config item random order" do
-      expr1 = quote do: name(:list, :optional, :auto, 1..11) || 99
-      expr2 = quote do: name(:optional, :auto, 1..11, :list) || 99
-      expr3 = quote do: name(:auto, 1..11, :optional, :list) || 99
-      expr4 = quote do: name(1..11, :auto, :list, :optional) || 99
-      expr5 = quote do: name(:optional, :auto, :list, 1..11) || 99
+      expr1 = quote do: name(:list, :optional, :autoconvert, 1..11) || 99
+      expr2 = quote do: name(:optional, :autoconvert, 1..11, :list) || 99
+      expr3 = quote do: name(:autoconvert, 1..11, :optional, :list) || 99
+      expr4 = quote do: name(1..11, :autoconvert, :list, :optional) || 99
+      expr5 = quote do: name(:optional, :autoconvert, :list, 1..11) || 99
 
       [expr1, expr2, expr3, expr4, expr5]
       |> Enum.each(fn expr ->
         assert %{
                  name: %Argx.Config{
-                   auto: true,
+                   autoconvert: true,
                    default: 99,
                    optional: true,
                    range: {:.., [context: __MODULE__, import: Kernel], [1, 11]},
@@ -315,15 +315,15 @@ defmodule ParserTest do
     end
 
     test "nested - different type rule name" do
-      expr1 = quote do: name({:list, RuleA}, :optional, :auto, 1..11) || 99
-      expr2 = quote do: name({:list, :RuleA}, :optional, :auto, 1..11) || 99
-      expr3 = quote do: name({:list, "RuleA"}, :optional, :auto, 1..11) || 99
+      expr1 = quote do: name({:list, RuleA}, :optional, :autoconvert, 1..11) || 99
+      expr2 = quote do: name({:list, :RuleA}, :optional, :autoconvert, 1..11) || 99
+      expr3 = quote do: name({:list, "RuleA"}, :optional, :autoconvert, 1..11) || 99
 
       [expr1, expr2, expr3]
       |> Enum.each(fn expr ->
         assert %{
                  name: %Argx.Config{
-                   auto: true,
+                   autoconvert: true,
                    default: 99,
                    optional: true,
                    range: {:.., [context: __MODULE__, import: Kernel], [1, 11]},
@@ -345,7 +345,7 @@ defmodule ParserTest do
 
         assert %{
                  name: %Argx.Config{
-                   auto: false,
+                   autoconvert: false,
                    optional: true,
                    checkbox: true,
                    type: type,
@@ -355,7 +355,7 @@ defmodule ParserTest do
 
         assert %{
                  name: %Argx.Config{
-                   auto: false,
+                   autoconvert: false,
                    optional: true,
                    checkbox: true,
                    type: type,
@@ -365,7 +365,7 @@ defmodule ParserTest do
 
         assert %{
                  name: %Argx.Config{
-                   auto: false,
+                   autoconvert: false,
                    optional: true,
                    radio: true,
                    type: type,
@@ -375,7 +375,7 @@ defmodule ParserTest do
 
         assert %{
                  name: %Argx.Config{
-                   auto: false,
+                   autoconvert: false,
                    optional: true,
                    radio: true,
                    type: type,
@@ -428,16 +428,26 @@ defmodule ParserTest do
       expr3 = quote do: configs(name(:string), house(:map))
 
       assert %{
-               name: %Argx.Config{auto: false, optional: false, type: :string, empty: false}
+               name: %Argx.Config{
+                 autoconvert: false,
+                 optional: false,
+                 type: :string,
+                 empty: false
+               }
              } == P.parse_configs(expr1)
 
       assert %{
-               name: %Argx.Config{auto: false, optional: false, type: :list, empty: false}
+               name: %Argx.Config{autoconvert: false, optional: false, type: :list, empty: false}
              } == P.parse_configs(expr2)
 
       assert %{
-               house: %Argx.Config{auto: false, optional: false, type: :map, empty: false},
-               name: %Argx.Config{auto: false, optional: false, type: :string, empty: false}
+               house: %Argx.Config{autoconvert: false, optional: false, type: :map, empty: false},
+               name: %Argx.Config{
+                 autoconvert: false,
+                 optional: false,
+                 type: :string,
+                 empty: false
+               }
              } == P.parse_configs(expr3)
     end
 
@@ -445,8 +455,13 @@ defmodule ParserTest do
       expr = quote do: configs(RuleA, RuleB, name(:string), house(:map))
 
       assert %{
-               name: %Argx.Config{auto: false, optional: false, type: :string, empty: false},
-               house: %Argx.Config{auto: false, optional: false, type: :map, empty: false},
+               name: %Argx.Config{
+                 autoconvert: false,
+                 optional: false,
+                 type: :string,
+                 empty: false
+               },
+               house: %Argx.Config{autoconvert: false, optional: false, type: :map, empty: false},
                __names__: [:RuleA, :RuleB]
              } == P.parse_configs(expr)
     end
@@ -455,8 +470,13 @@ defmodule ParserTest do
       expr = quote do: configs(name(:string), RuleB, house(:map), RuleA)
 
       assert %{
-               name: %Argx.Config{auto: false, optional: false, type: :string, empty: false},
-               house: %Argx.Config{auto: false, optional: false, type: :map, empty: false},
+               name: %Argx.Config{
+                 autoconvert: false,
+                 optional: false,
+                 type: :string,
+                 empty: false
+               },
+               house: %Argx.Config{autoconvert: false, optional: false, type: :map, empty: false},
                __names__: [:RuleA, :RuleB]
              } == P.parse_configs(expr)
     end

@@ -64,7 +64,7 @@ defmodule Project.Argx.Nested.List.Shared do
 
   ### value type
   defconfig(ValueRule, [one({:list, IntegerRule})])
-  defconfig(IntegerRule, [_(:integer, :auto)])
+  defconfig(IntegerRule, [_(:integer, :autoconvert)])
 
   ### list type
   defconfig(Rule, [one({:list, ListRule})])

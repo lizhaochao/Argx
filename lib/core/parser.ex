@@ -132,7 +132,7 @@ defmodule Argx.Parser do
   defp do_every_config(field, items, default \\ nil) do
     config = %Argx.Config{
       type: nil,
-      auto: false,
+      autoconvert: false,
       optional: false,
       default: default,
       empty: false

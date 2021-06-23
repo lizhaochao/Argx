@@ -4,7 +4,7 @@ DSLs for checking args.
 Add argx to your list of dependencies in `mix.exs`:
 ```elixir
 defp deps do
-  [{:argx, "~> 1.1.3"}]
+  [{:argx, "~> 1.1.4"}]
 end
 ```
 Install via `mix deps.get` and the happy check your args as described in [Usage](#usage) and [Advanced](#advanced).
@@ -63,7 +63,7 @@ end
 defmodule YourProject.ArgConfigs do
   use Argx.Defconfig
   defconfig(NumberRule, number(:string, :empty))
-  defconfig(PageSizeRule, page_size(:integer, :auto, 1..100) || 10)
+  defconfig(PageSizeRule, page_size(:integer, :autoconvert, 1..100) || 10)
 end
 ```
 **step 2** : config share module to the following positions.
@@ -176,7 +176,7 @@ Reuse arg configs by name.
   ```elixir
   defconfig(Rule, [weight(:integer, :radio), height(:integer, :radio, :optional)])
   ```
-- `:auto` declare that argx convert it to expected type automatically if it is compatible.
+- `:autoconvert` declare that argx convert it to expected type automatically if it is compatible.
   - `"1"` to `1`
   - `"1.2"` to `1.2`
   - `1` to `1.0`
@@ -185,7 +185,7 @@ Reuse arg configs by name.
   - `"1"` to `true`
   - `"0"` to `false`
   ```elixir
-  defconfig(Rule, id(:integer, :auto))
+  defconfig(Rule, id(:integer, :autoconvert))
   ```
 - `:empty` empty value the same as nil, the following values are empty.
   - `0`
@@ -228,7 +228,7 @@ Reuse arg configs by name.
   
     with_check configs(
                    Rule,
-                   id(:integer, :optional, :auto, :empty, 1..99) || get_default_id()
+                   id(:integer, :optional, :autoconvert, :empty, 1..99) || get_default_id()
                ) do
       def create(id) when is_integer(id) do
         {:ok, id}

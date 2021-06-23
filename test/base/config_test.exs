@@ -147,7 +147,7 @@ defmodule ArgxConfigTest do
   def get_config(type, nested_name \\ nil) do
     %Argx.Config{
       type: type,
-      auto: true,
+      autoconvert: true,
       range: nil,
       default: nil,
       optional: false,

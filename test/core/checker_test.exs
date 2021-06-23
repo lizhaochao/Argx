@@ -19,7 +19,7 @@ defmodule CheckerTest do
             empty: empty,
             optional: optional,
             # following configs dont care
-            auto: false,
+            autoconvert: false,
             default: "hi",
             range: 7,
             type: :string
@@ -45,7 +45,7 @@ defmodule CheckerTest do
             empty: empty,
             optional: optional,
             # following configs dont care
-            auto: false,
+            autoconvert: false,
             default: "hi",
             range: 7,
             type: :string
@@ -71,7 +71,7 @@ defmodule CheckerTest do
             empty: empty,
             optional: optional,
             # following configs dont care
-            auto: false,
+            autoconvert: false,
             default: "hi",
             range: 7,
             type: :string
@@ -97,7 +97,7 @@ defmodule CheckerTest do
             empty: empty,
             optional: optional,
             # following configs dont care
-            auto: false,
+            autoconvert: false,
             default: "hi",
             range: 7,
             type: :string
@@ -123,7 +123,7 @@ defmodule CheckerTest do
             empty: empty,
             optional: optional,
             # following configs dont care
-            auto: false,
+            autoconvert: false,
             default: "hi",
             range: 7,
             type: :string
@@ -152,7 +152,7 @@ defmodule CheckerTest do
             optional: optional,
             empty: false,
             # following configs dont care
-            auto: false,
+            autoconvert: false,
             default: "hi",
             range: 7
           }
@@ -178,7 +178,7 @@ defmodule CheckerTest do
             optional: optional,
             empty: false,
             # following configs dont care
-            auto: false,
+            autoconvert: false,
             default: "hi",
             range: 7
           }
@@ -204,7 +204,7 @@ defmodule CheckerTest do
             optional: optional,
             empty: false,
             # following configs dont care
-            auto: false,
+            autoconvert: false,
             default: "hi",
             range: 7
           }
@@ -230,7 +230,7 @@ defmodule CheckerTest do
             optional: optional,
             empty: false,
             # following configs dont care
-            auto: false,
+            autoconvert: false,
             default: "hi",
             range: 7
           }
@@ -256,7 +256,7 @@ defmodule CheckerTest do
             optional: optional,
             empty: false,
             # following configs dont care
-            auto: false,
+            autoconvert: false,
             default: "hi",
             range: 7
           }
@@ -285,7 +285,7 @@ defmodule CheckerTest do
             # following configs dont care
             type: :string,
             empty: false,
-            auto: false,
+            autoconvert: false,
             default: "hi"
           }
         }
@@ -311,7 +311,7 @@ defmodule CheckerTest do
             # following configs dont care
             type: :string,
             empty: false,
-            auto: false,
+            autoconvert: false,
             default: "hi"
           }
         }
@@ -337,7 +337,7 @@ defmodule CheckerTest do
             # following configs dont care
             type: :string,
             empty: false,
-            auto: false,
+            autoconvert: false,
             default: "hi"
           }
         }
@@ -363,7 +363,7 @@ defmodule CheckerTest do
             # following configs dont care
             type: :string,
             empty: false,
-            auto: false,
+            autoconvert: false,
             default: "hi"
           }
         }
@@ -387,7 +387,7 @@ defmodule CheckerTest do
             # following configs dont care
             type: :string,
             empty: false,
-            auto: false,
+            autoconvert: false,
             default: "hi"
           }
         }

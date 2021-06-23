@@ -22,7 +22,7 @@ defmodule DefaulterTest do
         :total,
         %Argx.Config{
           type: :integer,
-          auto: true,
+          autoconvert: true,
           default: 3,
           optional: false,
           empty: false
@@ -41,7 +41,7 @@ defmodule DefaulterTest do
         :total,
         %Argx.Config{
           type: :integer,
-          auto: true,
+          autoconvert: true,
           default: fun_expr,
           optional: false,
           empty: false
@@ -60,7 +60,7 @@ defmodule DefaulterTest do
         :total,
         %Argx.Config{
           type: :integer,
-          auto: true,
+          autoconvert: true,
           default: fun_expr,
           optional: false,
           empty: false
@@ -79,14 +79,14 @@ defmodule DefaulterTest do
       config = [
         total: %Argx.Config{
           type: :integer,
-          auto: true,
+          autoconvert: true,
           default: 4.56,
           optional: false,
           empty: false
         },
         weight: %Argx.Config{
           type: :float,
-          auto: true,
+          autoconvert: true,
           default: 7,
           optional: false,
           empty: false
@@ -104,7 +104,7 @@ defmodule DefaulterTest do
       config = [
         total: %Argx.Config{
           type: :integer,
-          auto: true,
+          autoconvert: true,
           default: 7,
           optional: false,
           empty: false

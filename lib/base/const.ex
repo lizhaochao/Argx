@@ -6,7 +6,7 @@ defmodule Argx.Const do
   def value_key, do: :_
 
   def selection_modes, do: [:checkbox, :radio]
-  def allowed_functionalities, do: [:optional, :auto, :empty] ++ selection_modes()
+  def allowed_functionalities, do: [:optional, :autoconvert, :empty] ++ selection_modes()
 
   def container_types, do: [:list, :map]
   def allowed_types, do: [:string, :integer, :float, :boolean] ++ container_types()

@@ -6,7 +6,7 @@ defmodule Argx.MixProject do
   @gitee_repo_url "https://gitee.com/lizhaochao/argx"
   @github_repo_url "https://github.com/lizhaochao/Argx"
 
-  @version "1.1.3"
+  @version "1.1.4"
 
   def project do
     [

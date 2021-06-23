@@ -31,7 +31,7 @@ defmodule MatcherTest do
            args <- [one: "", two: 3, three: [], four: 1.2, five: true, six: %{a: 1}],
            configs <- [
              one: get_config(:string, empty: true, default: "hello"),
-             two: get_config(:integer, auto: true, range: range_expr),
+             two: get_config(:integer, autoconvert: true, range: range_expr),
              three: get_config(:list),
              four: get_config(:float),
              five: get_config(:boolean),
@@ -48,7 +48,7 @@ defmodule MatcherTest do
       with args <- [one: "", two: "3"],
            configs <- [
              one: get_config(:string, default: "hello"),
-             two: get_config(:integer, auto: true)
+             two: get_config(:integer, autoconvert: true)
            ],
            {errors, new_args} <- argx_match().(args, configs, @curr_m) do
         assert [] == errors
@@ -93,7 +93,7 @@ defmodule MatcherTest do
            args <- [one: 1, two: 22, three: 1, four: "a", five: "1", six: %{}],
            configs <- [
              one: get_config(:string, empty: true, default: "hello"),
-             two: get_config(:integer, auto: true, range: range_expr),
+             two: get_config(:integer, autoconvert: true, range: range_expr),
              three: get_config(:list),
              four: get_config(:float),
              five: get_config(:boolean),
@@ -116,13 +116,13 @@ defmodule MatcherTest do
       configs = [
         one: %Argx.Config{
           type: :list,
-          auto: false,
+          autoconvert: false,
           optional: false,
           empty: false,
           nested: %{
             a: %Argx.Config{
               type: :string,
-              auto: false,
+              autoconvert: false,
               optional: false,
               empty: false
             }
@@ -139,19 +139,19 @@ defmodule MatcherTest do
       configs = [
         one: %Argx.Config{
           type: :list,
-          auto: false,
+          autoconvert: false,
           optional: false,
           empty: false,
           nested: %{
             a: %Argx.Config{
               type: :list,
-              auto: false,
+              autoconvert: false,
               optional: false,
               empty: false,
               nested: %{
                 _: %Argx.Config{
                   type: :integer,
-                  auto: true,
+                  autoconvert: true,
                   optional: false,
                   empty: false
                 }
@@ -178,25 +178,25 @@ defmodule MatcherTest do
       configs = [
         one: %Argx.Config{
           type: :list,
-          auto: false,
+          autoconvert: false,
           optional: false,
           empty: false,
           nested: %{
             a: %Argx.Config{
               type: :list,
-              auto: false,
+              autoconvert: false,
               optional: false,
               empty: false,
               nested: %{
                 b: %Argx.Config{
                   type: :list,
-                  auto: true,
+                  autoconvert: true,
                   optional: false,
                   empty: false,
                   nested: %{
                     _: %Argx.Config{
                       type: :integer,
-                      auto: true,
+                      autoconvert: true,
                       optional: false,
                       empty: false
                     }
@@ -226,13 +226,13 @@ defmodule MatcherTest do
       configs = [
         one: %Argx.Config{
           type: :map,
-          auto: false,
+          autoconvert: false,
           optional: false,
           empty: false,
           nested: %{
             a: %Argx.Config{
               type: :map,
-              auto: false,
+              autoconvert: false,
               optional: false,
               empty: false
             }
@@ -249,19 +249,19 @@ defmodule MatcherTest do
       configs = [
         one: %Argx.Config{
           type: :map,
-          auto: false,
+          autoconvert: false,
           optional: false,
           empty: false,
           nested: %{
             a: %Argx.Config{
               type: :list,
-              auto: false,
+              autoconvert: false,
               optional: false,
               empty: false,
               nested: %{
                 b: %Argx.Config{
                   type: :map,
-                  auto: false,
+                  autoconvert: false,
                   optional: false,
                   empty: false
                 }
@@ -280,19 +280,19 @@ defmodule MatcherTest do
       configs = [
         one: %Argx.Config{
           type: :map,
-          auto: false,
+          autoconvert: false,
           optional: false,
           empty: false,
           nested: %{
             a: %Argx.Config{
               type: :map,
-              auto: false,
+              autoconvert: false,
               optional: false,
               empty: false,
               nested: %{
                 b: %Argx.Config{
                   type: :map,
-                  auto: false,
+                  autoconvert: false,
                   optional: false,
                   empty: false
                 }
@@ -311,25 +311,25 @@ defmodule MatcherTest do
       configs = [
         one: %Argx.Config{
           type: :map,
-          auto: false,
+          autoconvert: false,
           optional: false,
           empty: false,
           nested: %{
             a: %Argx.Config{
               type: :map,
-              auto: false,
+              autoconvert: false,
               optional: false,
               empty: false,
               nested: %{
                 b: %Argx.Config{
                   type: :map,
-                  auto: false,
+                  autoconvert: false,
                   optional: false,
                   empty: false,
                   nested: %{
                     c: %Argx.Config{
                       type: :map,
-                      auto: false,
+                      autoconvert: false,
                       optional: false,
                       empty: false
                     }
@@ -350,25 +350,25 @@ defmodule MatcherTest do
       configs = [
         one: %Argx.Config{
           type: :map,
-          auto: false,
+          autoconvert: false,
           optional: false,
           empty: false,
           nested: %{
             a: %Argx.Config{
               type: :map,
-              auto: false,
+              autoconvert: false,
               optional: false,
               empty: false,
               nested: %{
                 b: %Argx.Config{
                   type: :list,
-                  auto: false,
+                  autoconvert: false,
                   optional: false,
                   empty: false,
                   nested: %{
                     _: %Argx.Config{
                       type: :integer,
-                      auto: false,
+                      autoconvert: false,
                       optional: false,
                       empty: false
                     }
@@ -390,13 +390,13 @@ defmodule MatcherTest do
       configs = [
         one: %Argx.Config{
           type: :list,
-          auto: false,
+          autoconvert: false,
           optional: false,
           empty: false,
           nested: %{
             _: %Argx.Config{
               type: :list,
-              auto: false,
+              autoconvert: false,
               optional: false,
               empty: false
             }
@@ -413,19 +413,19 @@ defmodule MatcherTest do
       configs = [
         one: %Argx.Config{
           type: :list,
-          auto: false,
+          autoconvert: false,
           optional: false,
           empty: false,
           nested: %{
             _: %Argx.Config{
               type: :list,
-              auto: false,
+              autoconvert: false,
               optional: false,
               empty: false,
               nested: %{
                 _: %Argx.Config{
                   type: :list,
-                  auto: false,
+                  autoconvert: false,
                   optional: false,
                   empty: false
                 }
@@ -444,19 +444,19 @@ defmodule MatcherTest do
       configs = [
         one: %Argx.Config{
           type: :list,
-          auto: false,
+          autoconvert: false,
           optional: false,
           empty: false,
           nested: %{
             _: %Argx.Config{
               type: :list,
-              auto: false,
+              autoconvert: false,
               optional: false,
               empty: false,
               nested: %{
                 _: %Argx.Config{
                   type: :integer,
-                  auto: false,
+                  autoconvert: false,
                   optional: false,
                   empty: false
                 }
@@ -475,25 +475,25 @@ defmodule MatcherTest do
       configs = [
         one: %Argx.Config{
           type: :list,
-          auto: false,
+          autoconvert: false,
           optional: false,
           empty: false,
           nested: %{
             _: %Argx.Config{
               type: :list,
-              auto: false,
+              autoconvert: false,
               optional: false,
               empty: false,
               nested: %{
                 _: %Argx.Config{
                   type: :list,
-                  auto: false,
+                  autoconvert: false,
                   optional: false,
                   empty: false,
                   nested: %{
                     _: %Argx.Config{
                       type: :integer,
-                      auto: false,
+                      autoconvert: false,
                       optional: false,
                       empty: false
                     }
@@ -515,31 +515,31 @@ defmodule MatcherTest do
       configs = [
         one: %Argx.Config{
           type: :list,
-          auto: false,
+          autoconvert: false,
           optional: false,
           empty: false,
           nested: %{
             b: %Argx.Config{
               type: :boolean,
-              auto: true,
+              autoconvert: true,
               optional: true,
               empty: false
             },
             a: %Argx.Config{
               type: :list,
-              auto: false,
+              autoconvert: false,
               optional: false,
               empty: false,
               nested: %{
                 z: %Argx.Config{
                   type: :list,
-                  auto: false,
+                  autoconvert: false,
                   optional: false,
                   empty: false,
                   nested: %{
                     _: %Argx.Config{
                       type: :integer,
-                      auto: true,
+                      autoconvert: true,
                       optional: true,
                       empty: true
                     }
@@ -551,7 +551,7 @@ defmodule MatcherTest do
         },
         two: %Argx.Config{
           type: :string,
-          auto: false,
+          autoconvert: false,
           default: "hi",
           optional: false,
           empty: false
@@ -577,14 +577,14 @@ defmodule MatcherTest do
       configs = [
         one: %Argx.Config{
           type: :list,
-          auto: false,
+          autoconvert: false,
           range: 1,
           optional: false,
           empty: false,
           nested: %{
             a: %Argx.Config{
               type: :string,
-              auto: false,
+              autoconvert: false,
               optional: false,
               empty: false
             }
@@ -613,20 +613,20 @@ defmodule MatcherTest do
       configs = [
         one: %Argx.Config{
           type: :list,
-          auto: false,
+          autoconvert: false,
           optional: false,
           empty: false,
           nested: %{
             a: %Argx.Config{
               type: :list,
-              auto: false,
+              autoconvert: false,
               range: 1,
               optional: false,
               empty: false,
               nested: %{
                 _: %Argx.Config{
                   type: :integer,
-                  auto: true,
+                  autoconvert: true,
                   optional: false,
                   empty: false
                 }
@@ -653,25 +653,25 @@ defmodule MatcherTest do
       configs = [
         one: %Argx.Config{
           type: :list,
-          auto: false,
+          autoconvert: false,
           optional: false,
           empty: false,
           nested: %{
             a: %Argx.Config{
               type: :list,
-              auto: false,
+              autoconvert: false,
               optional: false,
               empty: false,
               nested: %{
                 b: %Argx.Config{
                   type: :list,
-                  auto: true,
+                  autoconvert: true,
                   optional: false,
                   empty: false,
                   nested: %{
                     _: %Argx.Config{
                       type: :integer,
-                      auto: true,
+                      autoconvert: true,
                       optional: false,
                       empty: false
                     }
@@ -701,13 +701,13 @@ defmodule MatcherTest do
       configs = [
         one: %Argx.Config{
           type: :map,
-          auto: false,
+          autoconvert: false,
           optional: false,
           empty: false,
           nested: %{
             a: %Argx.Config{
               type: :map,
-              auto: false,
+              autoconvert: false,
               optional: false,
               empty: false
             }
@@ -732,19 +732,19 @@ defmodule MatcherTest do
       configs = [
         one: %Argx.Config{
           type: :map,
-          auto: false,
+          autoconvert: false,
           optional: false,
           empty: false,
           nested: %{
             a: %Argx.Config{
               type: :map,
-              auto: false,
+              autoconvert: false,
               optional: false,
               empty: false,
               nested: %{
                 b: %Argx.Config{
                   type: :map,
-                  auto: false,
+                  autoconvert: false,
                   optional: false,
                   empty: false
                 }
@@ -767,25 +767,25 @@ defmodule MatcherTest do
       configs = [
         one: %Argx.Config{
           type: :map,
-          auto: false,
+          autoconvert: false,
           optional: false,
           empty: false,
           nested: %{
             a: %Argx.Config{
               type: :map,
-              auto: false,
+              autoconvert: false,
               optional: false,
               empty: false,
               nested: %{
                 b: %Argx.Config{
                   type: :map,
-                  auto: false,
+                  autoconvert: false,
                   optional: false,
                   empty: false,
                   nested: %{
                     c: %Argx.Config{
                       type: :map,
-                      auto: false,
+                      autoconvert: false,
                       optional: false,
                       empty: false
                     }
@@ -811,13 +811,13 @@ defmodule MatcherTest do
       configs = [
         one: %Argx.Config{
           type: :list,
-          auto: false,
+          autoconvert: false,
           optional: false,
           empty: false,
           nested: %{
             _: %Argx.Config{
               type: :list,
-              auto: false,
+              autoconvert: false,
               optional: false,
               empty: false
             }
@@ -838,19 +838,19 @@ defmodule MatcherTest do
       configs = [
         one: %Argx.Config{
           type: :list,
-          auto: false,
+          autoconvert: false,
           optional: false,
           empty: false,
           nested: %{
             _: %Argx.Config{
               type: :list,
-              auto: false,
+              autoconvert: false,
               optional: false,
               empty: false,
               nested: %{
                 _: %Argx.Config{
                   type: :list,
-                  auto: false,
+                  autoconvert: false,
                   optional: false,
                   empty: false
                 }
@@ -877,19 +877,19 @@ defmodule MatcherTest do
       configs = [
         one: %Argx.Config{
           type: :list,
-          auto: false,
+          autoconvert: false,
           optional: false,
           empty: false,
           nested: %{
             _: %Argx.Config{
               type: :list,
-              auto: false,
+              autoconvert: false,
               optional: false,
               empty: false,
               nested: %{
                 _: %Argx.Config{
                   type: :integer,
-                  auto: false,
+                  autoconvert: false,
                   optional: false,
                   empty: false
                 }
@@ -908,25 +908,25 @@ defmodule MatcherTest do
       configs = [
         one: %Argx.Config{
           type: :list,
-          auto: false,
+          autoconvert: false,
           optional: false,
           empty: false,
           nested: %{
             _: %Argx.Config{
               type: :list,
-              auto: false,
+              autoconvert: false,
               optional: false,
               empty: false,
               nested: %{
                 _: %Argx.Config{
                   type: :list,
-                  auto: false,
+                  autoconvert: false,
                   optional: false,
                   empty: false,
                   nested: %{
                     _: %Argx.Config{
                       type: :integer,
-                      auto: false,
+                      autoconvert: false,
                       optional: false,
                       empty: false
                     }
@@ -948,31 +948,31 @@ defmodule MatcherTest do
       configs = [
         one: %Argx.Config{
           type: :list,
-          auto: false,
+          autoconvert: false,
           optional: false,
           empty: false,
           nested: %{
             b: %Argx.Config{
               type: :boolean,
-              auto: true,
+              autoconvert: true,
               optional: true,
               empty: false
             },
             a: %Argx.Config{
               type: :list,
-              auto: false,
+              autoconvert: false,
               optional: false,
               empty: false,
               nested: %{
                 z: %Argx.Config{
                   type: :list,
-                  auto: false,
+                  autoconvert: false,
                   optional: false,
                   empty: false,
                   nested: %{
                     _: %Argx.Config{
                       type: :integer,
-                      auto: true,
+                      autoconvert: true,
                       optional: true,
                       empty: true
                     }
@@ -984,7 +984,7 @@ defmodule MatcherTest do
         },
         two: %Argx.Config{
           type: :string,
-          auto: false,
+          autoconvert: false,
           default: "hi",
           optional: false,
           empty: false
@@ -1028,7 +1028,7 @@ defmodule MatcherTest do
   def get_config(type, opts \\ []) do
     %Argx.Config{
       type: type,
-      auto: Keyword.get(opts, :auto, false),
+      autoconvert: Keyword.get(opts, :autoconvert, false),
       range: Keyword.get(opts, :range, nil),
       default: Keyword.get(opts, :default, nil),
       optional: Keyword.get(opts, :optional, false),
